@@ -5,7 +5,7 @@ Status values are `Not Started`, `In Progress`, `Blocked`, `Ready for Review`, a
 | ID | Ticket | Status | Depends on |
 | --- | --- | --- | --- |
 | DYT-001 | Repository foundation | In Progress | None |
-| DYT-002 | Physical background-recording spike | Not Started | DYT-001 |
+| DYT-002 | Physical background-recording spike | In Progress | DYT-001 |
 | DYT-003 | Secure persistence and session state | Not Started | DYT-001 |
 | DYT-004 | Prototype-faithful shell and onboarding | Not Started | DYT-001, DYT-003 |
 | DYT-005 | Voice enrollment and speaker identification | Not Started | DYT-002, DYT-003 |
@@ -41,7 +41,7 @@ Evidence to date (2026-09-25): `npm ci`, `npm run check`, `npx expo config --typ
 
 ## DYT-002 - Physical background-recording spike
 
-Status: `Not Started`
+Status: `In Progress`
 Dependencies: DYT-001
 
 Outcome: Prove `expo-audio` can record a compressed mono stream in background with Android microphone foreground service and a recoverable iOS path.
@@ -54,6 +54,8 @@ Definition of Done: a short spike app and physical-device evidence document the 
 
 Automated verification: adapter tests for command idempotency and permission state.
 Physical-device verification: iOS 17+ and Android 12+ background, screen lock, call, Bluetooth, route loss, low storage, and app termination checks.
+
+Implementation evidence (2026-09-25): `expo-audio` is configured with explicit background recording and Android microphone foreground-service options. The development-only spike route provides permission, prepare, start, pause, resume, stop, native-finished status, and idempotent discard controls for a 30-second mono AAC/M4A voice target. Adapter tests cover denied permission, command idempotency, native-finished state, cleanup, and protection against losing an undiscarded output. `npm ci`, `npm run check`, Expo config resolution, and config introspection pass. Physical-device verification remains outstanding.
 
 ## DYT-003 - Secure persistence and session state
 

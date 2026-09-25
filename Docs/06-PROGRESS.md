@@ -4,28 +4,28 @@ This file records current delivery evidence and decisions. It does not repeat re
 
 ## Current milestone
 
-Canonical documentation baseline complete. DYT-001 repository foundation is in progress. The next dependency after its physical-device gate is DYT-002.
+Canonical documentation baseline complete. DYT-001 repository foundation checks are green locally, but its iOS and Android development-client gate remains outstanding. DYT-002 implementation is now in progress; its physical-device gate remains pending.
 
 ## Ticket status
 
 Completed: none.
-Active: DYT-001.
+Active: DYT-001, DYT-002.
 Blocked: none.
 Ready for review: none.
 Verified: none.
-Not started: DYT-002 through DYT-012.
+Not started: DYT-003 through DYT-012.
 
 ## Blockers and prerequisites
 
-There is no repository implementation blocker. DYT-001 still needs Apple and Google developer access plus physical devices for development-build verification. DYT-008 needs the Google Cloud/Firebase project and a paid Gemini service configuration; the key must be provided only when that ticket starts and stored in Secret Manager.
+There is no repository implementation blocker. DYT-001 and DYT-002 still need Apple and Google developer access plus physical devices for development-build and background-recording verification. DYT-008 needs the Google Cloud/Firebase project and a paid Gemini service configuration; the key must be provided only when that ticket starts and stored in Secret Manager.
 
 ## Latest verified build
 
-Expo SDK 57 repository foundation verified locally on 2026-09-25: public Expo config resolved, web export completed, and no native signed build was produced. The prototype remains unchanged and is the visual authority for implementation.
+Expo SDK 57 repository foundation and DYT-002 recording-spike configuration verified locally on 2026-09-25: clean install, public Expo config, native config introspection, and web export completed; no native signed build was produced. The prototype remains unchanged and is the visual authority for implementation.
 
 ## Test evidence
 
-2026-09-25: `npm ci` succeeded; `npm run check` passed formatting, lint, TypeScript, three test suites with four tests, documentation links/placeholders, and route smoke checks. `npx expo config --type public` resolved the Daytale Expo Router configuration, and `npx expo export --platform web` bundled the route graph successfully. Watchman emitted a recrawl warning during Jest but did not affect results. Physical iOS 17+ and Android 12+ development-client checks remain pending.
+2026-09-25: `npm ci` succeeded; `npm run check` passed formatting, lint, TypeScript, four test suites with eight tests, documentation links/placeholders, and route smoke checks. `npx expo config --type public` resolved the Daytale Expo Router configuration, native config introspection included the iOS audio background mode and microphone usage description plus Android notification, microphone foreground-service permissions, and `AudioRecordingService`, and `npx expo export --platform web` bundled the route graph successfully. Watchman emitted a recrawl warning during Jest but did not affect results. Physical iOS 17+ and Android 12+ development-client and background-recording checks remain pending.
 
 ## Dated decisions
 
