@@ -1,21 +1,27 @@
 # Dependencies
-/node_modules/
+node_modules/
+.npm/
+.pnpm-store/
 
 # Expo and generated web output
 .expo/
 .expo-shared/
-/dist/
-/web-build/
-/coverage/
+dist/
+web-build/
+coverage/
 expo-env.d.ts
 
 # Generated native projects
-/ios/
-/android/
+ios/
+android/
 .kotlin/
 
 # Metro and debug output
 .metro-health-check*
+.cache/
+.parcel-cache/
+.turbo/
+.eslintcache
 npm-debug.*
 yarn-debug.*
 yarn-error.*
