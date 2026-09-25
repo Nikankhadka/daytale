@@ -1,0 +1,1769 @@
+<title>Daytale</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<script>try{if(localStorage.getItem('daytale.appTheme')==='dark') document.documentElement.classList.add('saved-app-dark')}catch(e){}</script>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Fredoka:wght@400;500;600&family=Figtree:wght@400;500;600;700&family=Newsreader:ital,wght@0,400;0,500;1,400&family=IBM+Plex+Mono:wght@400;500&display=swap">
+<link rel="stylesheet" href="tokens.css">
+<style>
+/* ============================================================
+   DAYTALE — interactive design prototype
+   Sakura Morning: light workspace, warm app palette.
+   ============================================================ */
+
+:root{
+  --c-bg:var(--color-shell-paper);
+  --c-bg-2:var(--color-shell-surface);
+  --c-surface:var(--color-shell-surface);
+  --c-text:var(--color-shell-ink);
+  --c-muted:var(--color-shell-muted);
+  --c-faint:var(--color-shell-faint);
+  --c-line:var(--color-shell-line);
+  --c-line-soft:var(--color-shell-line-soft);
+  --c-brand:var(--color-app-cherry);
+  --c-shadow:var(--shadow-soft);
+  --c-phone-shadow:var(--shadow-device);
+
+  --a-bg:var(--color-app-paper);
+  --a-bg-2:var(--color-app-sakura-mist);
+  --a-surface:var(--color-app-surface);
+  --a-text:var(--color-app-ink);
+  --a-muted:var(--color-app-muted);
+  --a-faint:var(--color-app-faint);
+  --a-line:var(--color-app-line);
+  --a-sun:var(--color-app-sun);
+  --a-sun-deep:var(--color-app-sun-deep);
+  --a-rec:var(--color-app-recording);
+  --a-rec-soft:var(--color-app-recording-soft);
+  --a-pause:var(--color-app-pause);
+  --a-pause-soft:var(--color-app-pause-soft);
+  --a-sprout:var(--color-app-leaf);
+  --a-sprout-soft:var(--color-app-leaf-soft);
+  --a-cheek:var(--color-app-cheek);
+  --a-ink-soft:var(--color-app-ink-soft);
+  --a-shadow:var(--shadow-soft);
+  --a-r-card:var(--radius-card);
+  --a-r-btn:var(--radius-control);
+
+  --f-display:var(--font-display);
+  --f-ui:var(--font-ui);
+  --f-read:var(--font-read);
+  --f-mono:var(--font-mono);
+}
+.phone[data-app-theme="dark"],.saved-app-dark .phone{
+  color-scheme:dark;
+  --a-bg:var(--color-app-paper);
+  --a-bg-2:var(--color-app-sakura-mist);
+  --a-surface:var(--color-app-surface);
+  --a-text:var(--color-app-ink);
+  --a-muted:var(--color-app-muted);
+  --a-faint:var(--color-app-faint);
+  --a-line:var(--color-app-line);
+  --a-sun:var(--color-app-sun);
+  --a-sun-deep:var(--color-app-sun-deep);
+  --a-rec:var(--color-app-recording);
+  --a-rec-soft:var(--color-app-recording-soft);
+  --a-pause:var(--color-app-pause);
+  --a-pause-soft:var(--color-app-pause-soft);
+  --a-sprout:var(--color-app-leaf);
+  --a-sprout-soft:var(--color-app-leaf-soft);
+  --a-cheek:var(--color-app-cheek);
+  --a-ink-soft:var(--color-app-ink-soft);
+  --a-shadow:var(--shadow-soft);
+}
+
+*{box-sizing:border-box}
+body{
+  margin:0;
+  background:var(--c-bg);
+  color:var(--c-text);
+  font-family:var(--f-ui);
+  font-size:15px;
+  line-height:1.5;
+  -webkit-font-smoothing:antialiased;
+}
+h1,h2,h3,h4{margin:0;text-wrap:balance}
+p{margin:0}
+button{font:inherit;color:inherit;background:none;border:0;padding:0;cursor:pointer}
+:focus-visible{outline:2px solid var(--c-brand);outline-offset:2px;border-radius:6px}
+.eyebrow{
+  font-family:var(--f-mono);font-size:11px;letter-spacing:.14em;text-transform:uppercase;
+  color:var(--c-faint);
+}
+
+/* ---------- top bar ---------- */
+.topbar{
+  position:sticky;top:env(safe-area-inset-top,0px);z-index:60;
+  display:flex;align-items:center;gap:16px;flex-wrap:wrap;
+  padding:12px 20px;
+  background:color-mix(in srgb, var(--c-bg) 86%, transparent);
+  backdrop-filter:blur(14px);
+  border-bottom:1px solid var(--c-line);
+}
+.brand{display:flex;align-items:baseline;gap:10px;margin-right:auto}
+.brand b{font-family:var(--f-display);font-weight:600;font-size:21px;letter-spacing:-.01em}
+.brand span{font-size:12px;color:var(--c-muted)}
+.toggles{display:flex;gap:8px;flex-wrap:wrap}
+.tgl{
+  display:inline-flex;align-items:center;gap:7px;
+  padding:7px 13px;border:1px solid var(--c-line);border-radius:999px;
+  background:var(--c-surface);font-size:12.5px;font-weight:500;color:var(--c-muted);
+  transition:border-color .16s, color .16s, background .16s;
+}
+.tgl:hover{border-color:var(--c-faint);color:var(--c-text)}
+.tgl[aria-pressed="true"]{border-color:var(--c-brand);color:var(--c-brand);background:color-mix(in srgb,var(--c-brand) 9%, var(--c-surface))}
+.tgl .dot{width:7px;height:7px;border-radius:50%;background:currentColor;opacity:.35}
+.tgl[aria-pressed="true"] .dot{opacity:1}
+
+/* ---------- workspace grid ---------- */
+.work{
+  display:grid;
+  grid-template-columns:238px minmax(0,1fr) 296px;
+  gap:24px;
+  align-items:start;
+  max-width:1420px;margin:0 auto;
+  padding:24px 20px 8px;
+}
+@media (max-width:1180px){ .work{grid-template-columns:214px minmax(0,1fr)} .rail{grid-column:1/-1} }
+@media (max-width:820px){ .work{grid-template-columns:minmax(0,1fr);gap:18px} }
+
+/* ---------- screen index ---------- */
+.index{position:sticky;top:96px}
+@media (max-width:820px){ .index{position:static} }
+.idx-group{margin-bottom:16px}
+.idx-group h4{
+  font-family:var(--f-mono);font-size:10.5px;letter-spacing:.14em;text-transform:uppercase;
+  color:var(--c-faint);margin:0 0 7px 10px;
+}
+.idx-list{display:flex;flex-direction:column;gap:1px}
+@media (max-width:820px){
+  .index{display:flex;gap:16px;overflow-x:auto;padding-bottom:8px;scrollbar-width:thin}
+  .idx-group{margin:0;flex:0 0 auto}
+  .idx-list{flex-direction:row;gap:6px}
+}
+.idx{
+  display:flex;align-items:center;gap:9px;width:100%;text-align:left;
+  padding:7px 10px;border-radius:9px;font-size:13.5px;color:var(--c-muted);
+  white-space:nowrap;transition:background .14s,color .14s;
+}
+.idx:hover{background:var(--c-line-soft);color:var(--c-text)}
+.idx .n{font-family:var(--f-mono);font-size:10.5px;color:var(--c-faint);min-width:16px}
+.idx[aria-current="true"]{background:var(--c-surface);color:var(--c-text);font-weight:600;box-shadow:var(--c-shadow)}
+.idx[aria-current="true"] .n{color:var(--c-brand)}
+
+/* ---------- stage ---------- */
+.stage{
+  display:grid;place-items:center;
+  padding:22px 8px 30px;
+  border-radius:24px;
+  background:var(--c-bg-2);
+  border:1px solid var(--c-line-soft);
+}
+
+/* ---------- phone frame ---------- */
+.phone-wrap{display:flex;flex-direction:column;align-items:center;gap:14px}
+.phone{
+  position:relative;
+  width:356px;height:732px;
+  background:var(--a-bg);
+  border-radius:52px;
+  padding:14px;
+  box-shadow:var(--c-phone-shadow);
+  background-image:none;
+}
+.phone::before{ /* side buttons */
+  content:"";position:absolute;left:-3px;top:150px;width:3px;height:56px;border-radius:3px 0 0 3px;
+  background:var(--color-shell-line);
+}
+.screen{
+  position:relative;width:100%;height:100%;overflow:hidden;
+  border-radius:40px;
+  background:var(--a-bg);
+  color:var(--a-text);
+  display:flex;flex-direction:column;
+  font-family:var(--f-ui);
+  box-shadow:inset 0 0 0 1px color-mix(in srgb,var(--a-text) 7%,transparent);
+}
+.notch{
+  position:absolute;top:14px;left:50%;transform:translateX(-50%);
+  width:118px;height:30px;background:color-mix(in srgb, var(--a-text) 94%, black);
+  border-radius:16px;z-index:40;
+}
+.statusbar{
+  display:flex;align-items:center;justify-content:space-between;
+  padding:16px 26px 4px;font-family:var(--f-ui);font-weight:600;font-size:14.5px;
+  flex:0 0 auto;position:relative;z-index:20;color:var(--a-text);
+}
+.statusbar .icons{display:flex;align-items:center;gap:5px}
+.homebar{
+  position:absolute;bottom:8px;left:50%;transform:translateX(-50%);
+  width:120px;height:5px;border-radius:3px;background:color-mix(in srgb, var(--a-text) 30%, transparent);
+  z-index:40;
+}
+.screen-body{flex:1 1 auto;min-height:0;overflow-y:auto;display:flex;flex-direction:column;scrollbar-width:none}
+.screen-body::-webkit-scrollbar{display:none}
+.pad{padding:6px 24px 24px}
+
+/* tab bar */
+.tabbar{
+  flex:0 0 auto;display:flex;align-items:center;justify-content:space-around;
+  padding:9px 12px calc(20px + env(safe-area-inset-bottom,0px)*0) 12px;
+  border-top:1px solid var(--a-line);background:var(--a-surface);
+  position:relative;z-index:20;
+}
+.tab{display:flex;flex-direction:column;align-items:center;gap:3px;color:var(--a-muted);padding:4px 14px;border-radius:12px;transition:color .15s}
+.tab[aria-current="true"]{color:var(--a-sun-deep)}
+.tab svg{width:22px;height:22px}
+.tab small{font-size:10.5px;font-weight:600}
+
+/* device chrome caption under the phone */
+.phone-caption{display:flex;align-items:center;gap:10px}
+.phone-caption select{
+  font:inherit;font-size:12.5px;padding:6px 10px;border-radius:10px;border:1px solid var(--c-line);
+  background:var(--c-surface);color:var(--c-text);
+}
+.phone-nav{display:flex;gap:8px}
+.navbtn{
+  width:34px;height:34px;border-radius:50%;background:var(--c-surface);border:1px solid var(--c-line);
+  display:grid;place-items:center;color:var(--c-muted);box-shadow:var(--c-shadow);
+}
+.navbtn:hover{color:var(--c-text)}
+.navbtn:disabled{opacity:.35;cursor:default}
+
+/* ---------- right rail / spec card ---------- */
+.rail{position:sticky;top:96px;display:flex;flex-direction:column;gap:14px}
+@media (max-width:1180px){.rail{position:static}}
+.card{
+  background:var(--c-surface);border:1px solid var(--c-line);border-radius:16px;
+  padding:16px 18px;box-shadow:var(--c-shadow);
+}
+.card h3{font-size:14px;font-weight:700;margin-bottom:9px;display:flex;align-items:center;gap:8px}
+.card p{color:var(--c-muted);font-size:13px;line-height:1.55}
+.card + .card{margin-top:0}
+.tag-row{display:flex;flex-wrap:wrap;gap:6px;margin-top:10px}
+.tag{
+  font-family:var(--f-mono);font-size:10.5px;padding:3px 8px;border-radius:7px;
+  background:var(--c-line-soft);color:var(--c-muted);
+}
+.tag.on{background:color-mix(in srgb,var(--c-brand) 16%, var(--c-surface));color:var(--c-brand)}
+.spec-list{list-style:none;margin:10px 0 0;padding:0;display:flex;flex-direction:column;gap:7px}
+.spec-list li{display:flex;gap:8px;font-size:12.5px;color:var(--c-muted)}
+.spec-list li::before{content:"→";color:var(--c-brand);flex:0 0 auto;font-weight:600}
+.mascot-chip{
+  display:inline-flex;align-items:center;gap:7px;padding:5px 11px 5px 6px;border-radius:999px;
+  background:var(--a-sprout-soft);color:var(--a-sprout);font-size:12px;font-weight:600;
+}
+.mascot-chip svg{width:20px;height:20px}
+.ui-icon{display:inline-block;flex:0 0 auto;vertical-align:-.18em}
+.sakura-petals{position:absolute;inset:72px 22px auto;pointer-events:none;z-index:0;opacity:.72}
+.sakura-petals i{position:absolute;display:block;width:10px;height:16px;border-radius:80% 20% 80% 20%;background:var(--color-app-blossom);transform:rotate(28deg)}
+.sakura-petals i:nth-child(1){left:4%;top:12px;transform:rotate(-24deg) scale(.85)}
+.sakura-petals i:nth-child(2){right:8%;top:78px;transform:rotate(44deg) scale(.7)}
+.sakura-petals i:nth-child(3){left:18%;top:148px;transform:rotate(18deg) scale(.55)}
+
+/* ============================================================
+   Mascot — single SVG, parts toggled by data-state on .mascot
+   ============================================================ */
+.mascot{display:block;overflow:visible}
+.mascot .body{fill:var(--a-sun)}
+.mascot .body-shade{fill:var(--a-sun-deep);opacity:.55}
+.mascot .peach-crease{stroke:var(--a-sun-deep);stroke-width:2;fill:none;stroke-linecap:round;opacity:.5}
+.mascot .cheek{fill:var(--a-cheek);opacity:.75}
+.mascot .sprout-stem{stroke:var(--a-sprout);stroke-width:3.4;fill:none;stroke-linecap:round}
+.mascot .sprout-leaf{fill:var(--a-sprout)}
+.mascot .eye{fill:var(--a-text)}
+.mascot .mouth{stroke:var(--a-text);stroke-width:3;fill:none;stroke-linecap:round}
+.mascot .prop{stroke:var(--a-text);stroke-width:2.6;fill:none;stroke-linecap:round;stroke-linejoin:round}
+.mascot .prop-fill{fill:var(--a-surface);stroke:var(--a-text);stroke-width:2.4}
+.mascot .accent{fill:var(--a-rec)}
+.mascot .accent2{fill:var(--a-sprout)}
+.mascot .zzz{fill:var(--a-muted);font-family:var(--f-display);font-weight:600}
+.mascot [data-part]{transition:opacity .15s}
+/* hide all optional parts by default; state selectors below reveal them */
+.mascot [data-part]{opacity:0}
+.mascot[data-state="sleeping"] [data-part="eyes-closed"],
+.mascot[data-state="sleeping"] [data-part="zzz"],
+.mascot[data-state="sleeping"] [data-part="mouth-sleep"]{opacity:1}
+
+.mascot[data-state="waking"] [data-part="eyes-happy"],
+.mascot[data-state="waking"] [data-part="mouth-smile"],
+.mascot[data-state="waking"] [data-part="arm-wave"],
+.mascot[data-state="waking"] [data-part="sparkle"]{opacity:1}
+
+.mascot[data-state="ready"] [data-part="eyes-open"],
+.mascot[data-state="ready"] [data-part="mouth-smile"],
+.mascot[data-state="ready"] [data-part="cheeks"]{opacity:1}
+
+.mascot[data-state="listening"] [data-part="eyes-happy"],
+.mascot[data-state="listening"] [data-part="mouth-smile-sm"],
+.mascot[data-state="listening"] [data-part="headphones"],
+.mascot[data-state="listening"] [data-part="pulse"]{opacity:1}
+
+.mascot[data-state="paused"] [data-part="eyes-soft"],
+.mascot[data-state="paused"] [data-part="mouth-flat"],
+.mascot[data-state="paused"] [data-part="headphones-down"]{opacity:1}
+
+.mascot[data-state="thinking"] [data-part="eyes-up"],
+.mascot[data-state="thinking"] [data-part="mouth-flat"],
+.mascot[data-state="thinking"] [data-part="question"]{opacity:1}
+
+.mascot[data-state="writing"] [data-part="eyes-open"],
+.mascot[data-state="writing"] [data-part="mouth-focus"],
+.mascot[data-state="writing"] [data-part="notebook"]{opacity:1}
+
+.mascot[data-state="celebrating"] [data-part="eyes-happy"],
+.mascot[data-state="celebrating"] [data-part="mouth-grin"],
+.mascot[data-state="celebrating"] [data-part="confetti"],
+.mascot[data-state="celebrating"] [data-part="arm-up"]{opacity:1}
+
+.mascot[data-state="error"] [data-part="eyes-worried"],
+.mascot[data-state="error"] [data-part="mouth-flat"],
+.mascot[data-state="error"] [data-part="sweat"]{opacity:1}
+
+/* idle motion — subtle breathing loop, per PRD §8 (3-6s, low amplitude) */
+.mascot-fx{animation:breathe 4.4s ease-in-out infinite}
+.mascot[data-state="listening"] .mascot-fx{animation-duration:2.1s}
+.mascot[data-state="thinking"] .mascot-fx{animation-duration:1.7s}
+.mascot[data-state="writing"] .mascot-fx{animation-duration:1.5s}
+@keyframes breathe{0%,100%{transform:translateY(0) scale(1)}50%{transform:translateY(-3px) scale(1.012)}}
+.mascot[data-state="celebrating"] .mascot-fx{animation:bounce-once .9s cubic-bezier(.34,1.56,.64,1)}
+@keyframes bounce-once{0%{transform:translateY(0) scale(1)}35%{transform:translateY(-14px) scale(1.05,.96)}60%{transform:translateY(0) scale(.97,1.03)}100%{transform:translateY(0) scale(1)}}
+[data-part="pulse"] circle{animation:pulse-ring 2s ease-out infinite}
+@keyframes pulse-ring{0%{r:34;opacity:.5}100%{r:50;opacity:0}}
+[data-part="confetti"] rect{animation:confetti-fall 1.1s ease-in forwards}
+@keyframes confetti-fall{0%{transform:translateY(-6px) rotate(0);opacity:1}100%{transform:translateY(14px) rotate(70deg);opacity:0}}
+[data-part="zzz"]{animation:zzz-float 3s ease-in-out infinite}
+@keyframes zzz-float{0%,100%{transform:translateY(0);opacity:.7}50%{transform:translateY(-4px);opacity:1}}
+
+body.reduced-motion *, body.reduced-motion *::before, body.reduced-motion *::after{
+  animation-duration:.001ms !important;animation-iteration-count:1 !important;transition-duration:.001ms !important;
+}
+
+/* ============================================================
+   Reusable app components (inside the phone)
+   ============================================================ */
+.h-mascot-slot{display:flex;justify-content:center;padding:10px 0 4px}
+.a-eyebrow{font-family:var(--f-mono);font-size:10.5px;letter-spacing:.1em;text-transform:uppercase;color:var(--a-muted)}
+.a-h1{font-family:var(--f-display);font-weight:600;font-size:23px;letter-spacing:-.01em;color:var(--a-text)}
+.a-sub{font-size:13.5px;color:var(--a-muted);line-height:1.5}
+.a-card{background:var(--a-surface);border:1px solid var(--a-line);border-radius:var(--a-r-card);padding:16px;box-shadow:var(--a-shadow)}
+.a-btn{
+  display:flex;align-items:center;justify-content:center;gap:8px;
+  width:100%;padding:15px 18px;border-radius:var(--a-r-btn);
+  font-family:var(--f-ui);font-weight:700;font-size:15px;
+  transition:transform .1s;
+}
+.a-btn:active{transform:scale(.97)}
+.a-btn-primary{background:var(--color-app-cherry);color:var(--color-app-paper);box-shadow:none}
+.a-btn-ghost{background:var(--a-surface);color:var(--a-text);border:1.5px solid var(--a-line)}
+.a-btn-text{color:var(--a-muted);font-weight:600;font-size:13.5px;padding:8px}
+.a-btn-danger{background:var(--a-rec-soft);color:var(--a-rec)}
+.a-stack{display:flex;flex-direction:column;gap:10px}
+.a-row{display:flex;align-items:center;gap:10px}
+.a-chip{
+  min-height:44px;padding:9px 15px;border-radius:999px;border:1.5px solid var(--a-line);font-weight:600;font-size:13px;
+  color:var(--a-text);background:var(--a-surface);transition:all .13s;
+}
+.a-chip[aria-pressed="true"]{background:var(--color-app-sakura-mist);color:var(--color-app-cherry-hover);border-color:var(--color-app-cherry)}
+.a-chip.small{padding:6px 12px;font-size:12px}
+.a-check-row{
+  display:flex;align-items:center;justify-content:space-between;gap:12px;
+  padding:13px 14px;border-radius:16px;border:1.5px solid var(--a-line);background:var(--a-surface);
+}
+.a-check-row[data-checked="true"]{border-color:var(--a-sun-deep);background:color-mix(in srgb, var(--a-sun) 12%, var(--a-surface))}
+.a-check{
+  width:22px;height:22px;border-radius:7px;border:2px solid var(--a-line);flex:0 0 auto;display:grid;place-items:center;
+}
+.a-check-row[data-checked="true"] .a-check{background:var(--a-sun-deep);border-color:var(--a-sun-deep)}
+.a-flag{font-size:19px;line-height:1}
+.a-lang-name{font-weight:600;font-size:14.5px}
+.a-lang-native{font-size:12px;color:var(--a-muted)}
+.a-select{
+  width:100%;padding:13px 14px;border-radius:14px;border:1.5px solid var(--a-line);
+  background:var(--a-surface);color:var(--a-text);font:inherit;font-weight:600;
+  appearance:none;-webkit-appearance:none;
+  background-image:url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='14' height='14'><path d='M2 4l5 5 5-5' fill='none' stroke='%23735b66' stroke-width='1.6' stroke-linecap='round' stroke-linejoin='round'/></svg>");
+  background-repeat:no-repeat;background-position:right 14px center;
+}
+.a-field-label{font-size:12px;font-weight:700;color:var(--a-muted);text-transform:uppercase;letter-spacing:.06em;margin-bottom:6px}
+.a-time-card{display:flex;align-items:center;justify-content:space-between;padding:14px 16px;border-radius:16px;background:var(--a-surface);border:1px solid var(--a-line)}
+.a-time-card b{font-family:var(--f-display);font-size:20px;font-weight:600}
+.a-days{display:flex;gap:6px;justify-content:space-between}
+.a-day{
+  flex:0 0 auto;
+  width:38px;height:38px;border-radius:50%;display:grid;place-items:center;font-size:12px;font-weight:700;
+  border:1.5px solid var(--a-line);color:var(--a-muted);
+}
+.a-day[aria-pressed="true"]{background:var(--color-app-cherry);border-color:var(--color-app-cherry);color:var(--color-app-paper)}
+.switch{width:44px;height:26px;border-radius:999px;background:var(--a-line);position:relative;flex:0 0 auto;transition:background .15s}
+.switch::after{content:"";position:absolute;top:3px;left:3px;width:20px;height:20px;border-radius:50%;background:var(--a-surface);box-shadow:0 1px 3px color-mix(in srgb,var(--a-text) 25%,transparent);transition:transform .15s}
+.switch[aria-checked="true"]{background:var(--a-sprout)}
+.switch[aria-checked="true"]::after{transform:translateX(18px)}
+
+/* onboarding progress dots */
+.dots{display:flex;gap:6px;justify-content:center;padding:10px 0 2px}
+.dots i{width:6px;height:6px;border-radius:50%;background:var(--a-line)}
+.dots i[data-on="true"]{background:var(--a-sun-deep);width:16px;border-radius:3px}
+
+/* recording screen */
+.timer{font-family:var(--f-mono);font-weight:500;font-size:44px;letter-spacing:.02em;text-align:center;font-variant-numeric:tabular-nums}
+.rec-pill{
+  display:inline-flex;align-items:center;gap:7px;padding:6px 13px;border-radius:999px;
+  background:var(--a-rec-soft);color:var(--a-rec);font-weight:700;font-size:12.5px;margin:0 auto;
+}
+.rec-pill .rdot{width:7px;height:7px;border-radius:50%;background:var(--a-rec)}
+body:not(.reduced-motion) .rec-pill .rdot{animation:rdot-pulse 1.4s ease-in-out infinite}
+@keyframes rdot-pulse{0%,100%{opacity:1}50%{opacity:.35}}
+.pause-pill{background:var(--a-pause-soft);color:var(--a-ink-soft)}
+.pause-pill .rdot{background:var(--a-pause);animation:none}
+.wave{display:flex;align-items:flex-end;gap:3px;height:34px;justify-content:center}
+.wave i{width:3.5px;border-radius:3px;background:var(--a-sun-deep);opacity:.75}
+body:not(.reduced-motion) .wave i{animation:wave-bar 1.2s ease-in-out infinite}
+.circle-btn{width:64px;height:64px;border-radius:50%;display:grid;place-items:center;box-shadow:var(--a-shadow)}
+.circle-btn.stop{background:var(--a-rec)}
+.circle-btn.pause{background:var(--a-surface);border:1.5px solid var(--a-line)}
+.circle-btn.resume{background:var(--a-sun-deep)}
+.circle-label{font-size:11.5px;font-weight:600;color:var(--a-muted);text-align:center;margin-top:6px}
+
+/* sheet (privacy break) */
+.sheet-scrim{position:absolute;inset:0;background:color-mix(in srgb,var(--a-text) 42%,transparent);z-index:30;display:flex;align-items:flex-end}
+.sheet{
+  width:100%;background:var(--a-bg);border-radius:26px 26px 0 0;padding:10px 22px calc(30px);
+  box-shadow:0 -12px 30px color-mix(in srgb,var(--a-text) 18%,transparent);
+}
+.sheet-handle{width:38px;height:4px;border-radius:2px;background:var(--a-line);margin:6px auto 14px}
+.sheet-opt{
+  display:flex;align-items:center;justify-content:space-between;padding:15px 4px;border-bottom:1px solid var(--a-line);font-weight:600;
+}
+.sheet-opt:last-of-type{border-bottom:0}
+
+/* clarification */
+.clar-map{
+  height:120px;border-radius:18px;overflow:hidden;position:relative;
+  background:color-mix(in srgb,var(--a-sprout) 16%,var(--a-bg-2));
+}
+.clar-map .pin{
+  position:absolute;top:44%;left:52%;width:26px;height:26px;border-radius:50% 50% 50% 0;
+  background:var(--a-rec);transform:translate(-50%,-100%) rotate(-45deg);
+  box-shadow:0 4px 10px color-mix(in srgb,var(--a-text) 25%,transparent);
+}
+.clar-map .pin::after{content:"";position:absolute;inset:6px;background:var(--a-bg);border-radius:50%}
+.clar-map .pin-label{
+  position:absolute;left:12px;bottom:10px;background:var(--a-surface);padding:6px 10px;border-radius:10px;
+  font-size:11.5px;font-weight:700;box-shadow:0 2px 6px color-mix(in srgb,var(--a-text) 12%,transparent);
+}
+.clar-chips{display:flex;flex-wrap:wrap;gap:8px}
+
+/* processing */
+.proc-steps{display:flex;flex-direction:column;gap:14px;margin-top:6px}
+.proc-step{display:flex;align-items:center;gap:12px;opacity:.35;transition:opacity .3s}
+.proc-step.active{opacity:1}
+.proc-step.done{opacity:.55}
+.proc-dot{width:26px;height:26px;border-radius:50%;border:2px solid var(--a-line);display:grid;place-items:center;flex:0 0 auto;font-size:13px}
+.proc-step.active .proc-dot{border-color:var(--color-app-cherry);background:var(--color-app-cherry);color:var(--color-app-paper)}
+.proc-step.done .proc-dot{border-color:var(--a-sprout);background:var(--a-sprout);color:var(--a-bg)}
+.proc-track{height:6px;border-radius:3px;background:var(--a-line);overflow:hidden;margin-top:16px}
+.proc-fill{height:100%;background:var(--color-app-cherry);border-radius:3px;transition:width .4s ease}
+
+/* journal list */
+.j-month{font-family:var(--f-mono);font-size:11px;letter-spacing:.1em;text-transform:uppercase;color:var(--a-muted);margin:14px 0 8px}
+.j-item{display:flex;gap:12px;padding:12px 4px;border-bottom:1px solid var(--a-line);align-items:center}
+.j-item:last-child{border-bottom:0}
+.j-date{width:44px;flex:0 0 auto;text-align:center}
+.j-date b{display:block;font-family:var(--f-display);font-size:19px;font-weight:600}
+.j-date span{display:block;font-size:10px;color:var(--a-muted);text-transform:uppercase}
+.j-item-body{flex:1;min-width:0}
+.j-item-title{font-weight:700;font-size:13.5px;margin-bottom:2px}
+.j-item-snip{font-size:12.5px;color:var(--a-muted);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.j-item-chips{display:flex;gap:5px;margin-top:5px}
+.j-mini-chip{font-size:10.5px;padding:2px 7px;border-radius:999px;background:var(--a-bg-2);color:var(--a-muted)}
+
+/* journal detail — calmer, editorial (PRD: reading mode calmer than Today) */
+.j-read{font-family:var(--f-read);font-size:16px;line-height:1.75;color:var(--a-text)}
+.j-read p{margin:0 0 14px}
+.j-read p:last-child{margin-bottom:0}
+[contenteditable="true"].j-read{outline:none;border-radius:12px;padding:2px 4px;margin:-2px -4px}
+[contenteditable="true"].j-read:focus{background:color-mix(in srgb, var(--a-sun) 8%, transparent)}
+.j-context-row{display:flex;flex-wrap:wrap;gap:7px;padding:2px 0 4px}
+.j-context-chip{
+  display:inline-flex;align-items:center;gap:5px;font-size:12px;font-weight:600;
+  padding:5px 11px;border-radius:999px;background:var(--a-bg-2);color:var(--a-ink-soft);
+}
+.j-actionbar{display:flex;gap:8px}
+.j-actionbar .a-btn{flex:1}
+
+/* settings */
+.set-section{margin-bottom:4px}
+.set-row{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:14px 2px;border-bottom:1px solid var(--a-line)}
+.set-row:last-child{border-bottom:0}
+.set-row-label{display:flex;flex-direction:column;gap:2px}
+.set-row-label b{font-size:13.5px;font-weight:600}
+.set-row-label span{font-size:11.5px;color:var(--a-muted)}
+.set-value{font-size:13px;color:var(--a-muted);font-weight:600}
+.set-danger{color:var(--a-rec)}
+
+/* error */
+.err-box{background:var(--a-rec-soft);border:1px solid color-mix(in srgb, var(--a-rec) 30%, transparent);border-radius:16px;padding:14px}
+
+/* inline confirm (no native dialogs) */
+.inline-confirm{background:var(--a-rec-soft);border:1px solid color-mix(in srgb, var(--a-rec) 25%, transparent);border-radius:16px;padding:14px;display:flex;flex-direction:column;gap:10px}
+.inline-confirm p{font-size:13px;color:var(--a-text);margin:0}
+
+/* ============================================================
+   Below-fold reference boards
+   ============================================================ */
+.boards{max-width:1420px;margin:0 auto;padding:12px 20px 80px;display:flex;flex-direction:column;gap:44px}
+.board{display:flex;flex-direction:column;gap:16px}
+.board-head{display:flex;align-items:baseline;gap:12px;flex-wrap:wrap}
+.board-head h2{font-family:var(--f-display);font-size:20px;font-weight:600}
+.board-head p{color:var(--c-muted);font-size:13px}
+
+/* system surfaces */
+.surf-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(230px,1fr));gap:16px}
+.surf-card{background:var(--c-surface);border:1px solid var(--c-line);border-radius:18px;padding:16px;box-shadow:var(--c-shadow);display:flex;flex-direction:column;gap:12px}
+.surf-card h4{font-size:12.5px;font-weight:700}
+.surf-card .surf-caption{font-size:11.5px;color:var(--c-muted);margin-top:auto}
+
+.dyn-island{
+  background:var(--color-os-black);border-radius:26px;padding:10px 16px;display:flex;align-items:center;gap:10px;
+  color:var(--color-os-white);width:fit-content;margin:0 auto;
+}
+.dyn-island.compact{padding:8px 14px}
+.dyn-island .di-mascot{width:22px;height:22px}
+.dyn-island .di-time{font-family:var(--f-mono);font-size:13px}
+.dyn-island .di-wave{display:flex;gap:2px;align-items:flex-end;height:14px}
+.dyn-island .di-wave i{width:2.4px;background:var(--color-app-cherry);border-radius:2px}
+
+.lock-card{background:linear-gradient(160deg,var(--color-app-paper),var(--color-app-sakura-mist));border:1px solid var(--color-app-line);border-radius:20px;padding:20px 16px;color:var(--color-app-ink);text-align:center}
+.lock-time{font-family:var(--f-display);font-size:34px;font-weight:600}
+.lock-date{font-size:11.5px;opacity:.75;margin-bottom:14px}
+.lock-notif{display:flex;align-items:center;gap:10px;background:var(--color-app-surface);box-shadow:var(--shadow-soft);border-radius:14px;padding:10px 12px;text-align:left}
+.lock-notif b{display:block;font-size:12.5px}
+.lock-notif span{display:block;font-size:11px;color:var(--color-app-muted)}
+
+.and-notif{background:var(--color-app-surface);border:1px solid var(--color-app-line);border-radius:18px;padding:14px;color:var(--color-app-ink);box-shadow:var(--shadow-soft)}
+.and-notif-head{display:flex;align-items:center;gap:8px;font-size:11px;color:var(--color-app-muted);margin-bottom:8px}
+.and-notif-body{display:flex;align-items:center;gap:10px}
+.and-actions{display:flex;gap:8px;margin-top:10px}
+.and-actions button{flex:1;background:var(--color-app-sakura-mist);border-radius:10px;padding:8px;font-size:12px;font-weight:600;color:var(--color-app-cherry-hover);text-align:center}
+
+.widget-card{background:var(--a-bg);border:1px solid var(--c-line);border-radius:20px;padding:14px;display:flex;align-items:center;gap:12px}
+.widget-card b{font-size:13px}
+.widget-card span{font-size:11.5px;color:var(--c-muted)}
+
+.cc-tile{background:var(--c-surface);border:1px solid var(--c-line);border-radius:20px;padding:16px;display:flex;flex-direction:column;align-items:center;gap:8px;text-align:center}
+.cc-tile .cc-icon{width:52px;height:52px;border-radius:16px;background:var(--color-app-blossom);display:grid;place-items:center}
+
+/* mascot sheet */
+.mas-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(118px,1fr));gap:12px}
+.mas-cell{
+  background:var(--c-surface);border:1px solid var(--c-line);border-radius:16px;padding:14px 10px;
+  display:flex;flex-direction:column;align-items:center;gap:8px;text-align:center;box-shadow:var(--c-shadow);
+}
+.mas-cell .mascot{width:56px;height:56px}
+.mas-cell b{font-size:12.5px}
+.mas-cell span{font-size:11px;color:var(--c-muted);line-height:1.4}
+
+/* flow diagram */
+.flow-row{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+.flow-step{
+  background:var(--c-surface);border:1px solid var(--c-line);border-radius:14px;padding:12px 16px;
+  font-size:12.5px;font-weight:700;box-shadow:var(--c-shadow);display:flex;align-items:center;gap:8px;
+}
+.flow-step small{display:block;font-weight:500;color:var(--c-muted);font-size:11px;margin-top:1px}
+.flow-arrow{color:var(--c-faint);flex:0 0 auto}
+.flow-loop{
+  margin-top:4px;display:flex;align-items:center;gap:8px;color:var(--c-muted);font-size:12px;font-family:var(--f-mono);
+}
+
+footer.credits{max-width:1420px;margin:0 auto;padding:0 20px 60px;color:var(--c-faint);font-size:12px;display:flex;justify-content:space-between;flex-wrap:wrap;gap:8px}
+
+/* Sakura Morning visual pass */
+html,body{overflow-x:clip}
+body{background:var(--color-shell-paper);color:var(--color-shell-ink)}
+.topbar{background:color-mix(in srgb,var(--color-shell-paper) 94%,transparent);backdrop-filter:none;border-bottom-color:var(--color-shell-line)}
+.brand b{color:var(--color-app-ink);letter-spacing:-.025em}
+.tgl{background:var(--color-shell-surface);border-color:var(--color-shell-line);border-radius:var(--radius-pill)}
+.tgl{min-height:44px}
+.tgl[aria-pressed="true"]{border-color:var(--color-app-cherry);color:var(--color-app-cherry);background:var(--color-app-sakura-mist)}
+.stage{background:var(--color-shell-surface);border-color:var(--color-shell-line);border-radius:var(--radius-card);box-shadow:inset 0 0 0 1px color-mix(in srgb,var(--color-app-blossom) 18%,transparent)}
+.phone-wrap{gap:var(--space-4)}
+.phone{width:min(356px,calc(100vw - 32px));height:auto;aspect-ratio:356 / 732;min-height:0;background:var(--color-shell-surface);border:1px solid var(--color-shell-line);border-radius:44px;box-shadow:var(--shadow-device)}
+.screen{background:var(--a-bg);box-shadow:inset 0 0 0 1px color-mix(in srgb,var(--a-text) 7%,transparent)}
+.notch{background:var(--color-os-black)}
+.homebar{background:color-mix(in srgb,var(--a-text) 30%,transparent)}
+:focus-visible{outline-color:var(--color-focus);outline-offset:3px}
+.idx[aria-current="true"]{background:var(--color-shell-surface);box-shadow:var(--shadow-soft)}
+.idx[aria-current="true"] .n{color:var(--color-app-cherry)}
+.tab{min-height:44px}
+.tab[aria-current="true"]{color:var(--color-app-cherry)}
+.card,.surf-card,.mas-cell,.flow-step{border-color:var(--color-shell-line);box-shadow:var(--shadow-soft);border-radius:var(--radius-card)}
+.card{background:var(--color-shell-surface)}
+.a-card{border-radius:var(--radius-card);border-color:var(--a-line);box-shadow:var(--a-shadow)}
+.a-btn{min-height:44px;border-radius:var(--radius-control);transition:background-color var(--dur-fast) var(--ease-out),border-color var(--dur-fast) var(--ease-out),color var(--dur-fast) var(--ease-out),transform var(--dur-fast) var(--ease-out)}
+.a-btn-primary{background:var(--color-app-cherry);color:var(--color-app-paper);box-shadow:none}
+.a-btn-primary:hover{background:var(--color-app-cherry-hover)}
+.a-btn-primary:active{background:var(--color-app-cherry-hover)}
+.a-btn-ghost{background:transparent;color:var(--color-app-ink);border-color:var(--color-app-line)}
+.a-btn-ghost:hover{background:var(--color-app-sakura-mist);border-color:var(--color-app-blossom)}
+.a-btn-danger{background:var(--color-app-recording-soft);color:var(--color-app-recording)}
+.a-btn-text{min-height:44px}
+.a-btn-text:hover{color:var(--color-app-cherry)}
+.a-check-row{border-radius:var(--radius-control)}
+.a-check-row[data-checked="true"]{border-color:var(--color-app-cherry);background:var(--color-app-sakura-mist)}
+.a-check{border-color:var(--color-app-line)}
+.a-check-row[data-checked="true"] .a-check{background:var(--color-app-cherry);border-color:var(--color-app-cherry)}
+.a-day[aria-pressed="true"]{background:var(--color-app-cherry);border-color:var(--color-app-cherry);color:var(--color-app-paper)}
+.switch[aria-checked="true"]{background:var(--color-app-cherry)}
+.switch::after{background:var(--color-app-surface);box-shadow:0 1px 3px color-mix(in srgb,var(--color-app-ink) 25%,transparent)}
+.a-field-label{text-transform:none;letter-spacing:.02em;color:var(--color-app-muted)}
+.timer{font-variant-numeric:tabular-nums;color:var(--color-app-ink)}
+.rec-pill{background:var(--color-app-recording-soft);color:var(--color-app-recording)}
+.rec-pill .rdot{background:var(--color-app-recording)}
+.circle-btn{box-shadow:none}
+.circle-btn.stop{background:var(--color-app-recording)}
+.circle-btn.pause{background:var(--color-app-pause-soft);border-color:var(--color-app-pause);color:var(--color-app-ink)}
+.circle-btn.resume{background:var(--color-app-cherry)}
+.circle-label{color:var(--color-app-muted)}
+.pause-pill{background:var(--color-app-pause-soft);color:var(--color-app-ink-soft)}
+.pause-pill .rdot{background:var(--color-app-pause)}
+.proc-step.active .proc-dot{border-color:var(--color-app-cherry);background:var(--color-app-cherry);color:var(--color-app-paper)}
+.proc-step.done .proc-dot{border-color:var(--color-app-leaf);background:var(--color-app-leaf);color:var(--color-app-paper)}
+.proc-fill{background:var(--color-app-cherry)}
+.j-context-chip,.j-mini-chip{background:var(--color-app-sakura-mist);color:var(--color-app-ink-soft)}
+.j-read{color:var(--color-app-ink)}
+.j-read p{max-width:38ch}
+.j-item{min-height:64px}
+.j-item:focus-visible{background:var(--color-app-sakura-mist)}
+.dyn-island{background:var(--color-os-black);color:var(--color-os-white)}
+.dyn-island .di-wave i{background:var(--color-app-cherry)}
+.cc-tile .cc-icon{background:var(--color-app-sakura-mist)}
+@media (max-width:820px){
+  .work{padding-inline:12px}
+  .stage{padding-inline:0;border-inline:0;border-radius:0;box-shadow:none;background:transparent}
+  .phone{width:min(356px,calc(100vw - 24px));height:auto;aspect-ratio:356 / 732}
+}
+@media (prefers-reduced-motion:reduce){
+  *,*::before,*::after{scroll-behavior:auto!important}
+}
+</style>
+
+<div class="topbar">
+  <div class="brand"><b>Daytale</b><span>Interactive design prototype</span></div>
+  <div class="toggles">
+    <button class="tgl" id="tglAppTheme" aria-pressed="false" onclick="toggleAppTheme()"><span class="dot"></span><span id="tglAppThemeLabel">Dark app preview</span></button>
+    <button class="tgl" id="tglMotion" aria-pressed="false" onclick="toggleMotion()"><span class="dot"></span><span id="tglMotionLabel">Reduce motion</span></button>
+  </div>
+</div>
+
+<div class="work">
+  <nav class="index" id="index" aria-label="Screen picker"></nav>
+
+  <div class="stage">
+    <div class="phone-wrap">
+      <div class="phone" id="phoneFrame">
+        <div class="notch"></div>
+        <div class="screen" id="screen">
+          <div class="statusbar">
+            <span id="clockLabel">9:41</span>
+            <span class="icons">
+              <svg width="16" height="11" viewBox="0 0 16 11" fill="none"><rect x="0" y="6" width="3" height="5" rx=".5" fill="currentColor"/><rect x="4.3" y="4" width="3" height="7" rx=".5" fill="currentColor"/><rect x="8.6" y="2" width="3" height="9" rx=".5" fill="currentColor"/><rect x="12.9" y="0" width="3" height="11" rx=".5" fill="currentColor"/></svg>
+              <svg width="24" height="12" viewBox="0 0 24 12" fill="none"><rect x=".75" y=".75" width="20.5" height="10.5" rx="2.75" stroke="currentColor" stroke-width="1.2"/><rect x="2.3" y="2.3" width="15" height="7.4" rx="1.4" fill="currentColor"/><rect x="22" y="4" width="1.6" height="4" rx="0.8" fill="currentColor"/></svg>
+            </span>
+          </div>
+          <div class="screen-body" id="screenBody"></div>
+          <div class="tabbar" id="tabbar" hidden>
+            <button class="tab" data-tab="today" onclick="setTab('today')">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4"/></svg>
+              <small>Today</small>
+            </button>
+            <button class="tab" data-tab="journal" onclick="setTab('journal')">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20V4a1 1 0 0 0-1-1H6.5A2.5 2.5 0 0 0 4 5.5v14z"/><path d="M4 19.5A2.5 2.5 0 0 0 6.5 22H20"/></svg>
+              <small>Journal</small>
+            </button>
+            <button class="tab" data-tab="settings" onclick="setTab('settings')">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.6a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
+              <small>Settings</small>
+            </button>
+          </div>
+        </div>
+        <div class="homebar"></div>
+      </div>
+      <div class="phone-caption">
+        <div class="phone-nav">
+          <button class="navbtn" id="navPrev" onclick="stepScreen(-1)" aria-label="Previous screen">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M15 18l-6-6 6-6"/></svg>
+          </button>
+          <button class="navbtn" id="navNext" onclick="stepScreen(1)" aria-label="Next screen">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M9 6l6 6-6 6"/></svg>
+          </button>
+        </div>
+        <select id="jumpSelect" onchange="goto(this.value)" aria-label="Jump to screen"></select>
+      </div>
+    </div>
+  </div>
+
+  <aside class="rail" id="rail"></aside>
+</div>
+
+<div class="boards" id="boards"></div>
+
+<footer class="credits">
+  <span>Built from Daytale_Product_PRD · UI_UX_User_Flow · Complete_Implementation_PRD</span>
+  <span>Click-through prototype · not production UI</span>
+</footer>
+
+<script>
+/* ============================================================
+   MASCOT — one SVG geometry, parts toggled by [data-state] in CSS
+   ============================================================ */
+function mascotSVG(state, size){
+  size = size || 64;
+  return `<div class="mascot" data-state="${state}" style="width:${size}px;height:${size}px" role="img" aria-label="Mascot: ${state}">
+  <svg class="mascot-fx" viewBox="0 0 120 120" width="100%" height="100%">
+    <g data-part="pulse"><circle cx="60" cy="62" r="34" fill="none" stroke="var(--a-rec)" stroke-width="2" opacity=".5"/></g>
+    <path class="sprout-stem" d="M60 26 C 58 18, 58 12, 60 6"/>
+    <path class="sprout-leaf" d="M60 12 C 52 8, 48 14, 56 18 C 58 16, 59 14, 60 12 Z"/>
+    <path class="sprout-leaf" d="M60 10 C 68 5, 73 11, 65 15 C 63 13, 61 11, 60 10 Z"/>
+    <circle class="body" cx="60" cy="62" r="34"/>
+    <path class="body-shade" d="M32 70 A34 34 0 0 0 88 70 A34 20 0 0 1 32 70 Z"/>
+    <path class="peach-crease" d="M84 34 Q 79 50, 83 66 Q 87 80, 82 90"/>
+    <g data-part="cheeks"><ellipse class="cheek" cx="42" cy="68" rx="6" ry="4"/><ellipse class="cheek" cx="78" cy="68" rx="6" ry="4"/></g>
+
+    <g data-part="eyes-closed"><path class="mouth" d="M44 58 q6 5 12 0"/><path class="mouth" d="M64 58 q6 5 12 0"/></g>
+    <g data-part="eyes-happy"><path class="mouth" d="M44 60 q6 -8 12 0"/><path class="mouth" d="M64 60 q6 -8 12 0"/></g>
+    <g data-part="eyes-open"><circle class="eye" cx="48" cy="58" r="3.4"/><circle class="eye" cx="72" cy="58" r="3.4"/></g>
+    <g data-part="eyes-soft"><path class="mouth" d="M44 59 h10"/><path class="mouth" d="M66 59 h10"/></g>
+    <g data-part="eyes-up"><circle class="eye" cx="49" cy="55" r="3.2"/><circle class="eye" cx="71" cy="57" r="3.2"/></g>
+    <g data-part="eyes-worried"><path class="mouth" d="M44 57 q3 -4 6 0 q3 4 6 0"/><path class="mouth" d="M64 57 q3 -4 6 0 q3 4 6 0"/></g>
+
+    <path data-part="mouth-sleep" class="mouth" d="M56 74 q4 3 8 0"/>
+    <path data-part="mouth-smile" class="mouth" d="M48 74 q12 11 24 0"/>
+    <path data-part="mouth-smile-sm" class="mouth" d="M52 74 q8 7 16 0"/>
+    <path data-part="mouth-flat" class="mouth" d="M50 76 q10 2 20 0"/>
+    <path data-part="mouth-focus" class="mouth" d="M53 76 h14"/>
+    <path data-part="mouth-grin" class="prop-fill" d="M46 72 q14 16 28 0 q-14 6 -28 0 Z"/>
+
+    <g data-part="zzz" transform="translate(84,28)"><text class="zzz" x="0" y="0" font-size="15">Z</text><text class="zzz" x="10" y="-10" font-size="11">z</text></g>
+    <path data-part="sparkle" class="prop" d="M92 34 l2 6 6 2 -6 2 -2 6 -2 -6 -6 -2 6 -2 Z"/>
+    <path data-part="sweat" class="prop-fill" d="M84 44 q4 6 0 10 q-4 -4 0 -10 Z"/>
+    <path data-part="question" class="mouth" transform="translate(84,26)" d="M0 4 a5 5 0 1 1 8 3.2 c-2 1.4 -2.6 2.4 -2.6 4.8 M5.2 18.4 h.1"/>
+
+    <g data-part="headphones"><path class="prop" d="M32 56 a28 28 0 0 1 56 0"/><rect class="prop-fill" x="24" y="52" width="11" height="18" rx="5"/><rect class="prop-fill" x="85" y="52" width="11" height="18" rx="5"/></g>
+    <g data-part="headphones-down"><path class="prop" d="M30 82 a30 22 0 0 1 60 0"/><rect class="prop-fill" x="22" y="78" width="11" height="16" rx="5"/><rect class="prop-fill" x="87" y="78" width="11" height="16" rx="5"/></g>
+
+    <g data-part="notebook" transform="translate(78,72) rotate(-8)">
+      <rect class="prop-fill" x="0" y="0" width="22" height="16" rx="2"/>
+      <path class="mouth" d="M4 5 h14 M4 9 h10" stroke-width="1.6"/>
+      <path class="prop" d="M20 -2 l6 -4 3 3 -6 4 Z"/>
+    </g>
+    <path data-part="arm-wave" class="prop-fill" d="M92 66 q10 -4 8 -14 q-2 6 -8 8 Z"/>
+    <path data-part="arm-up" class="prop-fill" d="M90 70 q4 -20 -2 -28 q10 6 8 22 Z"/>
+    <g data-part="confetti">
+      <rect x="26" y="18" width="5" height="5" class="accent" transform="rotate(20 28 20)"/>
+      <rect x="88" y="16" width="5" height="5" class="accent2" transform="rotate(-15 90 18)"/>
+      <rect x="44" y="6" width="5" height="5" class="accent" transform="rotate(45 46 8)"/>
+      <rect x="70" y="4" width="5" height="5" class="accent2" transform="rotate(10 72 6)"/>
+    </g>
+  </svg>
+</div>`;
+}
+
+/* ============================================================
+   DATA
+   ============================================================ */
+const LANGS = [
+  {code:'en', name:'English', native:'English', flag:'🇬🇧'},
+  {code:'ne', name:'Nepali',  native:'नेपाली',  flag:'🇳🇵'},
+  {code:'hi', name:'Hindi',   native:'हिन्दी',   flag:'🇮🇳'},
+];
+const DAYS = ['Mon','Tue','Wed','Thu','Fri','Sat','Sun'];
+const CHIP_OPTIONS = [
+  {label:'Work', emoji:'💼'}, {label:'Study', emoji:'📚'}, {label:'Social', emoji:'👥'},
+  {label:'Travel', emoji:'🚆'}, {label:'Gym', emoji:'🏋️'}, {label:'Shopping', emoji:'🛍️'},
+  {label:'Other', emoji:'✨'}, {label:'Ignore', emoji:null},
+];
+const CLAR_QUESTIONS = [
+  {time:'8:16 AM – 4:55 PM', place:'Bondi Junction'},
+  {time:'6:10 PM – 7:40 PM', place:'Warehouse Gym'},
+];
+const PROC_STAGES = ['Transcribing conversations','Finding key moments','Summarizing your day'];
+
+const SEED_ENTRIES = [
+  { id:'e1', weekday:'Mon', day:15, month:'Apr', title:'A productive day', chips:['Work','Gym','Bondi Junction'],
+    body:[
+      "I started my day at 7:00 AM and headed to Bondi Junction, where I worked on client projects and had a great lunch with the team.",
+      "In the evening, I went to the gym and completed a solid workout.",
+      "Overall, it was a productive day and I felt good about it. 🙂"
+    ]},
+  { id:'e2', weekday:'Sun', day:14, month:'Apr', title:'A slow, easy Sunday', chips:['Social','Home'],
+    body:[
+      "I slept in and spent the morning reading on the balcony with coffee.",
+      "In the afternoon, friends came over and we cooked lunch together, then played cards until the evening.",
+      "A quiet day that felt exactly like a Sunday should."
+    ]},
+  { id:'e3', weekday:'Sat', day:13, month:'Apr', title:'Errands and a long walk', chips:['Shopping','Travel'],
+    body:[
+      "I ran errands around the neighborhood in the morning, picking up groceries and a few things for the apartment.",
+      "Later I went for a long walk along the coast and stopped for a coffee halfway through.",
+      "Simple day, but a good one to reset before the week ahead."
+    ]},
+  { id:'e4', weekday:'Wed', day:10, month:'Apr', title:'Deadline day', chips:['Work','Study'],
+    body:[
+      "Most of the day went into finishing the client presentation, with a short study session for my evening course squeezed in between calls.",
+      "Stressful in the morning, but it came together by the afternoon."
+    ]},
+];
+
+/* ============================================================
+   SCREEN REGISTRY
+   ============================================================ */
+const SCREENS = [
+  {id:'welcome', group:'Onboarding', label:'Welcome', mascot:'ready'},
+  {id:'lang-spoken', group:'Onboarding', label:'Languages', mascot:'ready'},
+  {id:'schedule', group:'Onboarding', label:'Schedule', mascot:'ready'},
+  {id:'privacy-permissions', group:'Onboarding', label:'Privacy & Permissions', mascot:'ready'},
+  {id:'ready', group:'Onboarding', label:'Ready', mascot:'celebrating'},
+
+  {id:'today-idle', group:'Daily Loop', label:'Today · Idle', tab:'today', mascot:'sleeping'},
+  {id:'morning-prompt', group:'Daily Loop', label:'Morning Prompt', tab:'today', mascot:'waking'},
+  {id:'recording', group:'Daily Loop', label:'Recording Active', tab:'today', mascot:'listening'},
+  {id:'privacy-sheet', group:'Daily Loop', label:'Privacy Break', tab:'today', mascot:'listening'},
+  {id:'paused', group:'Daily Loop', label:'Paused', tab:'today', mascot:'paused'},
+  {id:'clarification', group:'Daily Loop', label:'Clarification', tab:'today', mascot:'thinking'},
+  {id:'processing', group:'Daily Loop', label:'Processing', tab:'today', mascot:'writing'},
+  {id:'journal-ready', group:'Daily Loop', label:'Journal Ready', tab:'today', mascot:'celebrating'},
+
+  {id:'journal-list', group:'Journal', label:'Entry List', tab:'journal', mascot:'ready'},
+  {id:'journal-detail', group:'Journal', label:'Entry Detail', tab:'journal', mascot:'ready'},
+  {id:'journal-edit', group:'Journal', label:'Entry Edit', tab:'journal', mascot:'writing'},
+
+  {id:'settings-root', group:'Settings', label:'Settings', tab:'settings', mascot:'ready'},
+  {id:'settings-schedule', group:'Settings', label:'Schedule', tab:'settings', mascot:'ready'},
+  {id:'settings-languages', group:'Settings', label:'Languages', tab:'settings', mascot:'ready'},
+  {id:'settings-privacy', group:'Settings', label:'Privacy & Data', tab:'settings', mascot:'ready'},
+
+  {id:'error', group:'States', label:'Error (recoverable)', tab:'today', mascot:'error'},
+];
+const SCREEN_BY_ID = Object.fromEntries(SCREENS.map(s=>[s.id,s]));
+
+const MASCOT_MEANING = {
+  sleeping:'App/session off', waking:'Morning reminder', ready:'Ready to start',
+  listening:'Recording active', paused:'Privacy break', thinking:'Needs clarification',
+  writing:'Generating journal', celebrating:'Journal ready', error:'Recoverable problem',
+};
+
+const SPEC = {
+  'welcome': {note:'Warm introduction with a clear value proposition. Single primary action — nothing to configure yet.', wired:['Get Started → Spoken Languages']},
+  'lang-spoken': {note:'Spoken languages and journal-output language on one screen — one setup step instead of two. A bilingual day still produces one clean journal.', wired:['Checkboxes hold state','Journal-language select persists to Settings','Continue → Schedule']},
+  'schedule': {note:'Alarm-clock visual model: start/end time, repeat days, one reminder toggle. Nothing more to decide.', wired:['Time selects persist','Day chips toggle','Continue → Privacy & Permissions']},
+  'privacy-permissions': {note:'Explains on-device processing and temporary storage before asking for the microphone permission alarm-clock apps take for granted.', wired:['Allow & Continue → Ready (auto-advances, no extra tap needed)']},
+  'ready': {note:'Confirms setup before handing off to the daily loop. Plays a brief celebratory animation and moves on by itself — setup ends the moment permission is granted.', wired:['Auto-advances → Today (Idle) after ~1.7s','Go to Today → Today (Idle) now, skips the wait']},
+
+  'today-idle': {note:'Outside the scheduled window. Mascot sleeping — the product principle is “easy to forget about” until it matters.', wired:['Shows next scheduled window','Preview next prompt → Morning Prompt']},
+  'morning-prompt': {note:'The signature screen. One primary action; two quiet secondary ones. No waveform, no complexity.', wired:['Start my day → Recording (timer starts at 0)','Change time → Settings · Schedule','Skip today → Today (Idle)']},
+  'recording': {note:'Minimal live status: elapsed time, a calm recording indicator, Pause and Stop. Avoid a complex waveform-recorder UI.', wired:['Live ticking timer','Pause → Privacy Break sheet','Stop → Processing']},
+  'privacy-sheet': {note:'One-tap privacy break, presented as a sheet over the active session rather than a new screen — recording context stays visible underneath.', wired:['Choice → Paused','Cancel → back to Recording']},
+  'paused': {note:'Calm, deliberately unexciting. Timer holds exactly where it stopped.', wired:['Resume → Recording (timer continues)']},
+  'clarification': {note:'One low-confidence event at a time. One-tap chips only — never a text field. Daytale should not invent missing context.', wired:['Chip tap advances to next question','Last answer → Processing']},
+  'processing': {note:'Mascot writing. A few understandable stages, not a raw progress bar.', wired:['Stages reveal automatically','Auto-advances → Journal Ready']},
+  'journal-ready': {note:'Celebratory but brief — one bounce, not endless confetti (Implementation PRD §8: “no endless confetti”).', wired:['View journal → Entry Detail']},
+
+  'journal-list': {note:'Entries grouped by month. Calmer than Today — this is reading mode, not alarm-clock mode.', wired:['Row tap → Entry Detail']},
+  'journal-detail': {note:'Mostly typography and whitespace. Subtle context chips only — no heavy chrome.', wired:['Edit → Entry Edit','Delete → inline confirm, no dialog','Share → no-op in prototype']},
+  'journal-edit': {note:'Real contenteditable. The user owns the final words; Daytale only drafts them.', wired:['Save → writes back to the entry','Cancel → discards changes']},
+
+  'settings-root': {note:'Functional and restrained — minimal mascot use, per PRD.', wired:['Rows route to sub-screens']},
+  'settings-schedule': {note:'Same alarm-clock control as onboarding, editable at any time.', wired:['Edits update Today copy live']},
+  'settings-languages': {note:'Spoken and journal language, always independently editable.', wired:['Edits update onboarding-seeded state']},
+  'settings-privacy': {note:'States plainly what is deleted and when. No ambiguity about raw audio retention.', wired:['Delete all → inline confirm, no dialog']},
+
+  'error': {note:'Concerned but calm — never alarming. A recoverable problem gets a retry, not a dead end.', wired:['Retry → Processing','Discard → Today (Idle)']},
+};
+
+/* ============================================================
+   STATE
+   ============================================================ */
+let PREFERS_REDUCED = false;
+try{ PREFERS_REDUCED = matchMedia('(prefers-reduced-motion: reduce)').matches; }catch(e){}
+let SAVED_APP_THEME = null;
+try{ SAVED_APP_THEME = localStorage.getItem('daytale.appTheme'); }catch(e){}
+
+const state = {
+  appTheme:SAVED_APP_THEME === 'dark' ? 'dark' : 'light', reducedMotion:PREFERS_REDUCED,
+  screen:'welcome', tab:'today',
+  langs:{en:true, ne:true, hi:false},
+  journalLang:'en',
+  scheduleStart:'7:00 AM', scheduleEnd:'10:00 PM',
+  repeatDays:{Mon:true,Tue:true,Wed:true,Thu:true,Fri:true,Sat:false,Sun:false},
+  reminder:true,
+  readyAutoHandle:null,
+  timerSeconds:0, timerHandle:null,
+  breakChoice:null,
+  clarIndex:0, clarAnswers:[],
+  procStage:-1, procHandle:null,
+  entries: SEED_ENTRIES.map(e=>({...e, chips:[...e.chips], body:[...e.body]})),
+  currentEntryId:'e1',
+  confirmDelete:false, confirmWipe:false,
+  history:['welcome'],
+};
+
+function fmtTime(total){
+  const h=Math.floor(total/3600), m=Math.floor((total%3600)/60), s=total%60;
+  const p=n=>String(n).padStart(2,'0');
+  return `${p(h)}:${p(m)}:${p(s)}`;
+}
+function esc(s){ return String(s).replace(/[&<>]/g, c=>({'&':'&amp;','<':'&lt;','>':'&gt;'}[c])); }
+function activeLangs(){ return LANGS.filter(l=>state.langs[l.code]); }
+function langName(code){ const l=LANGS.find(l=>l.code===code); return l?l.name:code; }
+function currentEntry(){ return state.entries.find(e=>e.id===state.currentEntryId); }
+function chipEmoji(label){ const c=CHIP_OPTIONS.find(c=>c.label.toLowerCase()===String(label).toLowerCase()); return c&&c.emoji?c.emoji+' ':''; }
+function uiIcon(name, label=''){
+  const paths = {
+    lock:'<rect x="5" y="10" width="14" height="10" rx="2"/><path d="M8 10V7a4 4 0 0 1 8 0v3"/>',
+    spark:'<path d="m12 3 1.8 5.2L19 10l-5.2 1.8L12 17l-1.8-5.2L5 10l5.2-1.8L12 3Z"/><path d="m19 16 .8 2.2L22 19l-2.2.8L19 22l-.8-2.2L16 19l2.2-.8L19 16Z"/>',
+    journal:'<path d="M6 4.5h10a2 2 0 0 1 2 2V20H8a2 2 0 0 1-2-2V4.5Z"/><path d="M6 18a2 2 0 0 1 2-2h10"/>',
+    sun:'<circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4"/>',
+    mic:'<rect x="8" y="3" width="8" height="12" rx="4"/><path d="M5 11a7 7 0 0 0 14 0M12 18v3M9 21h6"/>',
+    trash:'<path d="M5 7h14M10 11v6M14 11v6M7 7l1 14h8l1-14M9 7l1-3h4l1 3"/>',
+    book:'<path d="M5 4h10a2 2 0 0 1 2 2v14H7a2 2 0 0 1-2-2V4Z"/><path d="M7 16h10"/>',
+    edit:'<path d="m4 16.5-.8 3.3 3.3-.8L18.8 6.7a2.3 2.3 0 0 0-3.3-3.3L4 16.5Z"/><path d="m14 5 3 3"/>',
+    share:'<path d="M14 5h5v5M19 5l-8 8"/><path d="M19 13v5a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V7a2 2 0 0 1 2-2h5"/>',
+    moon:'<path d="M20 15.5A8 8 0 0 1 8.5 4 8 8 0 1 0 20 15.5Z"/>',
+    pin:'<path d="M20 10c0 5-8 11-8 11S4 15 4 10a8 8 0 1 1 16 0Z"/><circle cx="12" cy="10" r="2.5"/>',
+    play:'<path d="m8 5 11 7-11 7V5Z"/>'
+  };
+  return `<svg class="ui-icon" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="${label?'false':'true'}"${label?` role="img" aria-label="${label}"`:''}>${paths[name]||''}</svg>`;
+}
+
+/* ============================================================
+   NAVIGATION
+   ============================================================ */
+function goto(id){
+  if(!SCREEN_BY_ID[id]) return;
+  state.screen = id;
+  const s = SCREEN_BY_ID[id];
+  if(s.tab) state.tab = s.tab;
+  state.history.push(id);
+  render();
+  const body=document.getElementById('screenBody');
+  if(body) body.scrollTop = 0;
+}
+function setTab(tab){
+  state.tab = tab;
+  const map = {today: state.timerHandle ? 'recording' : 'today-idle', journal:'journal-list', settings:'settings-root'};
+  goto(map[tab]);
+}
+function stepScreen(dir){
+  const ids = SCREENS.map(s=>s.id);
+  let i = ids.indexOf(state.screen) + dir;
+  i = Math.max(0, Math.min(ids.length-1, i));
+  goto(ids[i]);
+}
+
+/* ---------- onboarding actions ---------- */
+function toggleLang(code){
+  const count = activeLangs().length;
+  if(state.langs[code] && count<=1) return; // keep at least one
+  state.langs[code] = !state.langs[code];
+  render();
+}
+function setJournalLang(code){ state.journalLang = code; render(); }
+function setScheduleTime(which, val){ state[which] = val; render(); }
+function toggleDay(d){ state.repeatDays[d] = !state.repeatDays[d]; render(); }
+function toggleReminder(){ state.reminder = !state.reminder; render(); }
+function finishPermissions(){
+  // Permission granted: show the Ready celebration, then move on by itself —
+  // no extra tap required. A visible "skip the wait" link still lets an
+  // impatient user jump ahead immediately.
+  goto('ready');
+  clearTimeout(state.readyAutoHandle);
+  state.readyAutoHandle = setTimeout(() => {
+    if(state.screen === 'ready') goto('today-idle');
+  }, 1700);
+}
+
+/* ---------- daily loop actions ---------- */
+function startMyDay(){
+  state.timerSeconds = 0; state.breakChoice = null;
+  startTimerInterval();
+  goto('recording');
+}
+function skipToday(){ goto('today-idle'); }
+function pauseSession(){
+  stopTimerInterval();
+  goto('privacy-sheet');
+}
+function chooseBreak(choice){
+  state.breakChoice = choice;
+  goto('paused');
+}
+function cancelBreak(){ startTimerInterval(); goto('recording'); }
+function resumeSession(){ startTimerInterval(); goto('recording'); }
+function stopSession(){
+  stopTimerInterval();
+  state.procStage = -1;
+  goto('processing');
+  runProcessing();
+}
+function runProcessing(){
+  clearTimeout(state.procHandle);
+  const step=()=>{
+    state.procStage++;
+    render();
+    if(state.procStage < PROC_STAGES.length-1){
+      state.procHandle = setTimeout(step, 850);
+    } else {
+      state.procHandle = setTimeout(()=>{
+        state.clarIndex = 0; state.clarAnswers = [];
+        goto('clarification');
+      }, 900);
+    }
+  };
+  state.procHandle = setTimeout(step, 400);
+}
+function retryProcessing(){ state.procStage=-1; goto('processing'); runProcessing(); }
+function discardSession(){ clearTimeout(state.procHandle); goto('today-idle'); }
+
+function answerClarification(label){
+  const q = CLAR_QUESTIONS[state.clarIndex];
+  state.clarAnswers.push({...q, answer:label});
+  if(state.clarIndex < CLAR_QUESTIONS.length-1){
+    state.clarIndex++;
+    render();
+  } else {
+    finishJournal();
+  }
+}
+function finishJournal(){
+  const chips = ['Work','Gym', ...state.clarAnswers.filter(a=>a.answer!=='Ignore').map(a=>a.answer)];
+  const uniqueChips = [...new Set(chips)];
+  const today = new Date();
+  const entry = {
+    id:'e0-'+Date.now(),
+    weekday:['Sun','Mon','Tue','Wed','Thu','Fri','Sat'][today.getDay()],
+    day: today.getDate(), month: today.toLocaleString('en',{month:'short'}),
+    title:'A productive day',
+    chips: uniqueChips,
+    body:[
+      "I started my day at 7:00 AM and headed to Bondi Junction, where I worked on client projects and had a great lunch with the team.",
+      "In the evening, I went to the gym and completed a solid workout.",
+      "Overall, it was a productive day and I felt good about it. 🙂"
+    ],
+  };
+  state.entries.unshift(entry);
+  state.currentEntryId = entry.id;
+  goto('journal-ready');
+}
+
+/* ---------- timer ---------- */
+function startTimerInterval(){
+  if(state.timerHandle) return;
+  state.timerHandle = setInterval(()=>{
+    state.timerSeconds++;
+    const el = document.getElementById('timerDisplay');
+    if(el) el.textContent = fmtTime(state.timerSeconds);
+  }, 1000);
+}
+function stopTimerInterval(){
+  clearInterval(state.timerHandle);
+  state.timerHandle = null;
+}
+
+/* ---------- journal actions ---------- */
+function openEntry(id){ state.currentEntryId = id; state.confirmDelete=false; goto('journal-detail'); }
+function askDeleteEntry(){ state.confirmDelete = true; render(); }
+function cancelDeleteEntry(){ state.confirmDelete = false; render(); }
+function confirmDeleteEntry(){
+  state.entries = state.entries.filter(e=>e.id!==state.currentEntryId);
+  state.confirmDelete = false;
+  goto('journal-list');
+}
+function saveEdit(){
+  const el = document.getElementById('editArea');
+  if(el){
+    const text = el.innerText.replace(/\r/g,'');
+    const paras = text.split(/\n{1,}/).map(p=>p.trim()).filter(Boolean);
+    currentEntry().body = paras.length ? paras : currentEntry().body;
+  }
+  goto('journal-detail');
+}
+function askWipeData(){ state.confirmWipe = true; render(); }
+function cancelWipeData(){ state.confirmWipe = false; render(); }
+function confirmWipeData(){ state.entries = []; state.confirmWipe = false; goto('journal-list'); }
+
+/* ============================================================
+   SCREEN TEMPLATES
+   ============================================================ */
+const SCREEN_RENDER = {};
+
+SCREEN_RENDER['welcome'] = () => `
+  <div class="pad" style="padding-top:28px;display:flex;flex-direction:column;gap:22px;height:100%">
+    <div class="sakura-petals" aria-hidden="true"><i></i><i></i><i></i></div>
+    <div>
+      <div class="a-eyebrow">Daytale</div>
+      <div class="a-h1" style="font-size:27px;margin-top:2px">Your day,<br>written for you.</div>
+    </div>
+    <div class="h-mascot-slot" style="padding:6px 0 2px">${mascotSVG('ready',108)}</div>
+    <p class="a-sub" style="text-align:center;padding:0 8px">You live your day. I'll remember it.</p>
+    <div class="a-stack" style="margin-top:auto">
+      <div class="a-row" style="gap:10px;color:var(--a-muted);font-size:12.5px">${uiIcon('lock')}<span>Your voice stays on your device.</span></div>
+      <div class="a-row" style="gap:10px;color:var(--a-muted);font-size:12.5px">${uiIcon('spark')}<span>Set it once, live your day.</span></div>
+      <div class="a-row" style="gap:10px;color:var(--a-muted);font-size:12.5px">${uiIcon('journal')}<span>Turn everyday moments into a journal.</span></div>
+      <button class="a-btn a-btn-primary" style="margin-top:8px" onclick="goto('lang-spoken')">Get Started →</button>
+    </div>
+  </div>
+`;
+
+SCREEN_RENDER['lang-spoken'] = () => `
+  <div class="pad" style="padding-top:18px;display:flex;flex-direction:column;gap:12px;height:100%">
+    <div>
+      <div class="a-h1" style="font-size:20px">What languages are part of your life?</div>
+      <p class="a-sub" style="margin-top:4px">I'll understand and transcribe your conversations.</p>
+    </div>
+    <div class="a-stack" style="gap:8px">
+      ${LANGS.map(l=>`
+        <button class="a-check-row" style="padding:11px 14px" data-checked="${!!state.langs[l.code]}" onclick="toggleLang('${l.code}')">
+          <span class="a-row"><span class="a-flag">${l.flag}</span>
+            <span><span class="a-lang-name" style="display:block">${l.name}</span><span class="a-lang-native">${l.native}</span></span>
+          </span>
+          <span class="a-check">${state.langs[l.code] ? checkIcon() : ''}</span>
+        </button>`).join('')}
+    </div>
+    <div>
+      <div class="a-field-label">Write my journal in</div>
+      <select class="a-select" onchange="setJournalLang(this.value)">
+        ${activeLangs().map(l=>`<option value="${l.code}" ${state.journalLang===l.code?'selected':''}>${l.flag} ${l.name}</option>`).join('')}
+      </select>
+      <p class="a-sub" style="margin-top:6px">Speak in any of your languages — Daytale still writes one clean journal, in ${langName(state.journalLang)}.</p>
+    </div>
+    <button class="a-btn a-btn-primary" style="margin-top:auto" onclick="goto('schedule')">Continue →</button>
+  </div>
+`;
+
+function timeOptions(selected){
+  const opts=[]; 
+  ['6:00 AM','6:30 AM','7:00 AM','7:30 AM','8:00 AM','9:00 PM','9:30 PM','10:00 PM','10:30 PM','11:00 PM'].forEach(t=>{
+    opts.push(`<option value="${t}" ${t===selected?'selected':''}>${t}</option>`);
+  });
+  return opts.join('');
+}
+
+SCREEN_RENDER['schedule'] = () => `
+  <div class="pad" style="padding-top:22px;display:flex;flex-direction:column;gap:16px;height:100%">
+    <div>
+      <div class="a-h1">When should I remember your day?</div>
+      <p class="a-sub" style="margin-top:6px">You can always change this later.</p>
+    </div>
+    <div class="a-stack">
+      <div>
+        <div class="a-field-label">${uiIcon('sun')} Start time</div>
+        <select class="a-select" onchange="setScheduleTime('scheduleStart', this.value)">${timeOptions(state.scheduleStart)}</select>
+      </div>
+      <div>
+        <div class="a-field-label">${uiIcon('moon')} End time</div>
+        <select class="a-select" onchange="setScheduleTime('scheduleEnd', this.value)">${timeOptions(state.scheduleEnd)}</select>
+      </div>
+      <div>
+        <div class="a-field-label">Repeat on</div>
+        <div class="a-days">${DAYS.map(d=>`<button class="a-day" aria-pressed="${!!state.repeatDays[d]}" onclick="toggleDay('${d}')">${d[0]}</button>`).join('')}</div>
+      </div>
+      <div class="a-check-row" data-checked="${state.reminder}" style="cursor:pointer" onclick="toggleReminder()">
+        <span class="a-lang-name">Remind me every morning</span>
+        <span class="switch" aria-checked="${state.reminder}"></span>
+      </div>
+    </div>
+    <button class="a-btn a-btn-primary" style="margin-top:auto" onclick="goto('privacy-permissions')">Continue →</button>
+  </div>
+`;
+
+SCREEN_RENDER['privacy-permissions'] = () => `
+  <div class="pad" style="padding-top:24px;display:flex;flex-direction:column;gap:18px;height:100%">
+    <div>
+      <div class="a-h1">Take a little privacy break, always on your terms.</div>
+      <p class="a-sub" style="margin-top:6px">Here's exactly how Daytale handles your voice.</p>
+    </div>
+    <div class="a-stack">
+      <div class="a-row a-card" style="align-items:flex-start;gap:12px">${uiIcon('lock')}<div><b style="display:block;font-size:13.5px">Processed on your device</b><span class="a-sub">Speech is transcribed locally wherever possible.</span></div></div>
+      <div class="a-row a-card" style="align-items:flex-start;gap:12px">${uiIcon('trash')}<div><b style="display:block;font-size:13.5px">Deleted after your journal is written</b><span class="a-sub">Raw audio and transcripts are removed automatically.</span></div></div>
+      <div class="a-row a-card" style="align-items:flex-start;gap:12px">${uiIcon('mic')}<div><b style="display:block;font-size:13.5px">Microphone access</b><span class="a-sub">Only while a session you started is active.</span></div></div>
+    </div>
+    <button class="a-btn a-btn-primary" style="margin-top:auto" onclick="finishPermissions()">Allow &amp; Continue →</button>
+  </div>
+`;
+
+SCREEN_RENDER['ready'] = () => `
+  <div class="pad" style="padding-top:40px;display:flex;flex-direction:column;align-items:center;gap:16px;height:100%;text-align:center">
+    <div class="h-mascot-slot">${mascotSVG('celebrating',116)}</div>
+    <div class="a-h1">You're all set.</div>
+    <p class="a-sub">Daytale will greet you at ${state.scheduleStart} on ${DAYS.filter(d=>state.repeatDays[d]).join(', ') || 'your chosen days'}.</p>
+    <div class="tag-row" style="justify-content:center">
+      ${activeLangs().map(l=>`<span class="tag on">${l.flag} ${l.name}</span>`).join('')}
+      <span class="tag">Journal in ${langName(state.journalLang)}</span>
+    </div>
+    <button class="a-btn-text" style="margin-top:auto" onclick="goto('today-idle')">Skip the wait — Go to Today →</button>
+  </div>
+`;
+
+function checkIcon(){
+  return `<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="var(--color-app-paper)" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M4 12l5 5L20 6"/></svg>`;
+}
+
+SCREEN_RENDER['today-idle'] = () => `
+  <div class="pad" style="padding-top:26px;display:flex;flex-direction:column;align-items:center;gap:16px;height:100%;text-align:center">
+    <div class="a-eyebrow">Mon, ${new Date().getDate()} Apr</div>
+    <div class="h-mascot-slot">${mascotSVG('sleeping',110)}</div>
+    <div class="a-h1">Resting until ${state.scheduleStart}.</div>
+    <p class="a-sub">Daytale is off outside your journal hours — nothing is listening right now.</p>
+    <div class="a-card" style="width:100%;margin-top:6px">
+      <div class="set-row" style="border:0;padding:4px 0"><span class="set-row-label"><b>Next window</b><span>${state.scheduleStart} – ${state.scheduleEnd}</span></span>${uiIcon('sun')}</div>
+    </div>
+    <button class="a-btn a-btn-ghost" style="margin-top:auto;width:100%" onclick="goto('morning-prompt')">Preview morning prompt →</button>
+  </div>
+`;
+
+SCREEN_RENDER['morning-prompt'] = () => `
+  <div class="pad" style="padding-top:30px;display:flex;flex-direction:column;align-items:center;gap:14px;height:100%;text-align:center">
+    <div class="a-eyebrow">Mon, ${new Date().getDate()} Apr</div>
+    <div class="a-h1" style="font-size:24px">Good morning, Nikan!</div>
+    <div class="h-mascot-slot">${mascotSVG('waking',112)}</div>
+    <p class="a-sub">Ready for me to remember today?</p>
+    <div class="a-stack" style="width:100%;margin-top:auto">
+    <button class="a-btn a-btn-primary" onclick="startMyDay()">${uiIcon('play')} Start my day</button>
+      <p style="font-size:11px;color:var(--a-muted);text-align:center">Recording stays on your device.</p>
+      <div class="a-row" style="gap:10px">
+        <button class="a-btn a-btn-ghost" onclick="goto('settings-schedule')">Change time</button>
+        <button class="a-btn a-btn-ghost" onclick="skipToday()">Skip today</button>
+      </div>
+    </div>
+  </div>
+`;
+
+SCREEN_RENDER['recording'] = () => `
+  <div class="pad" style="padding-top:26px;display:flex;flex-direction:column;align-items:center;gap:14px;height:100%;text-align:center">
+    <div class="rec-pill"><span class="rdot"></span> RECORDING</div>
+    <div class="h-mascot-slot">${mascotSVG('listening',108)}</div>
+    <div class="a-h1" style="font-size:18px">I'm remembering your day</div>
+    <div class="wave" aria-hidden="true">${[14,22,10,28,16,24,12,20,15].map((h,i)=>`<i style="height:${h}px;animation-delay:${i*90}ms"></i>`).join('')}</div>
+    <div id="timerDisplay" class="timer">${fmtTime(state.timerSeconds)}</div>
+    <p class="a-sub">Live normally — I'll only ask if I need to.</p>
+    <div class="a-row" style="justify-content:center;gap:34px;margin-top:auto">
+      <div><button class="circle-btn pause" onclick="pauseSession()" aria-label="Pause Daytale recording">${pauseIcon()}</button><div class="circle-label">Pause</div></div>
+      <div><button class="circle-btn stop" onclick="stopSession()" aria-label="Stop Daytale recording">${stopIcon()}</button><div class="circle-label">Stop</div></div>
+    </div>
+  </div>
+`;
+
+SCREEN_RENDER['privacy-sheet'] = () => `
+  <div style="position:relative;height:100%">
+    <div style="filter:blur(2px);opacity:.5;pointer-events:none">${SCREEN_RENDER['recording']()}</div>
+    <div class="sheet-scrim">
+      <div class="sheet">
+        <div class="sheet-handle"></div>
+        <div class="a-h1" style="font-size:19px;text-align:center;margin-bottom:2px">Take a little privacy break?</div>
+        <p class="a-sub" style="text-align:center;margin-bottom:10px">${mascotSVG('paused',56)}</p>
+        <div>
+          ${[['15 minutes','15m'],['1 hour','1h'],['Until I resume','manual'],['Stop for today','stop']].map(([label,key])=>`
+            <button class="sheet-opt" onclick="${key==='stop'?"stopSession()":`chooseBreak('${label}')`}" style="width:100%;text-align:left">
+              <span class="a-row">${clockIcon()} ${label}</span> ${key!=='stop'?'<span style="color:var(--a-muted)">›</span>':''}
+            </button>`).join('')}
+        </div>
+        <button class="a-btn-text" style="width:100%;text-align:center;margin-top:8px" onclick="cancelBreak()">Cancel</button>
+      </div>
+    </div>
+  </div>
+`;
+
+SCREEN_RENDER['paused'] = () => `
+  <div class="pad" style="padding-top:30px;display:flex;flex-direction:column;align-items:center;gap:14px;height:100%;text-align:center">
+    <div class="rec-pill pause-pill"><span class="rdot"></span> PAUSED · ${state.breakChoice || 'Until I resume'}</div>
+    <div class="h-mascot-slot">${mascotSVG('paused',110)}</div>
+    <div class="a-h1" style="font-size:19px">Taking a privacy break.</div>
+    <div class="timer" style="opacity:.55">${fmtTime(state.timerSeconds)}</div>
+    <p class="a-sub">Nothing is being recorded right now. Resume whenever you're ready.</p>
+    <button class="a-btn a-btn-primary" style="margin-top:auto;width:100%" onclick="resumeSession()">Resume recording</button>
+  </div>
+`;
+
+SCREEN_RENDER['clarification'] = () => {
+  const q = CLAR_QUESTIONS[state.clarIndex];
+  return `
+  <div class="pad" style="padding-top:24px;display:flex;flex-direction:column;gap:14px;height:100%">
+    <div style="text-align:center">
+      <div class="a-eyebrow">Question ${state.clarIndex+1} of ${CLAR_QUESTIONS.length}</div>
+      <div class="a-h1" style="font-size:18px;margin-top:4px">One tiny question before I finish…</div>
+    </div>
+    <div class="h-mascot-slot" style="padding:2px 0">${mascotSVG('thinking',86)}</div>
+    <div class="clar-map"><div class="pin"></div><div class="pin-label">${uiIcon('pin')} ${q.place}</div></div>
+    <p style="font-size:13.5px;font-weight:600;text-align:center">${q.time}<br>${q.place}</p>
+    <p class="a-sub" style="text-align:center">What were you doing here?</p>
+    <div class="clar-chips" style="justify-content:center;margin-top:auto">
+      ${CHIP_OPTIONS.map(c=>`<button class="a-chip" onclick="answerClarification('${c.label}')">${c.emoji?c.emoji+' ':''}${c.label}</button>`).join('')}
+    </div>
+  </div>`;
+};
+
+SCREEN_RENDER['processing'] = () => `
+  <div class="pad" style="padding-top:34px;display:flex;flex-direction:column;align-items:center;gap:18px;height:100%;text-align:center">
+    <div class="h-mascot-slot">${mascotSVG('writing',112)}</div>
+    <div class="a-h1" style="font-size:19px">Writing your Daytale…</div>
+    <div class="proc-steps" style="width:100%;max-width:240px">
+      ${PROC_STAGES.map((label,i)=>`
+        <div class="proc-step ${i<state.procStage?'done':i===state.procStage?'active':''}">
+          <span class="proc-dot">${i<state.procStage?'✓':i+1}</span>
+          <span style="font-size:13px;font-weight:600;text-align:left">${label}</span>
+        </div>`).join('')}
+    </div>
+    <div class="proc-track" style="width:100%"><div class="proc-fill" style="width:${Math.max(6,((state.procStage+1)/PROC_STAGES.length)*100)}%"></div></div>
+    <p style="font-size:11px;color:var(--a-faint)">Source audio is deleted the moment this finishes.</p>
+  </div>
+`;
+
+SCREEN_RENDER['journal-ready'] = () => {
+  const e = state.entries.find(x=>x.id===state.currentEntryId) || state.entries[0];
+  return `
+  <div class="pad" style="padding-top:24px;display:flex;flex-direction:column;gap:14px;height:100%">
+    <div class="sakura-petals" aria-hidden="true"><i></i><i></i><i></i></div>
+    <div style="text-align:center">
+      <div class="h-mascot-slot">${mascotSVG('celebrating',100)}</div>
+      <div class="a-h1" style="font-size:20px">A productive day</div>
+      <div class="a-eyebrow" style="margin-top:2px">Mon, ${e.day} ${e.month}</div>
+    </div>
+    <div class="j-context-row" style="justify-content:center">${e.chips.map(c=>`<span class="j-context-chip">${chipEmoji(c)}${c}</span>`).join('')}</div>
+    <div class="j-read" style="max-height:180px;overflow:hidden;-webkit-mask-image:linear-gradient(180deg,var(--color-app-ink) 70%,transparent)">
+      ${e.body.map(p=>`<p>${esc(p)}</p>`).join('')}
+    </div>
+    <div class="j-actionbar" style="margin-top:auto">
+      <button class="a-btn a-btn-ghost" onclick="void 0">${uiIcon('edit')} Edit</button>
+      <button class="a-btn a-btn-ghost" onclick="void 0">${uiIcon('share')} Share</button>
+    </div>
+    <button class="a-btn a-btn-primary" onclick="openEntry('${e.id}')">Read full journal →</button>
+  </div>`;
+};
+
+function pauseIcon(){ return `<svg width="24" height="24" viewBox="0 0 24 24" fill="var(--a-text)"><rect x="6" y="5" width="4" height="14" rx="1.5"/><rect x="14" y="5" width="4" height="14" rx="1.5"/></svg>`; }
+function stopIcon(){ return `<svg width="22" height="22" viewBox="0 0 24 24" fill="var(--color-app-paper)"><rect x="5" y="5" width="14" height="14" rx="3"/></svg>`; }
+function clockIcon(){ return `<svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 3"/></svg>`; }
+
+SCREEN_RENDER['journal-list'] = () => {
+  const byMonth = {};
+  state.entries.forEach(e=>{ (byMonth[e.month] = byMonth[e.month]||[]).push(e); });
+  const months = Object.keys(byMonth);
+  return `
+  <div class="pad" style="padding-top:22px;height:100%;display:flex;flex-direction:column;gap:14px">
+    <div>
+      <div class="a-eyebrow">Journal</div>
+      <div class="a-h1" style="font-size:24px">Your days, written.</div>
+    </div>
+    ${months.length ? months.map(m=>`
+      <div>
+        <div class="j-month">${m} 2026</div>
+        ${byMonth[m].map(e=>`
+          <button class="j-item" style="width:100%;text-align:left;background:none;border:0;cursor:pointer" onclick="openEntry('${e.id}')">
+            <span class="j-date"><b>${e.day}</b><span>${e.weekday}</span></span>
+            <span class="j-item-body">
+              <span class="j-item-title" style="display:block">${esc(e.title)}</span>
+              <span class="j-item-snip" style="display:block">${esc(e.body[0])}</span>
+              <span class="j-item-chips">${e.chips.slice(0,3).map(c=>`<span class="j-mini-chip">${chipEmoji(c)}${esc(c)}</span>`).join('')}</span>
+            </span>
+            <span style="color:var(--a-faint);font-size:16px">›</span>
+          </button>`).join('')}
+      </div>`).join('') : `
+      <div class="a-card" style="text-align:center;padding:30px 16px">
+        ${mascotSVG('sleeping',72)}
+        <p class="a-sub" style="margin-top:8px">No journal entries yet.</p>
+      </div>`}
+  </div>`;
+};
+
+SCREEN_RENDER['journal-detail'] = () => {
+  const e = currentEntry();
+  return `
+  <div class="pad" style="padding-top:22px;height:100%;display:flex;flex-direction:column;gap:14px">
+    <div class="a-row" style="justify-content:space-between">
+      <button class="a-btn-text" onclick="goto('journal-list')">‹ Journal</button>
+      <div class="a-row" style="gap:14px">
+        <button class="a-btn-text" onclick="goto('journal-edit')" aria-label="Edit entry">${uiIcon('edit')}</button>
+        <button class="a-btn-text" onclick="askDeleteEntry()" aria-label="Delete entry">${uiIcon('trash')}</button>
+      </div>
+    </div>
+    <div>
+      <div class="a-eyebrow">${e.weekday}, ${e.day} ${e.month} 2026</div>
+      <div class="a-h1" style="font-family:var(--f-read);font-style:normal;font-weight:500;margin-top:3px">${esc(e.title)}</div>
+    </div>
+    <div class="j-context-row">${e.chips.map(c=>`<span class="j-context-chip">${chipEmoji(c)}${esc(c)}</span>`).join('')}</div>
+    <div class="j-read">${e.body.map(p=>`<p>${esc(p)}</p>`).join('')}</div>
+    ${state.confirmDelete ? `
+      <div class="inline-confirm">
+        <p>Delete this journal entry? This can't be undone.</p>
+        <div class="a-row" style="gap:8px">
+          <button class="a-btn a-btn-ghost" style="flex:1" onclick="cancelDeleteEntry()">Cancel</button>
+          <button class="a-btn a-btn-danger" style="flex:1" onclick="confirmDeleteEntry()">Delete</button>
+        </div>
+      </div>` : ''}
+  </div>`;
+};
+
+SCREEN_RENDER['journal-edit'] = () => {
+  const e = currentEntry();
+  return `
+  <div class="pad" style="padding-top:22px;height:100%;display:flex;flex-direction:column;gap:14px">
+    <div class="a-row" style="justify-content:space-between">
+      <button class="a-btn-text" onclick="goto('journal-detail')">Cancel</button>
+      <div class="a-eyebrow" style="align-self:center">Editing</div>
+      <button class="a-btn-text" style="font-weight:700" onclick="saveEdit()">Save</button>
+    </div>
+    <div class="a-eyebrow">${e.weekday}, ${e.day} ${e.month} 2026 · ${esc(e.title)}</div>
+    <div id="editArea" class="j-read" contenteditable="true" spellcheck="false">${e.body.map(p=>`<p>${esc(p)}</p>`).join('')}</div>
+    <p style="font-size:11px;color:var(--a-faint);text-align:center">You own the final words — Daytale only drafts them.</p>
+  </div>`;
+};
+
+SCREEN_RENDER['settings-root'] = () => `
+  <div class="pad" style="padding-top:22px;height:100%;display:flex;flex-direction:column;gap:18px">
+    <div>
+      <div class="a-eyebrow">Settings</div>
+      <div class="a-h1" style="font-size:24px">Your Daytale.</div>
+    </div>
+    <div class="a-card" style="padding:4px 14px">
+      <button class="set-row" style="width:100%;background:none;border:0;cursor:pointer" onclick="goto('settings-schedule')">
+        <span class="set-row-label"><b>${uiIcon('sun')} Schedule</b><span>${state.scheduleStart} – ${state.scheduleEnd} · ${Object.values(state.repeatDays).filter(Boolean).length} days/week</span></span>
+        <span style="color:var(--a-faint)">›</span>
+      </button>
+      <button class="set-row" style="width:100%;background:none;border:0;cursor:pointer" onclick="goto('settings-languages')">
+        <span class="set-row-label"><b>${uiIcon('spark')} Languages</b><span>${activeLangs().map(l=>l.name).join(', ')} · journal in ${langName(state.journalLang)}</span></span>
+        <span style="color:var(--a-faint)">›</span>
+      </button>
+      <button class="set-row" style="width:100%;background:none;border:0;cursor:pointer" onclick="goto('settings-privacy')">
+        <span class="set-row-label"><b>${uiIcon('lock')} Privacy &amp; Data</b><span>On-device processing, auto-delete</span></span>
+        <span style="color:var(--a-faint)">›</span>
+      </button>
+    </div>
+    <div class="a-card" style="padding:4px 14px">
+      <div class="set-row"><span class="set-row-label"><b>About Daytale</b><span>Version 1.0 (prototype)</span></span></div>
+    </div>
+    <p style="font-size:11px;color:var(--a-faint);text-align:center;margin-top:auto">An alarm clock for your life.</p>
+  </div>
+`;
+
+SCREEN_RENDER['settings-schedule'] = () => `
+  <div class="pad" style="padding-top:22px;display:flex;flex-direction:column;gap:16px;height:100%">
+    <div class="a-row" style="gap:10px">
+      <button class="a-btn-text" onclick="goto('settings-root')">‹</button>
+      <div class="a-h1" style="font-size:19px">Schedule</div>
+    </div>
+    <div class="a-stack">
+      <div>
+        <div class="a-field-label">${uiIcon('sun')} Start time</div>
+        <select class="a-select" onchange="setScheduleTime('scheduleStart', this.value)">${timeOptions(state.scheduleStart)}</select>
+      </div>
+      <div>
+        <div class="a-field-label">${uiIcon('moon')} End time</div>
+        <select class="a-select" onchange="setScheduleTime('scheduleEnd', this.value)">${timeOptions(state.scheduleEnd)}</select>
+      </div>
+      <div>
+        <div class="a-field-label">Repeat on</div>
+        <div class="a-days">${DAYS.map(d=>`<button class="a-day" aria-pressed="${!!state.repeatDays[d]}" onclick="toggleDay('${d}')">${d[0]}</button>`).join('')}</div>
+      </div>
+      <div class="a-check-row" data-checked="${state.reminder}" style="cursor:pointer" onclick="toggleReminder()">
+        <span class="a-lang-name">Remind me every morning</span>
+        <span class="switch" aria-checked="${state.reminder}"></span>
+      </div>
+    </div>
+    <div class="a-card" style="background:var(--a-sprout-soft);border-color:transparent;margin-top:auto">
+      <p style="font-size:12px;color:var(--a-ink-soft)">Today's Morning Prompt will show at ${state.scheduleStart}.</p>
+    </div>
+  </div>
+`;
+
+SCREEN_RENDER['settings-languages'] = () => `
+  <div class="pad" style="padding-top:22px;display:flex;flex-direction:column;gap:16px;height:100%">
+    <div class="a-row" style="gap:10px">
+      <button class="a-btn-text" onclick="goto('settings-root')">‹</button>
+      <div class="a-h1" style="font-size:19px">Languages</div>
+    </div>
+    <div>
+      <div class="a-field-label">Spoken languages</div>
+      <div class="a-stack">
+        ${LANGS.map(l=>`
+          <button class="a-check-row" data-checked="${!!state.langs[l.code]}" onclick="toggleLang('${l.code}')">
+            <span class="a-row"><span class="a-flag">${l.flag}</span>
+              <span><span class="a-lang-name" style="display:block">${l.name}</span><span class="a-lang-native">${l.native}</span></span>
+            </span>
+            <span class="a-check">${state.langs[l.code] ? checkIcon() : ''}</span>
+          </button>`).join('')}
+      </div>
+    </div>
+    <div>
+      <div class="a-field-label">Write my journal in</div>
+      <select class="a-select" onchange="setJournalLang(this.value)">
+        ${activeLangs().map(l=>`<option value="${l.code}" ${state.journalLang===l.code?'selected':''}>${l.flag} ${l.name}</option>`).join('')}
+      </select>
+    </div>
+  </div>
+`;
+
+SCREEN_RENDER['settings-privacy'] = () => `
+  <div class="pad" style="padding-top:22px;display:flex;flex-direction:column;gap:16px;height:100%">
+    <div class="a-row" style="gap:10px">
+      <button class="a-btn-text" onclick="goto('settings-root')">‹</button>
+      <div class="a-h1" style="font-size:19px">Privacy &amp; Data</div>
+    </div>
+    <div class="a-stack">
+      <div class="a-row a-card" style="align-items:flex-start;gap:12px">${uiIcon('lock')}<div><b style="display:block;font-size:13.5px">Processed on your device</b><span class="a-sub">Speech is transcribed locally wherever possible.</span></div></div>
+      <div class="a-row a-card" style="align-items:flex-start;gap:12px">${uiIcon('trash')}<div><b style="display:block;font-size:13.5px">Raw audio deleted immediately</b><span class="a-sub">The moment your journal finishes writing, source audio and transcripts are gone.</span></div></div>
+      <div class="a-row a-card" style="align-items:flex-start;gap:12px">${uiIcon('book')}<div><b style="display:block;font-size:13.5px">Only your journal remains</b><span class="a-sub">The written entry is what's kept — never the recording it came from.</span></div></div>
+    </div>
+    <div class="a-card" style="margin-top:auto;border-color:color-mix(in srgb, var(--a-rec) 30%, transparent)">
+      <div class="set-row" style="border:0;padding:2px 0">
+        <span class="set-row-label"><b class="set-danger">Delete all journal data</b><span>Removes every entry from this device</span></span>
+      </div>
+      ${state.confirmWipe ? `
+        <div class="inline-confirm" style="margin-top:8px">
+          <p>Delete all ${state.entries.length} journal entries? This can't be undone.</p>
+          <div class="a-row" style="gap:8px">
+            <button class="a-btn a-btn-ghost" style="flex:1" onclick="cancelWipeData()">Cancel</button>
+            <button class="a-btn a-btn-danger" style="flex:1" onclick="confirmWipeData()">Delete all</button>
+          </div>
+        </div>` : `<button class="a-btn a-btn-ghost" style="width:100%;margin-top:8px;color:var(--a-rec)" onclick="askWipeData()">Delete all data</button>`}
+    </div>
+  </div>
+`;
+
+SCREEN_RENDER['error'] = () => `
+  <div class="pad" style="padding-top:30px;display:flex;flex-direction:column;align-items:center;gap:14px;height:100%;text-align:center">
+    <div class="h-mascot-slot">${mascotSVG('error',108)}</div>
+    <div class="a-h1" style="font-size:19px">Something interrupted your journal.</div>
+    <p class="a-sub">Nothing is lost — I can pick up right where I left off.</p>
+    <div class="err-box" style="width:100%;text-align:left">
+      <p style="font-size:12px;color:var(--a-ink-soft)">The last processing step didn't finish. This is usually temporary.</p>
+    </div>
+    <div class="a-stack" style="width:100%;margin-top:auto">
+      <button class="a-btn a-btn-primary" onclick="retryProcessing()">Try again</button>
+      <button class="a-btn a-btn-ghost" onclick="discardSession()">Discard this session</button>
+    </div>
+  </div>
+`;
+
+/* ============================================================
+   RENDER — one dispatcher, driven entirely by `state`
+   ============================================================ */
+function render(){
+  const cur = SCREEN_BY_ID[state.screen];
+
+  // phone screen body
+  const body = document.getElementById('screenBody');
+  if(body) body.innerHTML = SCREEN_RENDER[state.screen] ? SCREEN_RENDER[state.screen]() : '';
+
+  // tab bar: visible + active only on screens that belong to a tab
+  const tabbar = document.getElementById('tabbar');
+  if(tabbar){
+    tabbar.hidden = !cur.tab;
+    tabbar.querySelectorAll('.tab').forEach(btn=>{
+      btn.setAttribute('aria-current', String(btn.dataset.tab === state.tab));
+    });
+  }
+
+  // phone app theme (independent of studio chrome theme)
+  const phone = document.getElementById('phoneFrame');
+  if(phone) phone.setAttribute('data-app-theme', state.appTheme);
+  document.documentElement.classList.toggle('saved-app-dark', state.appTheme==='dark');
+
+  // screen picker rail highlight
+  document.querySelectorAll('.idx').forEach(btn=>{
+    btn.setAttribute('aria-current', String(btn.dataset.id === state.screen));
+  });
+
+  // jump select
+  const jump = document.getElementById('jumpSelect');
+  if(jump) jump.value = state.screen;
+
+  // prev/next nav bounds
+  const ids = SCREENS.map(s=>s.id);
+  const i = ids.indexOf(state.screen);
+  const prev = document.getElementById('navPrev'), next = document.getElementById('navNext');
+  if(prev) prev.disabled = i<=0;
+  if(next) next.disabled = i>=ids.length-1;
+
+  // right rail spec card
+  const rail = document.getElementById('rail');
+  if(rail){
+    const spec = SPEC[state.screen] || {note:'', wired:[]};
+    rail.innerHTML = `
+      <div class="card">
+        <h3>${cur.group} · ${cur.label}</h3>
+        <div class="mascot-chip">${mascotSVG(cur.mascot,22)} ${MASCOT_MEANING[cur.mascot] || cur.mascot}</div>
+        <p style="margin-top:10px">${spec.note}</p>
+        ${spec.wired && spec.wired.length ? `<ul class="spec-list">${spec.wired.map(w=>`<li>${w}</li>`).join('')}</ul>` : ''}
+      </div>
+      <div class="card">
+        <h3>State snapshot</h3>
+        <div class="tag-row">
+          <span class="tag on">${activeLangs().map(l=>l.flag).join('')} spoken</span>
+          <span class="tag on">journal: ${langName(state.journalLang)}</span>
+          <span class="tag">${state.scheduleStart}–${state.scheduleEnd}</span>
+          <span class="tag">${state.entries.length} entries</span>
+        </div>
+      </div>
+    `;
+  }
+
+  // toggle buttons
+  setTgl('tglAppTheme','tglAppThemeLabel', state.appTheme==='dark', 'Light app preview', 'Dark app preview');
+  setTgl('tglMotion','tglMotionLabel', state.reducedMotion, 'Reduce motion', 'Reduce motion');
+  document.body.classList.toggle('reduced-motion', state.reducedMotion);
+}
+function setTgl(btnId, labelId, on, onLabel, offLabel){
+  const btn = document.getElementById(btnId), label = document.getElementById(labelId);
+  if(btn) btn.setAttribute('aria-pressed', String(on));
+  if(label) label.textContent = on ? onLabel : offLabel;
+}
+
+/* ============================================================
+   TOP BAR TOGGLES
+   ============================================================ */
+function toggleAppTheme(){
+  state.appTheme = state.appTheme==='dark' ? 'light' : 'dark';
+  try{ localStorage.setItem('daytale.appTheme', state.appTheme); }catch(e){}
+  render();
+}
+function toggleMotion(){
+  state.reducedMotion = !state.reducedMotion;
+  render();
+}
+
+/* ============================================================
+   INIT — build the static chrome once, then render(state.screen)
+   ============================================================ */
+function buildIndex(){
+  const groups = [];
+  SCREENS.forEach(s=>{
+    let g = groups.find(g=>g.name===s.group);
+    if(!g){ g = {name:s.group, items:[]}; groups.push(g); }
+    g.items.push(s);
+  });
+  const nav = document.getElementById('index');
+  nav.innerHTML = groups.map(g=>`
+    <div class="idx-group">
+      <h4>${g.name}</h4>
+      <div class="idx-list">
+        ${g.items.map((s,i)=>`<button class="idx" data-id="${s.id}" onclick="goto('${s.id}')"><span class="n">${String(i+1).padStart(2,'0')}</span>${s.label}</button>`).join('')}
+      </div>
+    </div>`).join('');
+}
+function buildJumpSelect(){
+  const sel = document.getElementById('jumpSelect');
+  sel.innerHTML = SCREENS.map(s=>`<option value="${s.id}">${s.group} — ${s.label}</option>`).join('');
+}
+function init(){
+  buildIndex();
+  buildJumpSelect();
+  buildBoards();
+  // The workspace is deliberately light-first. Only the app preview changes theme.
+  document.documentElement.setAttribute('data-theme', 'light');
+  document.body.classList.toggle('reduced-motion', state.reducedMotion);
+  render();
+}
+
+/* ============================================================
+   BELOW-FOLD BOARDS — system surfaces, mascot sheet, flow diagram
+   (Not phone-frame content: reference material from the concept board)
+   ============================================================ */
+function buildBoards(){
+  const el = document.getElementById('boards');
+  el.innerHTML = `
+    <section class="board">
+      <div class="board-head">
+        <h2>System surfaces</h2>
+        <p>Where Daytale shows up outside the app itself, while a session is recording.</p>
+      </div>
+      <div class="surf-grid">
+        <div class="surf-card">
+          <h4>Dynamic Island — compact</h4>
+          <div class="dyn-island compact">
+            <span class="di-mascot">${mascotSVG('listening',22)}</span>
+            <span class="di-time">12:04</span>
+          </div>
+          <p class="surf-caption">Glanceable while the phone is locked or in another app.</p>
+        </div>
+        <div class="surf-card">
+          <h4>Dynamic Island — expanded</h4>
+          <div class="dyn-island" style="padding:14px 20px">
+            <span class="di-mascot">${mascotSVG('listening',26)}</span>
+            <span class="di-time">12:04:37</span>
+            <span class="di-wave">${[6,10,5,12,7].map(h=>`<i style="height:${h}px"></i>`).join('')}</span>
+          </div>
+          <p class="surf-caption">Long-press reveals elapsed time and a live level indicator.</p>
+        </div>
+        <div class="surf-card">
+          <h4>iOS lock screen</h4>
+          <div class="lock-card">
+            <div class="lock-time">9:41</div>
+            <div class="lock-date">Monday, 15 April</div>
+            <div class="lock-notif">${mascotSVG('listening',30)}<span><b>Daytale is remembering your day</b><span>Recording · 03:12:04</span></span></div>
+          </div>
+          <p class="surf-caption">A quiet, ongoing notification — not a badge or alert sound.</p>
+        </div>
+        <div class="surf-card">
+          <h4>Android notification</h4>
+          <div class="and-notif">
+            <div class="and-notif-head"><span>${uiIcon('sun')} Daytale</span><span>· now</span></div>
+            <div class="and-notif-body">${mascotSVG('listening',34)}<span><b style="display:block;font-size:13px">Remembering your day</b><span style="font-size:11.5px;color:var(--color-app-muted)">03:12:04 elapsed</span></span></div>
+            <div class="and-actions"><button onclick="return false">Pause</button><button onclick="return false">Stop</button></div>
+          </div>
+          <p class="surf-caption">Foreground-service notification — required while the mic is active.</p>
+        </div>
+        <div class="surf-card">
+          <h4>Home-screen widget</h4>
+          <div class="widget-card">${mascotSVG('sleeping',40)}<span><b style="display:block">Next window</b><span>${state.scheduleStart} – ${state.scheduleEnd}</span></span></div>
+          <p class="surf-caption">Shows the next scheduled window without opening the app.</p>
+        </div>
+        <div class="surf-card">
+          <h4>Control Center tile</h4>
+          <div class="cc-tile">
+            <div class="cc-icon">${mascotSVG('ready',30)}</div>
+            <b>Daytale</b>
+            <span class="surf-caption" style="margin:0">One-tap Start / Pause</span>
+          </div>
+          <p class="surf-caption">A quick toggle for people who don't want to open the app at all.</p>
+        </div>
+      </div>
+    </section>
+
+    <section class="board">
+      <div class="board-head">
+        <h2>Mascot states</h2>
+        <p>One geometry, nine variants — every state also carries a text label (accessibility rule).</p>
+      </div>
+      <div class="mas-grid">
+        ${Object.keys(MASCOT_MEANING).map(s=>`
+          <div class="mas-cell">
+            ${mascotSVG(s,56)}
+            <b>${s[0].toUpperCase()+s.slice(1)}</b>
+            <span>${MASCOT_MEANING[s]}</span>
+          </div>`).join('')}
+      </div>
+    </section>
+
+    <section class="board">
+      <div class="board-head">
+        <h2>Daily flow</h2>
+        <p>The loop every scheduled day runs through.</p>
+      </div>
+      <div class="flow-row">
+        <div class="flow-step">🔔<div><span>Notification</span><small>Morning prompt at start time</small></div></div>
+        <span class="flow-arrow">→</span>
+        <div class="flow-step">🎧<div><span>Recording</span><small>Pause / privacy break anytime</small></div></div>
+        <span class="flow-arrow">→</span>
+        <div class="flow-step">${uiIcon('pin')}<div><span>Clarification</span><small>0–2 one-tap questions</small></div></div>
+        <span class="flow-arrow">→</span>
+        <div class="flow-step">${uiIcon('edit')}<div><span>Processing</span><small>On-device, then deleted</small></div></div>
+        <span class="flow-arrow">→</span>
+        <div class="flow-step">${uiIcon('book')}<div><span>Journal</span><small>Ready to read</small></div></div>
+      </div>
+      <div class="flow-loop">↻ repeats on every scheduled day — onboarding runs once, before the first loop.</div>
+    </section>
+  `;
+}
+
+init();
+</script>

@@ -1,0 +1,85 @@
+/* Daytale Sakura White design tokens */
+:root {
+  --color-shell-paper: oklch(99.3% 0.004 10);
+  --color-shell-surface: oklch(100% 0 0);
+  --color-shell-ink: oklch(28% 0.03 350);
+  --color-shell-muted: oklch(50% 0.035 350);
+  --color-shell-faint: oklch(62% 0.03 350);
+  --color-shell-line: oklch(91% 0.022 8);
+  --color-shell-line-soft: oklch(95.5% 0.014 8);
+
+  --color-app-paper: oklch(99.3% 0.004 10);
+  --color-app-surface: oklch(100% 0 0);
+  --color-app-ink: oklch(28% 0.03 350);
+  --color-app-muted: oklch(50% 0.035 350);
+  --color-app-faint: oklch(62% 0.03 350);
+  --color-app-line: oklch(91% 0.022 8);
+  --color-app-sakura-mist: oklch(96.5% 0.02 8);
+  --color-app-blossom: oklch(90% 0.055 8);
+  --color-app-cherry: oklch(56% 0.17 5);
+  --color-app-cherry-hover: oklch(48% 0.16 5);
+  --color-app-sun: oklch(83% 0.10 35);
+  --color-app-sun-deep: oklch(68% 0.14 22);
+  --color-app-leaf: oklch(61% 0.11 145);
+  --color-app-leaf-soft: oklch(93% 0.035 145);
+  --color-app-cheek: oklch(76% 0.12 15);
+  --color-app-recording: oklch(54% 0.20 30);
+  --color-app-recording-soft: oklch(94% 0.045 30);
+  --color-app-pause: oklch(70% 0.13 75);
+  --color-app-pause-soft: oklch(95% 0.04 75);
+  --color-app-ink-soft: oklch(42% 0.035 350);
+  --color-focus: oklch(56% 0.17 5);
+
+  --color-os-black: oklch(12% 0.01 350);
+  --color-os-white: oklch(99% 0 0);
+
+  --font-display: "Fredoka", "Trebuchet MS", sans-serif;
+  --font-ui: "Figtree", "Helvetica Neue", Arial, sans-serif;
+  --font-read: "Newsreader", Georgia, "Times New Roman", serif;
+  --font-mono: "IBM Plex Mono", ui-monospace, Menlo, monospace;
+
+  --space-1: 4px;
+  --space-2: 8px;
+  --space-3: 12px;
+  --space-4: 16px;
+  --space-5: 20px;
+  --space-6: 24px;
+  --space-8: 32px;
+  --space-12: 48px;
+  --radius-control: 16px;
+  --radius-card: 20px;
+  --radius-pill: 999px;
+  --shadow-soft: 0 1px 2px color-mix(in srgb, var(--color-app-cherry) 6%, transparent), 0 10px 28px -14px color-mix(in srgb, var(--color-app-cherry) 22%, transparent);
+  --shadow-device: 0 0 0 1px var(--color-shell-line), 0 2px 6px color-mix(in srgb, var(--color-app-cherry) 8%, transparent), 0 40px 80px -30px color-mix(in srgb, var(--color-app-cherry) 35%, transparent);
+  --ease-out: cubic-bezier(.22, 1, .36, 1);
+  --ease-in-out: cubic-bezier(.65, 0, .35, 1);
+  --dur-fast: 120ms;
+  --dur-normal: 200ms;
+}
+
+/* Night sakura: deep plum, not black */
+.phone[data-app-theme="dark"],
+.saved-app-dark .phone {
+  --color-app-paper: oklch(20% 0.03 350);
+  --color-app-surface: oklch(25% 0.035 350);
+  --color-app-ink: oklch(94% 0.012 10);
+  --color-app-muted: oklch(74% 0.025 355);
+  --color-app-faint: oklch(60% 0.02 355);
+  --color-app-line: oklch(34% 0.035 355);
+  --color-app-sakura-mist: oklch(30% 0.05 355);
+  --color-app-blossom: oklch(38% 0.07 0);
+  --color-app-cherry: oklch(76% 0.12 5);
+  --color-app-cherry-hover: oklch(82% 0.10 5);
+  --color-app-sun: oklch(86% 0.11 33);
+  --color-app-sun-deep: oklch(75% 0.14 25);
+  --color-app-leaf: oklch(72% 0.10 145);
+  --color-app-leaf-soft: oklch(29% 0.05 145);
+  --color-app-cheek: oklch(72% 0.12 15);
+  --color-app-recording: oklch(70% 0.17 30);
+  --color-app-recording-soft: oklch(31% 0.08 30);
+  --color-app-pause: oklch(70% 0.13 75);
+  --color-app-pause-soft: oklch(32% 0.06 75);
+  --color-app-ink-soft: oklch(80% 0.025 355);
+  --color-focus: oklch(76% 0.12 5);
+  --shadow-soft: 0 1px 2px color-mix(in srgb, var(--color-os-black) 45%, transparent), 0 10px 28px -14px color-mix(in srgb, var(--color-os-black) 80%, transparent);
+}
