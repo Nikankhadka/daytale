@@ -7,7 +7,7 @@ Status values are `Not Started`, `In Progress`, `Blocked`, `Ready for Review`, a
 | DYT-001 | Repository foundation | In Progress | None |
 | DYT-002 | Physical background-recording spike | In Progress | DYT-001 |
 | DYT-003 | Secure persistence and session state | In Progress | DYT-001 |
-| DYT-004 | Prototype-faithful shell and onboarding | Not Started | DYT-001, DYT-003 |
+| DYT-004 | Prototype-faithful shell and onboarding | In Progress | DYT-001, DYT-003 |
 | DYT-005 | Voice enrollment and speaker identification | Not Started | DYT-002, DYT-003 |
 | DYT-006 | Production recording and recovery | Not Started | DYT-002, DYT-003, DYT-005 |
 | DYT-007 | Local transcription | Not Started | DYT-005, DYT-006 |
@@ -77,7 +77,7 @@ Implementation evidence (2026-09-26): SQLCipher-backed SQLite initialization, Se
 
 ## DYT-004 - Prototype-faithful shell and onboarding
 
-Status: `Not Started`
+Status: `In Progress`
 Dependencies: DYT-001, DYT-003
 
 Outcome: Implement the three-tab shell, all onboarding screens except voice capture, theme/token mapping, reduced motion, accessible controls, and prototype-faithful empty/loading/error states.
@@ -90,6 +90,8 @@ Definition of Done: interactive prototype comparison passes for implemented scre
 
 Automated verification: component interaction, validation, permission denial, keyboard, accessibility, reduced-motion, and route restoration tests.
 Physical-device verification: safe areas, large text, dark mode, reduced motion, keyboard, touch targets, and screen-reader smoke tests.
+
+Implementation evidence (2026-09-26): DYT-004A implements the three-tab route shell, prototype token and font mapping, semantic light/dark themes, reduced-motion mascot states, accessible empty/loading/error surfaces, optional name, language and schedule forms, persisted onboarding-stage restoration, native notification and microphone permission boundaries with denial recovery, and explicit delete-all confirmation. The flow stops at the Voice Setup state for DYT-005 to implement. `npm run check` passes formatting, lint, TypeScript, 14 test suites with 66 tests, documentation checks, and route smoke checks; public Expo config, native config introspection, web export, and diff checks pass. Physical safe-area, large-text, dark-mode, reduced-motion, keyboard, touch-target, and screen-reader verification remains outstanding.
 
 ## DYT-005 - Voice enrollment and speaker identification
 

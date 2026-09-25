@@ -85,7 +85,7 @@ describe('storage schema migrations', () => {
     await database.closeAsync();
   });
 
-  it('creates the section-5 tables and operation identity table at schema version three', async () => {
+  it('creates the section-5 tables and operation identity table at schema version four', async () => {
     await applyMigrations(database);
 
     const version = database.native.prepare('PRAGMA user_version').get() as {
@@ -97,7 +97,7 @@ describe('storage schema migrations', () => {
       )
       .all() as { name: string }[];
 
-    expect(version.user_version).toBe(3);
+    expect(version.user_version).toBe(4);
     expect(rows.map((row) => row.name)).toEqual([...tableNames].sort());
     expect(
       (database.native.prepare('PRAGMA foreign_keys').get() as { foreign_keys: number })
@@ -124,7 +124,7 @@ describe('storage schema migrations', () => {
     expect(
       (database.native.prepare('PRAGMA user_version').get() as { user_version: number })
         .user_version,
-    ).toBe(3);
+    ).toBe(4);
   });
 
   it('upgrades an existing version-one database with operation identity and retry support', async () => {
@@ -147,7 +147,7 @@ describe('storage schema migrations', () => {
     expect(
       (database.native.prepare('PRAGMA user_version').get() as { user_version: number })
         .user_version,
-    ).toBe(3);
+    ).toBe(4);
     expect(
       database.native
         .prepare(
@@ -174,7 +174,7 @@ describe('storage schema migrations', () => {
     expect(
       (database.native.prepare('PRAGMA user_version').get() as { user_version: number })
         .user_version,
-    ).toBe(3);
+    ).toBe(4);
     expect(
       (
         database.native.prepare('PRAGMA table_info(recording_sessions)').all() as { name: string }[]
@@ -366,7 +366,7 @@ describe('storage schema migrations', () => {
     expect(initialized).toBe(injectedDatabase);
     expect(injectedDatabase.execAsync.mock.calls[0][0]).toBe("PRAGMA key = 'test-key';");
     expect(injectedDatabase.native.prepare('PRAGMA user_version').get()).toEqual({
-      user_version: 3,
+      user_version: 4,
     });
     expect(DATABASE_NAME).toBe('daytale.db');
   });

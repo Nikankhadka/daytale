@@ -6,15 +6,23 @@ export type StorageBootstrapResult = {
 };
 
 let bootstrapPromise: Promise<StorageBootstrapResult> | undefined;
+let activeStorage: StorageBootstrapResult | undefined;
 
 export function bootstrapStorage(): Promise<StorageBootstrapResult> {
   if (bootstrapPromise === undefined) {
-    bootstrapPromise = Promise.resolve({ database: null, repositories: null });
+    const result = { database: null, repositories: null } as const;
+    activeStorage = result;
+    bootstrapPromise = Promise.resolve(result);
   }
   return bootstrapPromise;
 }
 
+export function getBootstrappedStorage(): StorageBootstrapResult | undefined {
+  return activeStorage;
+}
+
 export function invalidateStorageBootstrap(): void {
   bootstrapPromise = undefined;
+  activeStorage = undefined;
   useSessionStore.getState().resetSession();
 }

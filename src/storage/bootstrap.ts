@@ -1,7 +1,7 @@
 import { initializeDatabase, type DatabaseDependencies, type SQLiteDatabaseLike } from './database';
 import { createStorageRepositories, type StorageRepositories } from './repositories';
 import { useSessionStore } from '../state/session';
-import type { RecordingSession } from './types';
+import type { AppPreferences, RecordingSession } from './types';
 
 export type StorageBootstrapResult = {
   database: SQLiteDatabaseLike;
@@ -10,6 +10,7 @@ export type StorageBootstrapResult = {
 
 let bootstrapPromise: Promise<StorageBootstrapResult> | undefined;
 let bootstrapGeneration = 0;
+let activeStorage: StorageBootstrapResult | undefined;
 
 export function bootstrapStorage(
   dependencies: DatabaseDependencies = {},
@@ -34,7 +35,12 @@ export function bootstrapStorage(
 export function invalidateStorageBootstrap(): void {
   bootstrapGeneration += 1;
   bootstrapPromise = undefined;
+  activeStorage = undefined;
   useSessionStore.getState().resetSession();
+}
+
+export function getBootstrappedStorage(): StorageBootstrapResult | undefined {
+  return activeStorage;
 }
 
 async function initializeStorage(
@@ -50,12 +56,18 @@ async function initializeStorage(
     const repositories = createStorageRepositories(database);
     const sessions = await repositories.recordingSessions.list();
     const latest = findLatestSession(sessions);
+    const preferences = await repositories.appPreferences.list();
+    const latestPreferences = findLatestPreferences(preferences);
     if (generation !== bootstrapGeneration) {
       throw new StorageBootstrapError();
     }
+    useSessionStore.getState().setAppPreferences(latestPreferences);
     useSessionStore.getState().setRecordingSession(latest);
-    return { database, repositories };
+    const result = { database, repositories };
+    activeStorage = result;
+    return result;
   } catch {
+    activeStorage = undefined;
     await database?.closeAsync().catch(() => undefined);
     throw new StorageBootstrapError();
   }
@@ -72,6 +84,18 @@ function findLatestSession(sessions: RecordingSession[]): RecordingSession | nul
   return sessions.reduce<RecordingSession | null>((latest, session) => {
     if (latest === null || Date.parse(session.updatedAt) > Date.parse(latest.updatedAt)) {
       return session;
+    }
+    return latest;
+  }, null);
+}
+
+function findLatestPreferences(preferences: AppPreferences[]): AppPreferences | null {
+  if (preferences.length > 1) {
+    throw new StorageBootstrapError();
+  }
+  return preferences.reduce<AppPreferences | null>((latest, preferences) => {
+    if (latest === null || Date.parse(preferences.updatedAt) > Date.parse(latest.updatedAt)) {
+      return preferences;
     }
     return latest;
   }, null);

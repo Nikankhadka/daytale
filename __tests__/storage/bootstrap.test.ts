@@ -6,6 +6,7 @@ import type { SQLiteBindValue, SQLiteRunResult } from 'expo-sqlite';
 import { bootstrapStorage, invalidateStorageBootstrap } from '../../src/storage/bootstrap';
 import { deleteAllData } from '../../src/storage/cleanup';
 import { applyMigrations, type MigrationDatabase } from '../../src/storage/migrations';
+import { createStorageRepositories } from '../../src/storage/repositories';
 import { useSessionStore } from '../../src/state/session';
 
 type TestDatabase = MigrationDatabase & {
@@ -94,6 +95,22 @@ describe('storage bootstrap', () => {
     await applyMigrations(database);
     await insertSession(database, olderSessionId, createdAt);
     await insertSession(database, latestSessionId, latestUpdatedAt);
+    await createStorageRepositories(database).appPreferences.save({
+      id: '00000000-0000-4000-8000-000000000004',
+      spokenLanguages: ['en'],
+      journalLanguage: 'en',
+      scheduleStartLocal: '08:00',
+      scheduleEndLocal: '20:00',
+      timezone: 'UTC',
+      notificationsEnabled: true,
+      microphonePermissionState: 'undetermined',
+      onboardingComplete: false,
+      onboardingStage: 'welcome',
+      theme: 'system',
+      reducedMotion: false,
+      createdAt,
+      updatedAt: latestUpdatedAt,
+    });
     const openDatabase = jest.fn(async () => database);
     const secureStore = {
       getItemAsync: jest.fn(async () => 'test-key'),
@@ -125,6 +142,11 @@ describe('storage bootstrap', () => {
       updatedAt: latestUpdatedAt,
       status: 'scheduled',
     });
+    expect(useSessionStore.getState().appPreferences).toMatchObject({
+      scheduleStartLocal: '08:00',
+      updatedAt: latestUpdatedAt,
+      onboardingComplete: false,
+    });
   });
 
   it('clears a failed bootstrap promise so a later mount can retry', async () => {
@@ -154,6 +176,50 @@ describe('storage bootstrap', () => {
 
     await expect(bootstrapStorage({ openDatabase, secureKey })).resolves.toBeDefined();
     expect(openDatabase).toHaveBeenCalledTimes(2);
+  });
+
+  it('fails closed when more than one app preferences row exists', async () => {
+    const database = createTestDatabase();
+    await applyMigrations(database);
+    for (const id of [
+      '00000000-0000-4000-8000-000000000004',
+      '00000000-0000-4000-8000-000000000005',
+    ]) {
+      await database.runAsync(
+        `INSERT INTO app_preferences
+         (id, spoken_languages, journal_language, schedule_start_local, schedule_end_local,
+          timezone, notifications_enabled, microphone_permission_state, onboarding_complete,
+          onboarding_stage, theme, reduced_motion, created_at, updated_at)
+         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+        id,
+        '["en"]',
+        'en',
+        '07:00',
+        '21:00',
+        'UTC',
+        1,
+        'undetermined',
+        0,
+        'welcome',
+        'system',
+        0,
+        createdAt,
+        latestUpdatedAt,
+      );
+    }
+    const secureKey = {
+      secureStore: {
+        getItemAsync: jest.fn(async () => 'test-key'),
+        setItemAsync: jest.fn(async () => undefined),
+        deleteItemAsync: jest.fn(async () => undefined),
+      },
+      crypto: { getRandomBytesAsync: async () => new Uint8Array(32) },
+    };
+
+    await expect(
+      bootstrapStorage({ openDatabase: async () => database, secureKey }),
+    ).rejects.toThrow('Secure storage bootstrap failed.');
+    expect(useSessionStore.getState().appPreferences).toBeNull();
   });
 
   it('invalidates the cached database and allows a clean remount after deletion', async () => {

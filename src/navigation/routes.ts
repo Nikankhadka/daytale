@@ -7,3 +7,9 @@ export const TAB_ROUTE_PATHS: Record<PrimaryTab, `/(tabs)/${PrimaryTab}`> = {
   journal: '/(tabs)/journal',
   settings: '/(tabs)/settings',
 };
+
+export function routeForOnboardingState(
+  onboardingComplete: boolean,
+): '/onboarding' | '/(tabs)/today' {
+  return onboardingComplete ? '/(tabs)/today' : '/onboarding';
+}

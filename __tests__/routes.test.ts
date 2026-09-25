@@ -1,4 +1,4 @@
-import { PRIMARY_TABS, TAB_ROUTE_PATHS } from '../src/navigation/routes';
+import { PRIMARY_TABS, routeForOnboardingState, TAB_ROUTE_PATHS } from '../src/navigation/routes';
 
 describe('primary routes', () => {
   it('exposes exactly the three product tabs', () => {
@@ -8,5 +8,10 @@ describe('primary routes', () => {
       '/(tabs)/journal',
       '/(tabs)/settings',
     ]);
+  });
+
+  it('guards direct tab links until onboarding is complete', () => {
+    expect(routeForOnboardingState(false)).toBe('/onboarding');
+    expect(routeForOnboardingState(true)).toBe('/(tabs)/today');
   });
 });

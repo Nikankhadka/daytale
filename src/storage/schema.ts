@@ -1,4 +1,4 @@
-export const DATABASE_SCHEMA_VERSION = 3;
+export const DATABASE_SCHEMA_VERSION = 4;
 
 function uuidConstraint(column: string): string {
   return `length(${column}) = 36 AND length(replace(${column}, '-', '')) = 32 AND substr(${column}, 9, 1) = '-' AND substr(${column}, 14, 1) = '-' AND substr(${column}, 19, 1) = '-' AND substr(${column}, 24, 1) = '-' AND ${column} NOT GLOB '*[^0-9A-Fa-f-]*' AND substr(${column}, 15, 1) GLOB '[1-5]' AND substr(${column}, 20, 1) GLOB '[89abAB]'`;
@@ -171,8 +171,14 @@ export const CREATE_RETRY_TARGET_SCHEMA_STATEMENTS = [
   `ALTER TABLE recording_sessions ADD COLUMN retry_target TEXT CHECK (retry_target IS NULL OR retry_target IN ('recording', 'transcribing', 'analyzing', 'awaiting clarification', 'generating'))`,
 ] as const;
 
+export const CREATE_ONBOARDING_STAGE_SCHEMA_STATEMENTS = [
+  `ALTER TABLE app_preferences ADD COLUMN onboarding_stage TEXT NOT NULL DEFAULT 'welcome' CHECK (onboarding_stage IN ('welcome', 'languages', 'schedule', 'privacy', 'voice'))`,
+  `UPDATE app_preferences SET onboarding_stage = 'voice' WHERE onboarding_complete = 1`,
+] as const;
+
 export const SCHEMA_SQL = `${[
   ...CREATE_SCHEMA_STATEMENTS,
   ...CREATE_OPERATION_SCHEMA_STATEMENTS,
   ...CREATE_RETRY_TARGET_SCHEMA_STATEMENTS,
+  ...CREATE_ONBOARDING_STAGE_SCHEMA_STATEMENTS,
 ].join(';\n')};`;

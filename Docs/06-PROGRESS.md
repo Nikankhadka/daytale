@@ -4,16 +4,16 @@ This file records current delivery evidence and decisions. It does not repeat re
 
 ## Current milestone
 
-Canonical documentation baseline complete. DYT-001 repository foundation checks are green locally, but its iOS and Android development-client gate remains outstanding. DYT-002 implementation is in progress with its physical-device gate pending. DYT-003 implementation is in progress with automated persistence and cleanup checks green; its physical-device gate remains pending.
+Canonical documentation baseline complete. DYT-001 repository foundation checks are green locally, but its iOS and Android development-client gate remains outstanding. DYT-002 implementation is in progress with its physical-device gate pending. DYT-003 implementation is in progress with automated persistence and cleanup checks green; its physical-device gate remains pending. DYT-004A implementation is in progress through the Voice Setup boundary, with its physical accessibility and visual gate pending.
 
 ## Ticket status
 
 Completed: none.
-Active: DYT-001, DYT-002, DYT-003.
+Active: DYT-001, DYT-002, DYT-003, DYT-004.
 Blocked: none.
 Ready for review: none.
 Verified: none.
-Not started: DYT-004 through DYT-012.
+Not started: DYT-005 through DYT-012.
 
 ## Blockers and prerequisites
 
@@ -21,11 +21,11 @@ There is no repository implementation blocker. DYT-001 and DYT-002 still need Ap
 
 ## Latest verified build
 
-Expo SDK 57 repository foundation and DYT-002 recording-spike configuration verified locally on 2026-09-25: clean install, public Expo config, native config introspection, and web export completed; no native signed build was produced. The prototype remains unchanged and is the visual authority for implementation.
+Expo SDK 57 repository foundation, DYT-002 recording-spike configuration, DYT-003 secure persistence, and DYT-004A shell/onboarding configuration verified locally on 2026-09-26: clean install, public Expo config, native config introspection, and web export completed; no native signed build was produced. The prototype remains unchanged and is the visual authority for implementation.
 
 ## Test evidence
 
-2026-09-26: `npm run check` passed formatting, lint, TypeScript, 11 test suites with 55 tests, documentation links/placeholders, and route smoke checks. `npx expo config --type public`, native config introspection, and `npx expo export --platform web` passed for SQLCipher, SecureStore backup configuration, the existing audio recording configuration, and the route graph. Watchman emitted a recrawl warning during Jest but did not affect results. Physical iOS 17+ and Android 12+ development-client, background-recording, secure persistence, and delete-all-data key-removal checks remain pending.
+2026-09-26: `npm run check` passed formatting, lint, TypeScript, 14 test suites with 66 tests, documentation links/placeholders, and route smoke checks. `npx expo config --type public`, native config introspection, and `npx expo export --platform web` passed for SQLCipher, SecureStore backup configuration, audio recording, notification/font/Reanimated/SVG dependencies, and the route graph. Watchman emitted a recrawl warning during Jest and Node emitted the expected SQLite experimental warning; neither affected results. Physical iOS 17+ and Android 12+ development-client, background-recording, secure persistence, delete-all-data key-removal, safe-area, large-text, dark-mode, reduced-motion, keyboard, touch-target, and screen-reader checks remain pending.
 
 ## Dated decisions
 

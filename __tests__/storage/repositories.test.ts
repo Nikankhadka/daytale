@@ -162,6 +162,7 @@ describe('storage repositories', () => {
       notificationsEnabled: true,
       microphonePermissionState: 'granted',
       onboardingComplete: true,
+      onboardingStage: 'voice',
       theme: 'system',
       reducedMotion: false,
       createdAt: t0,

@@ -117,7 +117,7 @@ type OperationRow = SqlRow & {
 const APP_PREFERENCES_COLUMNS = `
   id, first_name, spoken_languages, journal_language, schedule_start_local,
   schedule_end_local, timezone, notifications_enabled, microphone_permission_state,
-  onboarding_complete, theme, reduced_motion, created_at, updated_at`;
+  onboarding_complete, onboarding_stage, theme, reduced_motion, created_at, updated_at`;
 const VOICE_PROFILE_COLUMNS = `
   id, status, sample_count, encrypted_embedding_blob, model_version,
   created_at, updated_at, deleted_at`;
@@ -611,8 +611,8 @@ async function writeAppPreferences(
     INSERT INTO app_preferences (
       id, first_name, spoken_languages, journal_language, schedule_start_local,
       schedule_end_local, timezone, notifications_enabled, microphone_permission_state,
-      onboarding_complete, theme, reduced_motion, created_at, updated_at
-    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+      onboarding_complete, onboarding_stage, theme, reduced_motion, created_at, updated_at
+    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
     ON CONFLICT(id) DO UPDATE SET
       first_name = excluded.first_name,
       spoken_languages = excluded.spoken_languages,
@@ -623,6 +623,7 @@ async function writeAppPreferences(
       notifications_enabled = excluded.notifications_enabled,
       microphone_permission_state = excluded.microphone_permission_state,
       onboarding_complete = excluded.onboarding_complete,
+      onboarding_stage = excluded.onboarding_stage,
       theme = excluded.theme,
       reduced_motion = excluded.reduced_motion,
       created_at = excluded.created_at,
@@ -637,6 +638,7 @@ async function writeAppPreferences(
     sqliteBoolean(record.notificationsEnabled),
     record.microphonePermissionState,
     sqliteBoolean(record.onboardingComplete),
+    record.onboardingStage,
     record.theme,
     sqliteBoolean(record.reducedMotion),
     record.createdAt,
@@ -1142,6 +1144,7 @@ function mapAppPreferences(row: SqlRow): AppPreferences {
     notificationsEnabled: sqliteBooleanValue(row.notifications_enabled, 'notificationsEnabled'),
     microphonePermissionState: row.microphone_permission_state,
     onboardingComplete: sqliteBooleanValue(row.onboarding_complete, 'onboardingComplete'),
+    onboardingStage: row.onboarding_stage,
     theme: row.theme,
     reducedMotion: sqliteBooleanValue(row.reduced_motion, 'reducedMotion'),
     createdAt: row.created_at,

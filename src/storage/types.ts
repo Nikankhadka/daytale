@@ -2,6 +2,8 @@ export type UtcTimestamp = string;
 export type Language = 'en' | 'ne';
 export type Theme = 'system' | 'light' | 'dark';
 export type MicrophonePermissionState = 'undetermined' | 'granted' | 'denied' | 'blocked';
+export const ONBOARDING_STAGES = ['welcome', 'languages', 'schedule', 'privacy', 'voice'] as const;
+export type OnboardingStage = (typeof ONBOARDING_STAGES)[number];
 
 export const RECORDING_SESSION_STATUSES = [
   'scheduled',
@@ -55,6 +57,7 @@ export type AppPreferences = {
   notificationsEnabled: boolean;
   microphonePermissionState: MicrophonePermissionState;
   onboardingComplete: boolean;
+  onboardingStage: OnboardingStage;
   theme: Theme;
   reducedMotion: boolean;
   createdAt: UtcTimestamp;
@@ -344,13 +347,23 @@ function baseRecord(record: Record<string, unknown>): { id: string; createdAt: U
 export function validateAppPreferences(value: unknown): AppPreferences {
   const record = objectRecord(value);
   const base = baseRecord(record);
+  const spokenLanguages = languageArray(record, 'spokenLanguages');
+  const journalLanguage = enumValue(record, 'journalLanguage', ['en', 'ne']);
+  const scheduleStartLocal = timeString(record, 'scheduleStartLocal');
+  const scheduleEndLocal = timeString(record, 'scheduleEndLocal');
+  if (!spokenLanguages.includes(journalLanguage)) {
+    throw new StorageValidationError('journalLanguage');
+  }
+  if (scheduleEndLocal <= scheduleStartLocal) {
+    throw new StorageValidationError('scheduleEndLocal');
+  }
   return {
     ...base,
     firstName: optionalString(record, 'firstName'),
-    spokenLanguages: languageArray(record, 'spokenLanguages'),
-    journalLanguage: enumValue(record, 'journalLanguage', ['en', 'ne']),
-    scheduleStartLocal: timeString(record, 'scheduleStartLocal'),
-    scheduleEndLocal: timeString(record, 'scheduleEndLocal'),
+    spokenLanguages,
+    journalLanguage,
+    scheduleStartLocal,
+    scheduleEndLocal,
     timezone: requiredString(record, 'timezone'),
     notificationsEnabled: booleanValue(record, 'notificationsEnabled'),
     microphonePermissionState: enumValue(record, 'microphonePermissionState', [
@@ -360,6 +373,7 @@ export function validateAppPreferences(value: unknown): AppPreferences {
       'blocked',
     ]),
     onboardingComplete: booleanValue(record, 'onboardingComplete'),
+    onboardingStage: enumValue(record, 'onboardingStage', ONBOARDING_STAGES),
     theme: enumValue(record, 'theme', ['system', 'light', 'dark']),
     reducedMotion: booleanValue(record, 'reducedMotion'),
     updatedAt: timestamp(record, 'updatedAt'),
