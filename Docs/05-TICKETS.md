@@ -4,7 +4,7 @@ Status values are `Not Started`, `In Progress`, `Blocked`, `Ready for Review`, a
 
 | ID | Ticket | Status | Depends on |
 | --- | --- | --- | --- |
-| DYT-001 | Repository foundation | Not Started | None |
+| DYT-001 | Repository foundation | In Progress | None |
 | DYT-002 | Physical background-recording spike | Not Started | DYT-001 |
 | DYT-003 | Secure persistence and session state | Not Started | DYT-001 |
 | DYT-004 | Prototype-faithful shell and onboarding | Not Started | DYT-001, DYT-003 |
@@ -36,6 +36,8 @@ Definition of Done:
 
 Automated verification: clean-install CI, type/lint/test pass, route smoke test, internal-link and placeholder scan.
 Physical-device verification: install and launch on iOS 17+ and Android 12+ development builds.
+
+Evidence to date (2026-09-25): `npm ci`, `npm run check`, `npx expo config --type public`, and `npx expo export --platform web` pass. The repository now contains the Expo Router shell, Zustand session foundation, CI workflow, route smoke check, documentation check, and unit/component tests. Physical iOS and Android development-client verification remains outstanding.
 
 ## DYT-002 - Physical background-recording spike
 

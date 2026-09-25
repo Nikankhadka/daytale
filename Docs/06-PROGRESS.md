@@ -4,28 +4,28 @@ This file records current delivery evidence and decisions. It does not repeat re
 
 ## Current milestone
 
-Canonical documentation baseline complete. Application implementation has not started. The next work item is DYT-001.
+Canonical documentation baseline complete. DYT-001 repository foundation is in progress. The next dependency after its physical-device gate is DYT-002.
 
 ## Ticket status
 
 Completed: none.
-Active: none.
+Active: DYT-001.
 Blocked: none.
 Ready for review: none.
 Verified: none.
-Not started: DYT-001 through DYT-012.
+Not started: DYT-002 through DYT-012.
 
 ## Blockers and prerequisites
 
-There is no implementation blocker. DYT-001 needs Apple and Google developer access for physical development builds. DYT-008 needs the Google Cloud/Firebase project and a paid Gemini service configuration; the key must be provided only when that ticket starts and stored in Secret Manager.
+There is no repository implementation blocker. DYT-001 still needs Apple and Google developer access plus physical devices for development-build verification. DYT-008 needs the Google Cloud/Firebase project and a paid Gemini service configuration; the key must be provided only when that ticket starts and stored in Secret Manager.
 
 ## Latest verified build
 
-None. No application scaffold or distributable build exists yet. The prototype remains unchanged and is the visual authority for implementation.
+Expo SDK 57 repository foundation verified locally on 2026-09-25: public Expo config resolved, web export completed, and no native signed build was produced. The prototype remains unchanged and is the visual authority for implementation.
 
 ## Test evidence
 
-Documentation validation is performed before the documentation commit: clean diff, no unresolved placeholders, valid internal links, complete prototype-screen coverage, and unchanged prototype/image assets. Application test evidence will be added per ticket after DYT-001.
+2026-09-25: `npm ci` succeeded; `npm run check` passed formatting, lint, TypeScript, three test suites with four tests, documentation links/placeholders, and route smoke checks. `npx expo config --type public` resolved the Daytale Expo Router configuration, and `npx expo export --platform web` bundled the route graph successfully. Watchman emitted a recrawl warning during Jest but did not affect results. Physical iOS 17+ and Android 12+ development-client checks remain pending.
 
 ## Dated decisions
 

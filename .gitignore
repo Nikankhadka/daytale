@@ -1,0 +1,22 @@
+node_modules/
+.expo/
+.expo-shared/
+dist/
+coverage/
+.DS_Store
+.env
+.env.*
+!.env.example
+*.jks
+*.p8
+*.p12
+*.key
+*.mobileprovision
+*.orig.*
+
+# Native build output
+ios/
+android/
+
+# Local tooling state
+.hallmark/

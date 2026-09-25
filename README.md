@@ -19,4 +19,15 @@ Requirements belong in exactly one canonical document. Link to that owner instea
 
 ## Current status
 
-Documentation baseline: complete. Application implementation: not started. The next executable work item is [DYT-001](Docs/05-TICKETS.md#dyt-001-repository-foundation).
+Documentation baseline: complete. DYT-001 repository foundation: in progress. The next executable dependency is [DYT-002](Docs/05-TICKETS.md#dyt-002-physical-background-recording-spike).
+
+## Development foundation
+
+Requirements: Node.js 22+, npm 10+, and Expo tooling for local development. Install dependencies and run the verification suite with:
+
+```sh
+npm ci
+npm run check
+```
+
+Start the Expo Router shell with `npm start`. The app currently boots to the Today, Journal, and Settings placeholder tabs. Use `eas build --profile development --platform ios` or `eas build --profile development --platform android` when Apple and Google developer access is available.
