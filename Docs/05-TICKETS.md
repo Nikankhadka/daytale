@@ -6,7 +6,7 @@ Status values are `Not Started`, `In Progress`, `Blocked`, `Ready for Review`, a
 | --- | --- | --- | --- |
 | DYT-001 | Repository foundation | In Progress | None |
 | DYT-002 | Physical background-recording spike | In Progress | DYT-001 |
-| DYT-003 | Secure persistence and session state | Not Started | DYT-001 |
+| DYT-003 | Secure persistence and session state | In Progress | DYT-001 |
 | DYT-004 | Prototype-faithful shell and onboarding | Not Started | DYT-001, DYT-003 |
 | DYT-005 | Voice enrollment and speaker identification | Not Started | DYT-002, DYT-003 |
 | DYT-006 | Production recording and recovery | Not Started | DYT-002, DYT-003, DYT-005 |
@@ -59,7 +59,7 @@ Implementation evidence (2026-09-25): `expo-audio` is configured with explicit b
 
 ## DYT-003 - Secure persistence and session state
 
-Status: `Not Started`
+Status: `In Progress`
 Dependencies: DYT-001
 
 Outcome: Implement SQLCipher through `expo-sqlite`, SecureStore key management, persisted types, state reducer, cleanup worker, and recovery records.
@@ -72,6 +72,8 @@ Definition of Done: records survive process recreation, invalid transitions are 
 
 Automated verification: reducer, schema, migration, deadline, deletion, and cleanup receipt tests.
 Physical-device verification: lock/unlock, restart, low storage, and delete-all-data key removal.
+
+Implementation evidence (2026-09-26): SQLCipher-backed SQLite initialization, SecureStore key management, schema migrations, persisted repositories, reducer-driven idempotent session operations, bounded retry expiry, content-free cleanup receipts, delete-all-data handling, and startup hydration are implemented. `npm run check` passes with 11 suites and 55 tests; physical lock/unlock, restart, low-storage, and delete-all-data key-removal verification remains outstanding.
 
 ## DYT-004 - Prototype-faithful shell and onboarding
 

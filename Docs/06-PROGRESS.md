@@ -4,16 +4,16 @@ This file records current delivery evidence and decisions. It does not repeat re
 
 ## Current milestone
 
-Canonical documentation baseline complete. DYT-001 repository foundation checks are green locally, but its iOS and Android development-client gate remains outstanding. DYT-002 implementation is now in progress; its physical-device gate remains pending.
+Canonical documentation baseline complete. DYT-001 repository foundation checks are green locally, but its iOS and Android development-client gate remains outstanding. DYT-002 implementation is in progress with its physical-device gate pending. DYT-003 implementation is in progress with automated persistence and cleanup checks green; its physical-device gate remains pending.
 
 ## Ticket status
 
 Completed: none.
-Active: DYT-001, DYT-002.
+Active: DYT-001, DYT-002, DYT-003.
 Blocked: none.
 Ready for review: none.
 Verified: none.
-Not started: DYT-003 through DYT-012.
+Not started: DYT-004 through DYT-012.
 
 ## Blockers and prerequisites
 
@@ -25,7 +25,7 @@ Expo SDK 57 repository foundation and DYT-002 recording-spike configuration veri
 
 ## Test evidence
 
-2026-09-25: `npm ci` succeeded; `npm run check` passed formatting, lint, TypeScript, four test suites with eight tests, documentation links/placeholders, and route smoke checks. `npx expo config --type public` resolved the Daytale Expo Router configuration, native config introspection included the iOS audio background mode and microphone usage description plus Android notification, microphone foreground-service permissions, and `AudioRecordingService`, and `npx expo export --platform web` bundled the route graph successfully. Watchman emitted a recrawl warning during Jest but did not affect results. Physical iOS 17+ and Android 12+ development-client and background-recording checks remain pending.
+2026-09-26: `npm run check` passed formatting, lint, TypeScript, 11 test suites with 55 tests, documentation links/placeholders, and route smoke checks. `npx expo config --type public`, native config introspection, and `npx expo export --platform web` passed for SQLCipher, SecureStore backup configuration, the existing audio recording configuration, and the route graph. Watchman emitted a recrawl warning during Jest but did not affect results. Physical iOS 17+ and Android 12+ development-client, background-recording, secure persistence, and delete-all-data key-removal checks remain pending.
 
 ## Dated decisions
 

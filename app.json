@@ -17,6 +17,18 @@
           "enableBackgroundRecording": true,
           "enableBackgroundPlayback": false
         }
+      ],
+      [
+        "expo-sqlite",
+        {
+          "useSQLCipher": true
+        }
+      ],
+      [
+        "expo-secure-store",
+        {
+          "configureAndroidBackup": true
+        }
       ]
     ],
     "experiments": {
