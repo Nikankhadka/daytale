@@ -19,7 +19,7 @@ Status values are `Not Started`, `In Progress`, `Blocked`, `Ready for Review`, a
 
 ## DYT-001 - Repository foundation
 
-Status: `Not Started`
+Status: `In Progress`
 Dependencies: None
 
 Outcome: Create the Expo TypeScript development-build project, Expo Router shell, Zustand foundation, feature folders, CI, linting, type checks, unit/component test harness, and documentation/link checks.
@@ -37,7 +37,7 @@ Definition of Done:
 Automated verification: clean-install CI, type/lint/test pass, route smoke test, internal-link and placeholder scan.
 Physical-device verification: install and launch on iOS 17+ and Android 12+ development builds.
 
-Evidence to date (2026-09-25): `npm ci`, `npm run check`, `npx expo config --type public`, and `npx expo export --platform web` pass. The repository now contains the Expo Router shell, Zustand session foundation, CI workflow, route smoke check, documentation check, and unit/component tests. Physical iOS and Android development-client verification remains outstanding.
+Evidence to date (2026-09-25): `npm ci`, `npm run check`, `npx expo config --type public`, and `npx expo export --platform web` pass. The repository now contains the Expo Router shell, Zustand session foundation, CI workflow, route smoke check, documentation check, unit/component tests, supported Node/npm pins, a secret-free environment template, and repository hygiene rules for generated output and local secrets. Physical iOS and Android development-client verification remains outstanding.
 
 ## DYT-002 - Physical background-recording spike
 

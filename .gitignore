@@ -1,22 +1,46 @@
-node_modules/
+# Dependencies
+/node_modules/
+
+# Expo and generated web output
 .expo/
 .expo-shared/
-dist/
-coverage/
-.DS_Store
+/dist/
+/web-build/
+/coverage/
+expo-env.d.ts
+
+# Generated native projects
+/ios/
+/android/
+.kotlin/
+
+# Metro and debug output
+.metro-health-check*
+npm-debug.*
+yarn-debug.*
+yarn-error.*
+*.log
+
+# Local environment and secrets
 .env
 .env.*
 !.env.example
+*.local
+
+# Native signing material
 *.jks
 *.p8
 *.p12
 *.key
 *.mobileprovision
+*.pem
 *.orig.*
 
-# Native build output
-ios/
-android/
+# TypeScript build output
+*.tsbuildinfo
 
-# Local tooling state
+# Operating-system files
+.DS_Store
+
+# Local agent state
 .hallmark/

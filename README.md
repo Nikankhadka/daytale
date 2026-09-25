@@ -30,4 +30,6 @@ npm ci
 npm run check
 ```
 
+Copy `.env.example` to `.env.local` only when local runtime configuration is needed. Expo public variables are bundled into the app, so secrets do not belong there.
+
 Start the Expo Router shell with `npm start`. The app currently boots to the Today, Journal, and Settings placeholder tabs. Use `eas build --profile development --platform ios` or `eas build --profile development --platform android` when Apple and Google developer access is available.
