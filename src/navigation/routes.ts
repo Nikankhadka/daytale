@@ -8,6 +8,8 @@ export const TAB_ROUTE_PATHS: Record<PrimaryTab, `/(tabs)/${PrimaryTab}`> = {
   settings: '/(tabs)/settings',
 };
 
+export const VOICE_SETUP_ROUTE_PATH = '/voice-setup';
+
 export function routeForOnboardingState(
   onboardingComplete: boolean,
 ): '/onboarding' | '/(tabs)/today' {

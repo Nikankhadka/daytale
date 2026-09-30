@@ -1,4 +1,4 @@
-import { fireEvent, render, waitFor } from '@testing-library/react-native';
+import { act, fireEvent, render, waitFor } from '@testing-library/react-native';
 import type { PermissionResponse } from 'expo';
 import { Linking } from 'react-native';
 
@@ -8,10 +8,15 @@ import {
   persistAppPreferences,
   type PreferencesRepository,
 } from '../../src/features/preferences';
-import { getInitialOnboardingStep, OnboardingScreen } from '../../src/features/onboarding';
+import {
+  getInitialOnboardingStep,
+  OnboardingScreen,
+  READY_AUTO_ADVANCE_MS,
+} from '../../src/features/onboarding';
+import { VOICE_MODEL_VERSION } from '../../src/features/voice/enrollment';
 import { microphonePermissionState } from '../../src/features/permissions';
 import { useSessionStore } from '../../src/state/session';
-import type { AppPreferences } from '../../src/storage/types';
+import type { AppPreferences, VoiceProfile } from '../../src/storage/types';
 
 const now = '2026-09-26T00:00:00.000Z';
 
@@ -25,6 +30,25 @@ function createFakePreferencesRepository() {
     }),
   };
   return { repository, getCurrent: () => current };
+}
+
+async function renderReadyScreen() {
+  const fake = createFakePreferencesRepository();
+  const preferences = mergeAppPreferences(
+    createDefaultAppPreferences(now, 'UTC'),
+    {
+      onboardingStage: 'ready',
+      spokenLanguages: ['en', 'ne'],
+      journalLanguage: 'ne',
+      scheduleStartLocal: '08:30',
+      microphonePermissionState: 'granted',
+    },
+    now,
+  );
+  await fake.repository.save(preferences);
+  useSessionStore.getState().setAppPreferences(preferences);
+  const screen = await render(<OnboardingScreen now={() => now} repository={fake.repository} />);
+  return { fake, screen };
 }
 
 describe('DYT-004A onboarding and preferences', () => {
@@ -178,6 +202,129 @@ describe('DYT-004A onboarding and preferences', () => {
     expect(fake.getCurrent()?.notificationsEnabled).toBe(false);
     expect(fake.getCurrent()?.microphonePermissionState).toBe('blocked');
     openSettings.mockRestore();
+  });
+
+  it('shows the ready confirmation after voice setup without completing onboarding yet', async () => {
+    const fake = createFakePreferencesRepository();
+    const preferences = mergeAppPreferences(
+      createDefaultAppPreferences(now, 'UTC'),
+      { onboardingStage: 'voice', microphonePermissionState: 'granted' },
+      now,
+    );
+    await fake.repository.save(preferences);
+    useSessionStore.getState().setAppPreferences(preferences);
+    let voiceProfile: VoiceProfile | null = null;
+    const voiceProfileRepository = {
+      getById: jest.fn(async () => voiceProfile),
+      findById: jest.fn(async () => voiceProfile),
+      list: jest.fn(async () => []),
+      save: jest.fn(async (next: VoiceProfile) => {
+        voiceProfile = next;
+        return next;
+      }),
+      deleteById: jest.fn(async () => undefined),
+    };
+    const screen = await render(
+      <OnboardingScreen
+        now={() => now}
+        repository={fake.repository}
+        voiceProfileRepository={voiceProfileRepository}
+        speakerProvider={{
+          modelVersion: VOICE_MODEL_VERSION,
+          embeddingFromFile: async () => [1, 0],
+        }}
+        voiceSampleRecorder={{
+          recordSample: async () => 'cache://sample.m4a',
+          discard: async () => undefined,
+        }}
+      />,
+    );
+
+    for (const sample of [1, 2, 3]) {
+      await fireEvent.press(screen.getByText(`Record sample ${sample}`));
+      await waitFor(() =>
+        expect(
+          screen.queryByText(sample === 3 ? "You're all set." : `Sample ${sample + 1} of 3`),
+        ).toBeTruthy(),
+      );
+    }
+
+    expect(voiceProfileRepository.save).toHaveBeenCalledTimes(1);
+    expect(fake.getCurrent()?.onboardingStage).toBe('ready');
+    expect(fake.getCurrent()?.onboardingComplete).toBe(false);
+    expect(useSessionStore.getState().onboardingComplete).toBe(false);
+  });
+
+  it('greets the user with their schedule and languages on the ready screen', async () => {
+    const { screen } = await renderReadyScreen();
+
+    expect(screen.getByText("You're all set.")).toBeTruthy();
+    expect(screen.getByText('Daytale will greet you at 08:30 every day.')).toBeTruthy();
+    expect(screen.getByText('🇬🇧 English')).toBeTruthy();
+    expect(screen.getByText('🇳🇵 Nepali')).toBeTruthy();
+    expect(screen.getByText('Journal in Nepali')).toBeTruthy();
+    expect(screen.getByText('Skip the wait - Go to Today →')).toBeTruthy();
+  });
+
+  it('completes onboarding only when the user skips the wait', async () => {
+    const { fake, screen } = await renderReadyScreen();
+
+    expect(fake.getCurrent()?.onboardingComplete).toBe(false);
+    await fireEvent.press(screen.getByText('Skip the wait - Go to Today →'));
+
+    await waitFor(() => expect(fake.getCurrent()?.onboardingComplete).toBe(true));
+    expect(useSessionStore.getState().onboardingComplete).toBe(true);
+  });
+
+  describe('ready auto-advance', () => {
+    beforeEach(() => {
+      jest.useFakeTimers();
+    });
+
+    afterEach(() => {
+      jest.useRealTimers();
+    });
+
+    it('completes onboarding by itself after the celebration delay', async () => {
+      const { fake } = await renderReadyScreen();
+
+      await act(async () => {
+        jest.advanceTimersByTime(READY_AUTO_ADVANCE_MS - 1);
+      });
+      expect(fake.getCurrent()?.onboardingComplete).toBe(false);
+
+      await act(async () => {
+        jest.advanceTimersByTime(1);
+      });
+      expect(fake.getCurrent()?.onboardingComplete).toBe(true);
+      expect(useSessionStore.getState().onboardingComplete).toBe(true);
+      expect(READY_AUTO_ADVANCE_MS).toBe(1700);
+    });
+
+    it('clears the timer when the screen unmounts first', async () => {
+      const { fake, screen } = await renderReadyScreen();
+
+      await screen.unmount();
+      await act(async () => {
+        jest.advanceTimersByTime(READY_AUTO_ADVANCE_MS * 2);
+      });
+
+      expect(fake.getCurrent()?.onboardingComplete).toBe(false);
+    });
+  });
+
+  it('resumes on the ready screen after an interrupted launch', () => {
+    const ready = mergeAppPreferences(
+      createDefaultAppPreferences(now, 'UTC'),
+      { onboardingStage: 'ready' },
+      now,
+    );
+
+    expect(getInitialOnboardingStep(ready)).toBe('ready');
+    expect(getInitialOnboardingStep({ ...ready, onboardingComplete: true })).toBe('ready');
+    expect(
+      getInitialOnboardingStep({ ...ready, onboardingComplete: true, onboardingStage: 'welcome' }),
+    ).toBe('voice');
   });
 });
 

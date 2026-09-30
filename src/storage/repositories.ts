@@ -47,6 +47,10 @@ export type EntityRepository<T extends { id: string }> = {
   list: () => Promise<T[]>;
 };
 
+export type VoiceProfileRepository = EntityRepository<VoiceProfile> & {
+  deleteById: (id: string) => Promise<void>;
+};
+
 export type RecordingSessionOperationResult = {
   operation: RecordingOperation;
   session: RecordingSession;
@@ -55,7 +59,7 @@ export type RecordingSessionOperationResult = {
 
 export type StorageRepositories = {
   appPreferences: EntityRepository<AppPreferences>;
-  voiceProfiles: EntityRepository<VoiceProfile>;
+  voiceProfiles: VoiceProfileRepository;
   recordingSessions: EntityRepository<RecordingSession>;
   audioChunks: EntityRepository<AudioChunk>;
   transcriptSegments: EntityRepository<TranscriptSegment>;
@@ -154,10 +158,11 @@ export function createStorageRepositories(database: MigrationDatabase): StorageR
       (id) => getAppPreferences(database, id),
       () => listAppPreferences(database),
     ),
-    voiceProfiles: createEntityRepository(
+    voiceProfiles: createVoiceProfileRepository(
       (value) => saveVoiceProfile(database, value),
       (id) => getVoiceProfile(database, id),
       () => listVoiceProfiles(database),
+      (id) => deleteVoiceProfile(database, id),
     ),
     recordingSessions: createEntityRepository(
       (value) => saveRecordingSession(database, value),
@@ -263,6 +268,13 @@ export async function listVoiceProfiles(database: MigrationDatabase): Promise<Vo
     `SELECT ${VOICE_PROFILE_COLUMNS} FROM voice_profiles${ORDER_BY_ID}`,
   );
   return rows.map(mapVoiceProfile);
+}
+
+export async function deleteVoiceProfile(database: MigrationDatabase, id: string): Promise<void> {
+  const validatedId = validateStorageId(id);
+  await withExclusiveTransaction(database, async (transaction) => {
+    await run(transaction, 'DELETE FROM voice_profiles WHERE id = ?', validatedId);
+  });
 }
 
 export async function saveRecordingSession(
@@ -599,6 +611,15 @@ function createEntityRepository<T extends { id: string }>(
   list: () => Promise<T[]>,
 ): EntityRepository<T> {
   return { save, getById, findById: getById, list };
+}
+
+function createVoiceProfileRepository(
+  save: (value: VoiceProfile) => Promise<VoiceProfile>,
+  getById: (id: string) => Promise<VoiceProfile | null>,
+  list: () => Promise<VoiceProfile[]>,
+  deleteById: (id: string) => Promise<void>,
+): VoiceProfileRepository {
+  return { save, getById, findById: getById, list, deleteById };
 }
 
 async function writeAppPreferences(

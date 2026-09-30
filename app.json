@@ -31,7 +31,8 @@
         }
       ],
       "expo-notifications",
-      "expo-font"
+      "expo-font",
+      "@siteed/sherpa-onnx.rn"
     ],
     "experiments": {
       "typedRoutes": true

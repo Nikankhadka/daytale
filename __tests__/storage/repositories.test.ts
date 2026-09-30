@@ -617,6 +617,50 @@ describe('storage repositories', () => {
     ).rejects.toBeInstanceOf(StorageRepositoryError);
   });
 
+  it('persists the ready onboarding stage and deletes a voice profile atomically', async () => {
+    const repositories = createStorageRepositories(database);
+    const preferences: AppPreferences = {
+      id: ids.preferences,
+      spokenLanguages: ['en'],
+      journalLanguage: 'en',
+      scheduleStartLocal: '08:00',
+      scheduleEndLocal: '20:00',
+      timezone: 'UTC',
+      notificationsEnabled: false,
+      microphonePermissionState: 'granted',
+      onboardingComplete: false,
+      onboardingStage: 'ready',
+      theme: 'system',
+      reducedMotion: false,
+      createdAt: t0,
+      updatedAt: t1,
+    };
+    const voiceProfile: VoiceProfile = {
+      id: ids.voice,
+      status: 'ready',
+      sampleCount: 3,
+      encryptedEmbeddingBlob: 'opaque-encrypted-embedding',
+      modelVersion: 'model-1',
+      createdAt: t0,
+      updatedAt: t1,
+    };
+
+    await repositories.appPreferences.save(preferences);
+    await repositories.voiceProfiles.save(voiceProfile);
+    await repositories.voiceProfiles.save({ ...voiceProfile, updatedAt: t2 });
+
+    expect(await repositories.appPreferences.getById(ids.preferences)).toEqual(preferences);
+    expect(await repositories.voiceProfiles.list()).toHaveLength(1);
+
+    await repositories.voiceProfiles.deleteById(ids.voice);
+    expect(await repositories.voiceProfiles.getById(ids.voice)).toBeNull();
+    await expect(repositories.voiceProfiles.deleteById(ids.voice)).resolves.toBeUndefined();
+    await expect(repositories.voiceProfiles.deleteById('not-a-uuid')).rejects.toBeInstanceOf(
+      StorageValidationError,
+    );
+    expect(await repositories.appPreferences.getById(ids.preferences)).toEqual(preferences);
+  });
+
   it('validates lookup ids at the repository boundary', async () => {
     const repositories = createStorageRepositories(database);
     await expect(repositories.recordingSessions.getById('not-a-uuid')).rejects.toBeInstanceOf(

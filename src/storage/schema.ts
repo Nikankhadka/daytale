@@ -1,4 +1,4 @@
-export const DATABASE_SCHEMA_VERSION = 4;
+export const DATABASE_SCHEMA_VERSION = 5;
 
 function uuidConstraint(column: string): string {
   return `length(${column}) = 36 AND length(replace(${column}, '-', '')) = 32 AND substr(${column}, 9, 1) = '-' AND substr(${column}, 14, 1) = '-' AND substr(${column}, 19, 1) = '-' AND substr(${column}, 24, 1) = '-' AND ${column} NOT GLOB '*[^0-9A-Fa-f-]*' AND substr(${column}, 15, 1) GLOB '[1-5]' AND substr(${column}, 20, 1) GLOB '[89abAB]'`;
@@ -29,9 +29,7 @@ function utcConstraint(column: string): string {
   ].join(' AND ');
 }
 
-export const CREATE_SCHEMA_STATEMENTS = [
-  `CREATE TABLE IF NOT EXISTS app_preferences (
-    id TEXT PRIMARY KEY NOT NULL CHECK (${UUID_CONSTRAINT}),
+const APP_PREFERENCES_COLUMNS_SQL = `id TEXT PRIMARY KEY NOT NULL CHECK (${UUID_CONSTRAINT}),
     first_name TEXT,
     spoken_languages TEXT NOT NULL,
     journal_language TEXT NOT NULL CHECK (journal_language IN ('en', 'ne')),
@@ -44,8 +42,10 @@ export const CREATE_SCHEMA_STATEMENTS = [
     theme TEXT NOT NULL CHECK (theme IN ('system', 'light', 'dark')),
     reduced_motion INTEGER NOT NULL CHECK (reduced_motion IN (0, 1)),
     created_at TEXT NOT NULL CHECK (${utcConstraint('created_at')}),
-    updated_at TEXT NOT NULL CHECK (${utcConstraint('updated_at')})
-  )`,
+    updated_at TEXT NOT NULL CHECK (${utcConstraint('updated_at')})`;
+
+export const CREATE_SCHEMA_STATEMENTS = [
+  `CREATE TABLE IF NOT EXISTS app_preferences (${APP_PREFERENCES_COLUMNS_SQL})`,
   `CREATE TABLE IF NOT EXISTS voice_profiles (
     id TEXT PRIMARY KEY NOT NULL CHECK (${UUID_CONSTRAINT}),
     status TEXT NOT NULL CHECK (status IN ('pending', 'ready', 'deleted')),
@@ -176,9 +176,20 @@ export const CREATE_ONBOARDING_STAGE_SCHEMA_STATEMENTS = [
   `UPDATE app_preferences SET onboarding_stage = 'voice' WHERE onboarding_complete = 1`,
 ] as const;
 
+// SQLite cannot widen a CHECK constraint in place, so 'ready' needs a table rebuild.
+export const CREATE_READY_ONBOARDING_STAGE_SCHEMA_STATEMENTS = [
+  `CREATE TABLE app_preferences_next (${APP_PREFERENCES_COLUMNS_SQL},
+    onboarding_stage TEXT NOT NULL DEFAULT 'welcome' CHECK (onboarding_stage IN ('welcome', 'languages', 'schedule', 'privacy', 'voice', 'ready'))
+  )`,
+  `INSERT INTO app_preferences_next SELECT id, first_name, spoken_languages, journal_language, schedule_start_local, schedule_end_local, timezone, notifications_enabled, microphone_permission_state, onboarding_complete, theme, reduced_motion, created_at, updated_at, onboarding_stage FROM app_preferences`,
+  'DROP TABLE app_preferences',
+  'ALTER TABLE app_preferences_next RENAME TO app_preferences',
+] as const;
+
 export const SCHEMA_SQL = `${[
   ...CREATE_SCHEMA_STATEMENTS,
   ...CREATE_OPERATION_SCHEMA_STATEMENTS,
   ...CREATE_RETRY_TARGET_SCHEMA_STATEMENTS,
   ...CREATE_ONBOARDING_STAGE_SCHEMA_STATEMENTS,
+  ...CREATE_READY_ONBOARDING_STAGE_SCHEMA_STATEMENTS,
 ].join(';\n')};`;

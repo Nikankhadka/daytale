@@ -9,6 +9,7 @@ import { type AppPreferences, validateAppPreferences } from '../../storage/types
 import { useSessionStore } from '../../state/session';
 import { PrimaryButton, ScreenScaffold } from '../../shared/ui/ScreenScaffold';
 import { useDaytaleTheme } from '../../theme/useDaytaleTheme';
+import { VoiceProfileCard } from '../voice/VoiceProfileCard';
 import { deleteAllAppData } from './deleteData';
 
 export const APP_PREFERENCES_ID = '00000000-0000-4000-8000-000000000004';
@@ -242,6 +243,8 @@ export function PreferencesSettingsScreen() {
         onPress={() => void save({ scheduleStartLocal, scheduleEndLocal })}
         secondary
       />
+
+      <VoiceProfileCard />
 
       <Text style={[styles.sectionTitle, typography.heading, { color: colors.ink }]}>Data</Text>
       {!confirmingDelete ? (

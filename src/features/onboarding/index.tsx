@@ -7,28 +7,42 @@ import { useSessionStore } from '../../state/session';
 import { PrimaryButton, ScreenScaffold } from '../../shared/ui/ScreenScaffold';
 import { useDaytaleTheme } from '../../theme/useDaytaleTheme';
 import type { AppPreferences, Language } from '../../storage/types';
+import type { VoiceProfileRepository } from '../../storage/repositories';
 import {
   expoPermissionGateway,
   microphonePermissionState,
   type PermissionGateway,
 } from '../permissions';
+import { VoiceSetupScreen, type VoiceSampleRecorder } from '../voice/VoiceSetupScreen';
+import type { SpeakerEmbeddingProvider } from '../voice/enrollment';
 
-export type OnboardingStep = 'welcome' | 'languages' | 'schedule' | 'privacy' | 'voice';
+export type OnboardingStep = 'welcome' | 'languages' | 'schedule' | 'privacy' | 'voice' | 'ready';
+
+export const READY_AUTO_ADVANCE_MS = 1700;
+
+const LANGUAGE_TAGS: Record<Language, string> = { en: '🇬🇧 English', ne: '🇳🇵 Nepali' };
 
 export type OnboardingScreenProps = {
   repository?: PreferencesRepository;
   permissionGateway?: PermissionGateway;
+  voiceProfileRepository?: VoiceProfileRepository;
+  speakerProvider?: SpeakerEmbeddingProvider;
+  voiceSampleRecorder?: VoiceSampleRecorder;
   now?: () => string;
   timezone?: string;
 };
 
 export function getInitialOnboardingStep(preferences: AppPreferences | null): OnboardingStep {
-  return preferences?.onboardingComplete ? 'voice' : (preferences?.onboardingStage ?? 'welcome');
+  const stage = preferences?.onboardingStage ?? 'welcome';
+  return preferences?.onboardingComplete && stage !== 'ready' ? 'voice' : stage;
 }
 
 export function OnboardingScreen({
   repository,
   permissionGateway = expoPermissionGateway,
+  voiceProfileRepository,
+  speakerProvider,
+  voiceSampleRecorder,
   now,
   timezone,
 }: OnboardingScreenProps = {}) {
@@ -300,14 +314,33 @@ export function OnboardingScreen({
     );
   }
 
+  if (step === 'ready') {
+    return (
+      <ReadyStep
+        scheduleStart={scheduleStartLocal}
+        spokenLanguages={spokenLanguages}
+        journalLanguage={journalLanguage}
+        saving={saving}
+        error={error}
+        onFinish={async () => {
+          await save({ onboardingComplete: true, onboardingStage: 'ready' });
+        }}
+      />
+    );
+  }
+
   return (
-    <ScreenScaffold
-      title="Voice setup"
-      description="Your microphone is ready. Voice setup arrives in the next slice."
-      mascotState="ready"
-    >
-      <Text style={bodyStyle}>Daytale will not start recording until you choose to record.</Text>
-    </ScreenScaffold>
+    <VoiceSetupScreen
+      profileRepository={voiceProfileRepository}
+      speakerProvider={speakerProvider}
+      sampleRecorder={voiceSampleRecorder}
+      now={now}
+      onComplete={async () => {
+        if (await save({ onboardingStage: 'ready' })) {
+          setStep('ready');
+        }
+      }}
+    />
   );
 
   function toggleLanguage(language: Language) {
@@ -324,6 +357,81 @@ export function OnboardingScreen({
       current.includes(language) ? current : [...current, language],
     );
   }
+}
+
+function ReadyStep({
+  scheduleStart,
+  spokenLanguages,
+  journalLanguage,
+  saving,
+  error,
+  onFinish,
+}: {
+  scheduleStart: string;
+  spokenLanguages: Language[];
+  journalLanguage: Language;
+  saving: boolean;
+  error?: string;
+  onFinish: () => Promise<void>;
+}) {
+  const { colors, radii, typography } = useDaytaleTheme();
+  const onFinishRef = React.useRef(onFinish);
+  React.useEffect(() => {
+    onFinishRef.current = onFinish;
+  });
+  React.useEffect(() => {
+    const timer = setTimeout(() => void onFinishRef.current(), READY_AUTO_ADVANCE_MS);
+    return () => clearTimeout(timer);
+  }, []);
+
+  return (
+    <ScreenScaffold
+      title="You're all set."
+      description={`Daytale will greet you at ${scheduleStart} every day.`}
+      mascotState="celebrating"
+      error={error}
+      footer={
+        <PrimaryButton
+          label="Skip the wait - Go to Today →"
+          onPress={() => void onFinish()}
+          disabled={saving}
+          secondary
+        />
+      }
+    >
+      <View style={styles.tagRow}>
+        {spokenLanguages.map((language) => (
+          <Text
+            key={language}
+            style={[
+              typography.caption,
+              styles.tag,
+              {
+                backgroundColor: colors.primarySoft,
+                borderRadius: radii.control,
+                color: colors.primary,
+              },
+            ]}
+          >
+            {LANGUAGE_TAGS[language]}
+          </Text>
+        ))}
+        <Text
+          style={[
+            typography.caption,
+            styles.tag,
+            {
+              backgroundColor: colors.surfaceMuted,
+              borderRadius: radii.control,
+              color: colors.muted,
+            },
+          ]}
+        >
+          Journal in {journalLanguage === 'ne' ? 'Nepali' : 'English'}
+        </Text>
+      </View>
+    </ScreenScaffold>
+  );
 }
 
 function LanguageOption({
@@ -388,6 +496,8 @@ const styles = StyleSheet.create({
   option: { borderWidth: 1, marginBottom: 10, padding: 16 },
   timeField: { marginBottom: 16 },
   input: { borderWidth: 1, marginTop: 6, minHeight: 48, paddingHorizontal: 14 },
+  tagRow: { flexDirection: 'row', flexWrap: 'wrap', gap: 6 },
+  tag: { overflow: 'hidden', paddingHorizontal: 10, paddingVertical: 4 },
   switchRow: {
     alignItems: 'center',
     flexDirection: 'row',

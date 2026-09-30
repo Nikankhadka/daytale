@@ -89,6 +89,7 @@ export class RecordingSpikeAdapter {
   public constructor(
     private readonly recorder: RecordingRecorder,
     private readonly native: RecordingNative = expoAudioNative,
+    private readonly targetSeconds = SPIKE_CHUNK_TARGET_SECONDS,
   ) {}
 
   public get state(): RecordingState {
@@ -147,7 +148,7 @@ export class RecordingSpikeAdapter {
         return;
       }
 
-      this.recorder.record({ forDuration: SPIKE_CHUNK_TARGET_SECONDS });
+      this.recorder.record({ forDuration: this.targetSeconds });
       this.currentState = 'recording';
     });
   }
@@ -170,7 +171,7 @@ export class RecordingSpikeAdapter {
       }
 
       const elapsedSeconds = this.recorder.currentTime ?? 0;
-      const remainingSeconds = SPIKE_CHUNK_TARGET_SECONDS - elapsedSeconds;
+      const remainingSeconds = this.targetSeconds - elapsedSeconds;
       if (remainingSeconds <= 0) {
         await this.recorder.stop();
         this.currentState = 'stopped';
@@ -218,6 +219,7 @@ export class RecordingSpikeAdapter {
 export function createRecordingSpikeAdapter(
   recorder: RecordingRecorder,
   native: RecordingNative = expoAudioNative,
+  targetSeconds = SPIKE_CHUNK_TARGET_SECONDS,
 ): RecordingSpikeAdapter {
-  return new RecordingSpikeAdapter(recorder, native);
+  return new RecordingSpikeAdapter(recorder, native, targetSeconds);
 }

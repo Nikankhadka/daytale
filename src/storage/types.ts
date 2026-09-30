@@ -2,7 +2,14 @@ export type UtcTimestamp = string;
 export type Language = 'en' | 'ne';
 export type Theme = 'system' | 'light' | 'dark';
 export type MicrophonePermissionState = 'undetermined' | 'granted' | 'denied' | 'blocked';
-export const ONBOARDING_STAGES = ['welcome', 'languages', 'schedule', 'privacy', 'voice'] as const;
+export const ONBOARDING_STAGES = [
+  'welcome',
+  'languages',
+  'schedule',
+  'privacy',
+  'voice',
+  'ready',
+] as const;
 export type OnboardingStage = (typeof ONBOARDING_STAGES)[number];
 
 export const RECORDING_SESSION_STATUSES = [

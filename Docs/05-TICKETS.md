@@ -8,7 +8,7 @@ Status values are `Not Started`, `In Progress`, `Blocked`, `Ready for Review`, a
 | DYT-002 | Physical background-recording spike | In Progress | DYT-001 |
 | DYT-003 | Secure persistence and session state | In Progress | DYT-001 |
 | DYT-004 | Prototype-faithful shell and onboarding | In Progress | DYT-001, DYT-003 |
-| DYT-005 | Voice enrollment and speaker identification | Not Started | DYT-002, DYT-003 |
+| DYT-005 | Voice enrollment and speaker identification | Ready for Review | DYT-002, DYT-003 |
 | DYT-006 | Production recording and recovery | Not Started | DYT-002, DYT-003, DYT-005 |
 | DYT-007 | Local transcription | Not Started | DYT-005, DYT-006 |
 | DYT-008 | Cloud Run and Gemini journal API | Not Started | DYT-001 |
@@ -95,7 +95,7 @@ Implementation evidence (2026-09-26): DYT-004A implements the three-tab route sh
 
 ## DYT-005 - Voice enrollment and speaker identification
 
-Status: `Not Started`
+Status: `Ready for Review`
 Dependencies: DYT-002, DYT-003
 
 Outcome: Capture three guided samples, encrypt the local embedding, provide re-record/delete, and classify user/other/unknown with conservative thresholds using sherpa-onnx.
@@ -108,6 +108,8 @@ Definition of Done: profile is encrypted and local, three samples are required, 
 
 Automated verification: sample flow, encryption boundary, threshold, multi-speaker, silence, and delete tests.
 Physical-device verification: microphone routes, background interruption, re-enrollment, and memory/storage behavior.
+
+Implementation evidence (2026-09-30): Voice Setup requires three guided samples with per-sample delete and retry and no skip, averages the sherpa-onnx CAM++ embeddings, and stores only an opaque encrypted envelope in the SQLCipher `voice_profiles` table once all three samples succeed; sample audio files are discarded after analysis. Speaker classification returns `unknown` below the calibrated user threshold, for ambiguous multi-speaker matches, for silence, and for profiles from another model version. The English CAM++ model (`3dspeaker_speech_campplus_sv_en_voxceleb_16k.onnx`, 29,596,978 bytes, sha256 `357a834f702b80161e5b981182c038e18553c1f2ca752ed6cec2052365d4129b`) is downloaded on first use into the app document directory and verified by size and md5 before use. Onboarding continues from Voice Setup to Ready, and onboarding completes only when Ready is left. Settings shows voice profile status with Re-record voice and Delete voice profile with confirmation; deletion runs in an exclusive transaction and the next enrollment requires three new samples. Schema v5 adds the `ready` onboarding stage through a table rebuild. `npm run check` passes formatting, lint, TypeScript, 19 test suites with 109 tests, documentation checks, and route smoke checks; web export and public Expo config pass. Physical-device verification of model download, M4A embedding extraction, microphone routes, interruption, re-enrollment, and memory/storage behavior remains outstanding.
 
 ## DYT-006 - Production recording and recovery
 
