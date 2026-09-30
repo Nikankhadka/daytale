@@ -38,7 +38,7 @@ export type RecordingSessionAdvanceTarget =
 
 export type RecordingSessionAction =
   | { type: 'start'; at: UtcTimestamp }
-  | { type: 'pause'; at: UtcTimestamp }
+  | { type: 'pause'; at: UtcTimestamp; failureCode?: string }
   | { type: 'resume'; at: UtcTimestamp }
   | { type: 'stop'; at: UtcTimestamp }
   | { type: 'scheduled-end' | 'scheduled_end' | 'scheduledEnd'; at: UtcTimestamp }
@@ -96,6 +96,7 @@ export function recordingSessionReducer(
       }
       return transition(current, 'paused', action.at, {
         pauseIntervals: [...current.pauseIntervals, { startedAt: action.at }],
+        failureCode: action.failureCode,
       });
     case 'resume': {
       if (current.status !== 'paused' || current.actualStart === undefined) {
@@ -107,6 +108,7 @@ export function recordingSessionReducer(
       }
       return transition(current, 'recording', action.at, {
         pauseIntervals,
+        failureCode: undefined,
       });
     }
     case 'stop':
@@ -129,6 +131,7 @@ export function recordingSessionReducer(
       return transition(current, 'transcribing', action.at, {
         actualEnd: action.at,
         pauseIntervals,
+        failureCode: undefined,
       });
     }
     case 'advance':

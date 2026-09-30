@@ -1,4 +1,4 @@
-export const DATABASE_SCHEMA_VERSION = 5;
+export const DATABASE_SCHEMA_VERSION = 6;
 
 function uuidConstraint(column: string): string {
   return `length(${column}) = 36 AND length(replace(${column}, '-', '')) = 32 AND substr(${column}, 9, 1) = '-' AND substr(${column}, 14, 1) = '-' AND substr(${column}, 19, 1) = '-' AND substr(${column}, 24, 1) = '-' AND ${column} NOT GLOB '*[^0-9A-Fa-f-]*' AND substr(${column}, 15, 1) GLOB '[1-5]' AND substr(${column}, 20, 1) GLOB '[89abAB]'`;
@@ -186,10 +186,16 @@ export const CREATE_READY_ONBOARDING_STAGE_SCHEMA_STATEMENTS = [
   'ALTER TABLE app_preferences_next RENAME TO app_preferences',
 ] as const;
 
+// Closed chunk audio is stored inside the SQLCipher database so it is encrypted at rest.
+export const CREATE_AUDIO_BLOB_SCHEMA_STATEMENTS = [
+  'ALTER TABLE audio_chunks ADD COLUMN audio BLOB',
+] as const;
+
 export const SCHEMA_SQL = `${[
   ...CREATE_SCHEMA_STATEMENTS,
   ...CREATE_OPERATION_SCHEMA_STATEMENTS,
   ...CREATE_RETRY_TARGET_SCHEMA_STATEMENTS,
   ...CREATE_ONBOARDING_STAGE_SCHEMA_STATEMENTS,
   ...CREATE_READY_ONBOARDING_STAGE_SCHEMA_STATEMENTS,
+  ...CREATE_AUDIO_BLOB_SCHEMA_STATEMENTS,
 ].join(';\n')};`;

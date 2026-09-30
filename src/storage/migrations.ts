@@ -1,6 +1,7 @@
 import type { SQLiteBindValue, SQLiteRunResult } from 'expo-sqlite';
 
 import {
+  CREATE_AUDIO_BLOB_SCHEMA_STATEMENTS,
   CREATE_OPERATION_SCHEMA_STATEMENTS,
   CREATE_ONBOARDING_STAGE_SCHEMA_STATEMENTS,
   CREATE_READY_ONBOARDING_STAGE_SCHEMA_STATEMENTS,
@@ -47,8 +48,12 @@ export const MIGRATIONS: readonly Migration[] = [
     statements: CREATE_ONBOARDING_STAGE_SCHEMA_STATEMENTS,
   },
   {
-    version: DATABASE_SCHEMA_VERSION,
+    version: 5,
     statements: CREATE_READY_ONBOARDING_STAGE_SCHEMA_STATEMENTS,
+  },
+  {
+    version: DATABASE_SCHEMA_VERSION,
+    statements: CREATE_AUDIO_BLOB_SCHEMA_STATEMENTS,
   },
 ];
 

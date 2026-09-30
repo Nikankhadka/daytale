@@ -2,11 +2,11 @@ import type { PermissionResponse } from 'expo';
 import type { RecordingStatus } from 'expo-audio';
 
 import {
-  createRecordingSpikeAdapter,
+  CHUNK_ROTATION_SECONDS,
   RECORDING_AUDIO_MODE,
   RECORDING_OPTIONS,
-  SPIKE_CHUNK_TARGET_SECONDS,
-} from '../../src/features/recording/spike/adapter';
+} from '../../src/features/recording/recorder';
+import { createRecordingSpikeAdapter } from '../../src/features/recording/spike/adapter';
 
 const permissionResponse = (granted: boolean): PermissionResponse => ({
   status: (granted ? 'granted' : 'denied') as PermissionResponse['status'],
@@ -74,10 +74,10 @@ describe('RecordingSpikeAdapter', () => {
     expect(fakes.recorder.prepareToRecordAsync).toHaveBeenCalledWith(RECORDING_OPTIONS);
     expect(fakes.recorder.record).toHaveBeenCalledTimes(2);
     expect(fakes.recorder.record).toHaveBeenNthCalledWith(1, {
-      forDuration: SPIKE_CHUNK_TARGET_SECONDS,
+      forDuration: CHUNK_ROTATION_SECONDS,
     });
     expect(fakes.recorder.record).toHaveBeenNthCalledWith(2, {
-      forDuration: SPIKE_CHUNK_TARGET_SECONDS,
+      forDuration: CHUNK_ROTATION_SECONDS,
     });
     expect(fakes.recorder.pause).toHaveBeenCalledTimes(1);
     expect(fakes.recorder.stop).toHaveBeenCalledTimes(1);

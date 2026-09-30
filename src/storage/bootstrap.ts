@@ -1,3 +1,5 @@
+import { recoverOnLaunch } from '../features/recording/recovery';
+import { sweepExpiredSessions } from './cleanup';
 import { initializeDatabase, type DatabaseDependencies, type SQLiteDatabaseLike } from './database';
 import { createStorageRepositories, type StorageRepositories } from './repositories';
 import { useSessionStore } from '../state/session';
@@ -54,6 +56,10 @@ async function initializeStorage(
       throw new StorageBootstrapError();
     }
     const repositories = createStorageRepositories(database);
+    // Crash recovery and expiry cleanup must never stop the app from opening.
+    const launchedAt = new Date();
+    await recoverOnLaunch(repositories, launchedAt).catch(() => undefined);
+    await sweepExpiredSessions(database, repositories, launchedAt).catch(() => undefined);
     const sessions = await repositories.recordingSessions.list();
     const latest = findLatestSession(sessions);
     const preferences = await repositories.appPreferences.list();

@@ -37,6 +37,8 @@ export async function initializeDatabase(
     database = await openDatabase(DATABASE_NAME);
     await database.execAsync(`PRAGMA key = '${escapeSqliteString(databaseKey)}';`);
     await database.execAsync('PRAGMA foreign_keys = ON;');
+    // Deleted rows, including closed-chunk audio blobs, are overwritten instead of left in free pages.
+    await database.execAsync('PRAGMA secure_delete = ON;');
     await database.getFirstAsync<{ table_count: number }>(
       "SELECT count(*) AS table_count FROM sqlite_master WHERE type = 'table';",
     );

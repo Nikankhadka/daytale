@@ -137,7 +137,7 @@ All records have a UUID primary key and `createdAt`/`updatedAt` timestamps in UT
 
 `id`, `sessionId`, `sequence`, `startedAt`, `endedAt?`, `codec`, `sampleRate`, `encryptedPath`, `sha256`, `state` (`active`, `closed`, `transcribed`, `deleted`), `deleteAfter`, `createdAt`.
 
-Chunks are compressed mono audio in the protected app sandbox. A closed chunk is encrypted before it is eligible for processing. After a crash, only the active chunk is recovered; an incomplete chunk is marked discarded if integrity cannot be proven.
+Chunks are compressed mono audio captured to an opaque path in the protected app sandbox. A closed chunk is hashed, copied into the `audio` column of the SQLCipher database (encrypted at rest, `secure_delete` on), and its plaintext capture file is deleted before the next chunk opens; only then is it eligible for processing. `deleteAfter` is the close time plus 24 hours. After a crash, only the active chunk is recovered; an incomplete chunk is marked discarded if integrity cannot be proven.
 
 ### `TranscriptSegment`
 
@@ -250,7 +250,7 @@ References: [Gemini models](https://ai.google.dev/gemini-api/docs/models), [stru
 ## 8. Security, privacy, and deletion
 
 - SecureStore holds the SQLCipher database key and any platform credentials needed for App Check. Key access is least-privilege and failures fail closed.
-- Audio file paths are opaque UUID paths under the protected sandbox. Closed chunks are encrypted before processing.
+- Audio file paths are opaque UUID paths under the protected sandbox and hold only the active chunk. Closed chunks live encrypted inside the SQLCipher database before processing, and the plaintext capture file is removed.
 - App Check tokens are attached by the API client and refreshed through the supported Firebase flow. Gemini credentials never ship to the app.
 - The app redacts diagnostics to route, state, error code, duration, OS version, and app version. It excludes names, audio, transcripts, embeddings, journal text, and custom behavioral analytics.
 - Delete journal removes the journal and its source receipt reference but never silently removes another journal.

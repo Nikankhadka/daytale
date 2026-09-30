@@ -9,6 +9,7 @@ import { type AppPreferences, validateAppPreferences } from '../../storage/types
 import { useSessionStore } from '../../state/session';
 import { PrimaryButton, ScreenScaffold } from '../../shared/ui/ScreenScaffold';
 import { useDaytaleTheme } from '../../theme/useDaytaleTheme';
+import { syncDailyPrompt } from '../recording/notifications';
 import { VoiceProfileCard } from '../voice/VoiceProfileCard';
 import { deleteAllAppData } from './deleteData';
 
@@ -99,6 +100,9 @@ export async function persistAppPreferences(
   );
   const saved = repository ? await repository.save(next) : next;
   useSessionStore.getState().setAppPreferences(saved);
+  // Onboarding finishing and a schedule change both land here, so one call keeps the daily
+  // reminder in step with what was saved. It never throws: a reminder must not fail a save.
+  await syncDailyPrompt(saved);
   return saved;
 }
 

@@ -9,6 +9,12 @@ import { applyMigrations, type MigrationDatabase } from '../../src/storage/migra
 import { createStorageRepositories } from '../../src/storage/repositories';
 import { useSessionStore } from '../../src/state/session';
 
+// The jest-expo crypto stub returns undefined ids, so give recovery a real operation id.
+jest.mock('expo-crypto', () => ({
+  ...jest.requireActual('expo-crypto'),
+  randomUUID: () => '33333333-3333-4333-8333-333333333333',
+}));
+
 type TestDatabase = MigrationDatabase & {
   native: DatabaseSync;
   closeAsync: () => Promise<void>;
@@ -146,6 +152,40 @@ describe('storage bootstrap', () => {
       scheduleStartLocal: '08:00',
       updatedAt: latestUpdatedAt,
       onboardingComplete: false,
+    });
+  });
+
+  it('settles a crashed recording session before hydrating the store', async () => {
+    const database = createTestDatabase();
+    await applyMigrations(database);
+    await createStorageRepositories(database).recordingSessions.save({
+      id: latestSessionId,
+      scheduledStart: createdAt,
+      scheduledEnd: '2026-01-01T00:30:00.000Z',
+      actualStart: createdAt,
+      timezone: 'UTC',
+      status: 'recording',
+      pauseIntervals: [],
+      createdAt,
+      updatedAt: createdAt,
+    });
+
+    await bootstrapStorage({
+      openDatabase: jest.fn(async () => database),
+      secureKey: {
+        secureStore: {
+          getItemAsync: jest.fn(async () => 'test-key'),
+          setItemAsync: jest.fn(async () => undefined),
+          deleteItemAsync: jest.fn(async () => undefined),
+        },
+        crypto: { getRandomBytesAsync: async () => new Uint8Array(32) },
+      },
+    });
+
+    expect(useSessionStore.getState().recordingSession).toMatchObject({
+      id: latestSessionId,
+      status: 'paused',
+      failureCode: 'crash-recovered',
     });
   });
 

@@ -354,6 +354,43 @@ describe('cleanup', () => {
     expect(await countRows(database, 'audio_chunks')).toBe(1);
   });
 
+  it('discards a failed session now, before its retry deadline, with a discarded receipt', async () => {
+    const database = await createMigratedDatabase();
+    await insertExpiredMaterial(database);
+    await database.runAsync(
+      'UPDATE recording_sessions SET retry_until = ? WHERE id = ?',
+      timestamps.later,
+      ids.session,
+    );
+    const deleteFile = jest.fn<Promise<void>, [string]>(async () => undefined);
+    const values = [ids.cleanupOperation, ids.cleanupReceipt];
+
+    const receipt = await cleanupExpiredSession(database, ids.session, {
+      reason: 'discarded',
+      now: () => timestamps.completed,
+      hash: async () => sha256,
+      uuid: () => values.shift() as string,
+      deleteFile,
+    });
+
+    expect(receipt?.reason).toBe('discarded');
+    expect(deleteFile).toHaveBeenCalledWith('file:///private/chunk.enc');
+    expect(await countRows(database, 'audio_chunks')).toBe(0);
+    expect(await countRows(database, 'transcript_segments')).toBe(0);
+    expect(
+      await database.getFirstAsync<{ status: string; retry_until: string | null }>(
+        'SELECT status, retry_until FROM recording_sessions WHERE id = ?',
+        ids.session,
+      ),
+    ).toEqual({ status: 'expired', retry_until: null });
+    expect(
+      await database.getFirstAsync<{ operation_kind: string }>(
+        'SELECT operation_kind FROM recording_operations WHERE id = ?',
+        ids.cleanupOperation,
+      ),
+    ).toEqual({ operation_kind: 'discard_recording' });
+  });
+
   it('rolls back metadata and receipts when file deletion fails', async () => {
     const database = await createMigratedDatabase();
     await insertExpiredMaterial(database);

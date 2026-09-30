@@ -57,6 +57,15 @@ export type RecordingSessionOperationResult = {
   duplicate: boolean;
 };
 
+export type ClosedAudioChunkWrite = {
+  chunk: AudioChunk;
+  audio: Uint8Array;
+  /** Applied in the same transaction as the chunk, so the chunk and session change together. */
+  sessionOperation?: { operation: RecordingOperation; action: RecordingSessionAction };
+  /** Marks the chunk as the session's last recovered chunk (crash recovery). */
+  recovered?: boolean;
+};
+
 export type StorageRepositories = {
   appPreferences: EntityRepository<AppPreferences>;
   voiceProfiles: VoiceProfileRepository;
@@ -73,6 +82,10 @@ export type StorageRepositories = {
     operation: RecordingOperation,
     action: RecordingSessionAction,
   ) => Promise<RecordingSessionOperationResult>;
+  saveClosedAudioChunk: (
+    input: ClosedAudioChunkWrite,
+  ) => Promise<RecordingSessionOperationResult | null>;
+  readAudioChunkBytes: (id: string) => Promise<Uint8Array | null>;
 };
 
 type SqlRow = Record<string, unknown>;
@@ -211,6 +224,8 @@ export function createStorageRepositories(database: MigrationDatabase): StorageR
     ),
     applyRecordingSessionOperation: (operation, action) =>
       applyRecordingSessionOperation(database, operation, action),
+    saveClosedAudioChunk: (input) => saveClosedAudioChunk(database, input),
+    readAudioChunkBytes: (id) => readAudioChunkBytes(database, id),
   };
 }
 
@@ -329,6 +344,53 @@ export async function listAudioChunks(database: MigrationDatabase): Promise<Audi
     `SELECT ${AUDIO_CHUNK_COLUMNS} FROM audio_chunks${ORDER_BY_ID}`,
   );
   return rows.map(mapAudioChunk);
+}
+
+/**
+ * Commits a closed chunk (metadata plus audio bytes) in one exclusive transaction, optionally
+ * together with the session transition that caused the close.
+ */
+export async function saveClosedAudioChunk(
+  database: MigrationDatabase,
+  input: ClosedAudioChunkWrite,
+): Promise<RecordingSessionOperationResult | null> {
+  const record = validateAudioChunk(input.chunk);
+  if (record.state !== 'closed' || input.audio.byteLength === 0) {
+    throw new StorageValidationError('audio');
+  }
+  return withExclusiveTransaction(database, async (transaction) => {
+    await writeAudioChunk(transaction, record, input.audio);
+    if (input.recovered === true) {
+      await run(
+        transaction,
+        'UPDATE recording_sessions SET last_recovered_chunk_id = ? WHERE id = ?',
+        record.id,
+        record.sessionId,
+      );
+    }
+    if (input.sessionOperation === undefined) {
+      return null;
+    }
+    if (input.sessionOperation.operation.sessionId !== record.sessionId) {
+      throw new StorageRepositoryError('The session operation does not belong to the chunk.');
+    }
+    return applyRecordingSessionOperationInTransaction(
+      transaction,
+      input.sessionOperation.operation,
+      input.sessionOperation.action,
+    );
+  });
+}
+
+export async function readAudioChunkBytes(
+  database: MigrationDatabase,
+  id: string,
+): Promise<Uint8Array | null> {
+  const row = await database.getFirstAsync<{ audio: Uint8Array | null }>(
+    'SELECT audio FROM audio_chunks WHERE id = ?',
+    validateStorageId(id),
+  );
+  return row?.audio ?? null;
 }
 
 export async function saveTranscriptSegment(
@@ -743,15 +805,19 @@ async function writeRecordingSession(
   );
 }
 
-async function writeAudioChunk(database: MigrationTransaction, record: AudioChunk): Promise<void> {
+async function writeAudioChunk(
+  database: MigrationTransaction,
+  record: AudioChunk,
+  audio?: Uint8Array,
+): Promise<void> {
   await assertSessionExists(database, record.sessionId);
   await run(
     database,
     `
     INSERT INTO audio_chunks (
       id, session_id, sequence, started_at, ended_at, codec, sample_rate,
-      encrypted_path, sha256, state, delete_after, created_at
-    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+      encrypted_path, sha256, state, delete_after, created_at, audio
+    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
     ON CONFLICT(id) DO UPDATE SET
       session_id = excluded.session_id,
       sequence = excluded.sequence,
@@ -763,7 +829,11 @@ async function writeAudioChunk(database: MigrationTransaction, record: AudioChun
       sha256 = excluded.sha256,
       state = excluded.state,
       delete_after = excluded.delete_after,
-      created_at = excluded.created_at`,
+      created_at = excluded.created_at,
+      audio = CASE
+        WHEN excluded.state = 'deleted' THEN NULL
+        ELSE COALESCE(excluded.audio, audio_chunks.audio)
+      END`,
     record.id,
     record.sessionId,
     record.sequence,
@@ -776,6 +846,7 @@ async function writeAudioChunk(database: MigrationTransaction, record: AudioChun
     record.state,
     record.deleteAfter,
     record.createdAt,
+    audio ?? null,
   );
 }
 

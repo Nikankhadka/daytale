@@ -9,7 +9,7 @@ Status values are `Not Started`, `In Progress`, `Blocked`, `Ready for Review`, a
 | DYT-003 | Secure persistence and session state | In Progress | DYT-001 |
 | DYT-004 | Prototype-faithful shell and onboarding | In Progress | DYT-001, DYT-003 |
 | DYT-005 | Voice enrollment and speaker identification | Ready for Review | DYT-002, DYT-003 |
-| DYT-006 | Production recording and recovery | Not Started | DYT-002, DYT-003, DYT-005 |
+| DYT-006 | Production recording and recovery | Ready for Review | DYT-002, DYT-003, DYT-005 |
 | DYT-007 | Local transcription | Not Started | DYT-005, DYT-006 |
 | DYT-008 | Cloud Run and Gemini journal API | Not Started | DYT-001 |
 | DYT-009 | Processing, clarification, and journals | Not Started | DYT-003, DYT-007, DYT-008 |
@@ -113,7 +113,7 @@ Implementation evidence (2026-09-30): Voice Setup requires three guided samples 
 
 ## DYT-006 - Production recording and recovery
 
-Status: `Not Started`
+Status: `Ready for Review`
 Dependencies: DYT-002, DYT-003, DYT-005
 
 Outcome: Build the production recording lifecycle with encrypted chunk rotation, pause/resume/stop, automatic scheduled end, interruption handling, and crash recovery.
@@ -126,6 +126,8 @@ Definition of Done: duplicate end/stop is safe, closed chunks are durable before
 
 Automated verification: lifecycle, timing, chunk integrity, interruption, storage, retry, and expiry tests.
 Physical-device verification: eight-hour session, lock/background, calls, Bluetooth, route loss, low storage, termination, and recovery.
+
+Implementation evidence (2026-10-01): `src/features/recording/` promotes the spike into a serial recording engine with 30-second chunk rotation. Each closed chunk is hashed, stored in the SQLCipher database, and its plaintext capture file deleted before the next chunk opens. Start, pause, resume, stop, and scheduled end are idempotent through reducer operation ids. Interruptions (permission loss, route loss, low storage, termination) pause the session with a failure code, crash recovery restores only the active chunk, and failed sessions keep retry material until `retryUntil` (at most 24 hours) before the launch-time expiry sweep deletes it and writes a content-free receipt. The Today tab renders the prototype `today-idle`, `morning-prompt`, `recording`, `privacy-sheet`, `paused`, `error`, and `processing` screens, blocks start on microphone permission and a ready voice profile, and was compared against the prototype through web screenshots. `npm run check` passes 32 test suites with 317 tests; web export passes. Known limits: timed privacy breaks auto-resume only while the app is in the foreground, the chosen break label is not persisted across restarts, and the expiry sweep runs at launch. Physical-device verification remains outstanding.
 
 ## DYT-007 - Local transcription
 

@@ -78,6 +78,8 @@ type PrimaryButtonProps = {
   onPress: () => void;
   disabled?: boolean;
   secondary?: boolean;
+  /** Decorative glyph drawn before the label. */
+  icon?: ReactNode;
 };
 
 export function PrimaryButton({
@@ -85,6 +87,7 @@ export function PrimaryButton({
   onPress,
   disabled = false,
   secondary = false,
+  icon,
 }: PrimaryButtonProps) {
   const { colors, radii, typography } = useDaytaleTheme();
   return (
@@ -103,6 +106,7 @@ export function PrimaryButton({
         disabled ? { opacity: 0.45 } : null,
       ]}
     >
+      {icon}
       <Text style={[typography.label, { color: secondary ? colors.ink : '#ffffff' }]}>{label}</Text>
     </Pressable>
   );
@@ -119,6 +123,8 @@ const styles = StyleSheet.create({
   footer: { marginTop: 24 },
   button: {
     alignItems: 'center',
+    flexDirection: 'row',
+    gap: 8,
     minHeight: 52,
     justifyContent: 'center',
     marginTop: 10,

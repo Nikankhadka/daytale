@@ -661,6 +661,117 @@ describe('storage repositories', () => {
     expect(await repositories.appPreferences.getById(ids.preferences)).toEqual(preferences);
   });
 
+  describe('closed audio chunks', () => {
+    const audio = Uint8Array.from([1, 2, 3, 4]);
+    const pauseOperation: RecordingOperation = {
+      id: ids.operation,
+      sessionId: ids.session,
+      operationKind: 'pause_recording',
+      status: 'pending',
+      createdAt: t2,
+    };
+
+    async function seedRecordingSession() {
+      const repositories = createStorageRepositories(database);
+      await repositories.recordingSessions.save(
+        makeSession(ids.session, { status: 'recording', actualStart: t1, updatedAt: t1 }),
+      );
+      return repositories;
+    }
+
+    it('stores the bytes with the chunk row and reads them back by id', async () => {
+      const repositories = await seedRecordingSession();
+
+      await expect(
+        repositories.saveClosedAudioChunk({ chunk: makeChunk(), audio }),
+      ).resolves.toBeNull();
+
+      expect(await repositories.readAudioChunkBytes(ids.chunk)).toEqual(audio);
+      expect(await repositories.audioChunks.getById(ids.chunk)).toEqual(makeChunk());
+      expect(await repositories.readAudioChunkBytes(ids.secondChunk)).toBeNull();
+    });
+
+    it('rejects a chunk that is not closed or carries no audio', async () => {
+      const repositories = await seedRecordingSession();
+
+      await expect(
+        repositories.saveClosedAudioChunk({ chunk: { ...makeChunk(), state: 'active' }, audio }),
+      ).rejects.toBeInstanceOf(StorageValidationError);
+      await expect(
+        repositories.saveClosedAudioChunk({ chunk: makeChunk(), audio: new Uint8Array(0) }),
+      ).rejects.toBeInstanceOf(StorageValidationError);
+      expect(await repositories.audioChunks.list()).toEqual([]);
+    });
+
+    it('commits the chunk and the session transition in one transaction', async () => {
+      const repositories = await seedRecordingSession();
+
+      const result = await repositories.saveClosedAudioChunk({
+        chunk: makeChunk(),
+        audio,
+        sessionOperation: { operation: pauseOperation, action: { type: 'pause', at: t2 } },
+      });
+
+      expect(result?.operation.status).toBe('applied');
+      expect((await repositories.recordingSessions.getById(ids.session))?.status).toBe('paused');
+      expect(await repositories.readAudioChunkBytes(ids.chunk)).toEqual(audio);
+    });
+
+    it('rolls the chunk back when the session transition fails to persist', async () => {
+      const repositories = await seedRecordingSession();
+      database.failNextSessionWrite = true;
+
+      await expect(
+        repositories.saveClosedAudioChunk({
+          chunk: makeChunk(),
+          audio,
+          sessionOperation: { operation: pauseOperation, action: { type: 'pause', at: t2 } },
+        }),
+      ).rejects.toThrow('induced lifecycle write failure');
+
+      expect(await repositories.audioChunks.getById(ids.chunk)).toBeNull();
+      expect(await repositories.readAudioChunkBytes(ids.chunk)).toBeNull();
+      expect((await repositories.recordingSessions.getById(ids.session))?.status).toBe('recording');
+    });
+
+    it('refuses a session operation that belongs to another session', async () => {
+      const repositories = await seedRecordingSession();
+
+      await expect(
+        repositories.saveClosedAudioChunk({
+          chunk: makeChunk(),
+          audio,
+          sessionOperation: {
+            operation: { ...pauseOperation, sessionId: ids.secondSession },
+            action: { type: 'pause', at: t2 },
+          },
+        }),
+      ).rejects.toBeInstanceOf(StorageRepositoryError);
+      expect(await repositories.audioChunks.getById(ids.chunk)).toBeNull();
+    });
+
+    it('records a recovered chunk on the session', async () => {
+      const repositories = await seedRecordingSession();
+
+      await repositories.saveClosedAudioChunk({ chunk: makeChunk(), audio, recovered: true });
+
+      expect(
+        (await repositories.recordingSessions.getById(ids.session))?.lastRecoveredChunkId,
+      ).toBe(ids.chunk);
+    });
+
+    it('keeps the bytes across metadata updates and erases them when the chunk is deleted', async () => {
+      const repositories = await seedRecordingSession();
+      await repositories.saveClosedAudioChunk({ chunk: makeChunk(), audio });
+
+      await repositories.audioChunks.save({ ...makeChunk(), state: 'transcribed' });
+      expect(await repositories.readAudioChunkBytes(ids.chunk)).toEqual(audio);
+
+      await repositories.audioChunks.save({ ...makeChunk(), state: 'deleted' });
+      expect(await repositories.readAudioChunkBytes(ids.chunk)).toBeNull();
+    });
+  });
+
   it('validates lookup ids at the repository boundary', async () => {
     const repositories = createStorageRepositories(database);
     await expect(repositories.recordingSessions.getById('not-a-uuid')).rejects.toBeInstanceOf(

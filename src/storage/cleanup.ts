@@ -7,6 +7,7 @@ import { invalidateStorageBootstrap } from './bootstrap';
 import {
   applyRecordingSessionOperationInTransaction,
   type RecordingSessionOperationResult,
+  type StorageRepositories,
 } from './repositories';
 import { deleteDatabaseKey, type SecureKeyDependencies } from './secureKey';
 import {
@@ -26,6 +27,11 @@ export type CleanupDependencies = {
   deleteDatabase?: (databaseName: string) => Promise<void>;
   stopActiveCapture?: () => Promise<void>;
   secureKey?: SecureKeyDependencies;
+  /**
+   * Why the session's retry material is removed. `discarded` is the user giving up on a failed
+   * session: it skips the retry-deadline guard so the material goes now, not at expiry.
+   */
+  reason?: 'expired' | 'discarded';
 };
 
 export type CleanupDatabase = SQLiteDatabaseLike;
@@ -107,6 +113,7 @@ export async function cleanupExpiredSession(
   const deleteFile = dependencies.deleteFile ?? defaultDeleteFile;
   const hash = dependencies.hash ?? defaultHash;
   const uuid = dependencies.uuid ?? defaultUuid;
+  const reason = dependencies.reason ?? 'expired';
 
   return withExclusiveTransaction(database, async (transaction) => {
     const session = await transaction.getFirstAsync<ExpirySessionRow>(
@@ -129,27 +136,29 @@ export async function cleanupExpiredSession(
     if (session.retry_until === null && session.retry_target !== null) {
       throw new CleanupError('Stored retry metadata is incomplete.');
     }
-    if (session.retry_until === null) {
-      return null;
-    }
     if (session.retry_target !== null && !RETRY_TARGETS.includes(session.retry_target)) {
       throw new CleanupError('Stored retry target is invalid.');
     }
-    const retryUntil = validateUtcTimestamp(session.retry_until);
-    const updatedAt = validateUtcTimestamp(session.updated_at);
-    const effectiveDeadline = Math.min(
-      Date.parse(retryUntil),
-      Date.parse(updatedAt) + MAX_RETRY_WINDOW_MS,
-    );
-    if (effectiveDeadline > Date.parse(completedAt)) {
-      return null;
+    if (reason === 'expired') {
+      if (session.retry_until === null) {
+        return null;
+      }
+      const retryUntil = validateUtcTimestamp(session.retry_until);
+      const updatedAt = validateUtcTimestamp(session.updated_at);
+      const effectiveDeadline = Math.min(
+        Date.parse(retryUntil),
+        Date.parse(updatedAt) + MAX_RETRY_WINDOW_MS,
+      );
+      if (effectiveDeadline > Date.parse(completedAt)) {
+        return null;
+      }
     }
 
     const operationId = validateStorageId(uuid());
     const operation: RecordingOperation = {
       id: operationId,
       sessionId: validatedSessionId,
-      operationKind: 'expire_recording',
+      operationKind: reason === 'expired' ? 'expire_recording' : 'discard_recording',
       status: 'pending',
       createdAt: completedAt,
     };
@@ -183,7 +192,7 @@ export async function cleanupExpiredSession(
     const contentFreeHash = await hash(
       JSON.stringify({
         sessionId: validatedSessionId,
-        reason: 'expired',
+        reason,
         completedAt,
         deletedKinds,
       }),
@@ -191,7 +200,7 @@ export async function cleanupExpiredSession(
     const receipt = validateCleanupReceipt({
       id: receiptId,
       sessionId: validatedSessionId,
-      reason: 'expired',
+      reason,
       deletedKinds,
       completedAt,
       contentFreeHash,
@@ -212,6 +221,32 @@ export async function cleanupExpiredSession(
 
     return receipt;
   });
+}
+
+/** Deletes failed sessions whose retry window has passed and writes their content-free receipts. */
+export async function sweepExpiredSessions(
+  database: SQLiteDatabaseLike,
+  repositories: StorageRepositories,
+  now: Date,
+  dependencies: Omit<CleanupDependencies, 'now'> = {},
+): Promise<CleanupReceipt[]> {
+  const receipts: CleanupReceipt[] = [];
+  const due = (await repositories.recordingSessions.list()).filter(
+    (session) =>
+      session.status === 'failed' &&
+      session.retryUntil !== undefined &&
+      Date.parse(session.retryUntil) <= now.getTime(),
+  );
+  for (const session of due) {
+    const receipt = await cleanupExpiredSession(database, session.id, {
+      ...dependencies,
+      now: () => now.toISOString(),
+    }).catch(() => null);
+    if (receipt !== null) {
+      receipts.push(receipt);
+    }
+  }
+  return receipts;
 }
 
 export const cleanupExpiredRecordingSession = cleanupExpiredSession;

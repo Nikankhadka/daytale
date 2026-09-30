@@ -150,6 +150,31 @@ describe('recordingSessionReducer', () => {
     expect(ended?.actualEnd).toBe(t4);
   });
 
+  it('stores the pause reason as failureCode and clears it on resume, stop or scheduled end', () => {
+    const recording = recordingSessionReducer(makeSession('recording'), {
+      type: 'pause',
+      at: t2,
+      failureCode: 'call',
+    });
+    expect(recording).toMatchObject({ status: 'paused', failureCode: 'call' });
+    expect(
+      recordingSessionReducer(makeSession('recording'), { type: 'pause', at: t2 }),
+    ).toMatchObject({ status: 'paused', failureCode: undefined });
+
+    expect(recordingSessionReducer(recording!, { type: 'resume', at: t3 })).toMatchObject({
+      status: 'recording',
+      failureCode: undefined,
+    });
+    expect(recordingSessionReducer(recording!, { type: 'stop', at: t3 })).toMatchObject({
+      status: 'transcribing',
+      failureCode: undefined,
+    });
+    expect(recordingSessionReducer(recording!, { type: 'scheduled-end', at: t3 })).toMatchObject({
+      status: 'transcribing',
+      failureCode: undefined,
+    });
+  });
+
   it('records interruption metadata and retries only to the persisted target', () => {
     const failed = recordingSessionReducer(makeSession('recording'), {
       type: 'fail',

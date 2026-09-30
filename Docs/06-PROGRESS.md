@@ -4,16 +4,16 @@ This file records current delivery evidence and decisions. It does not repeat re
 
 ## Current milestone
 
-Canonical documentation baseline complete. DYT-001 repository foundation checks are green locally, but its iOS and Android development-client gate remains outstanding. DYT-002 implementation is in progress with its physical-device gate pending. DYT-003 implementation is in progress with automated persistence and cleanup checks green; its physical-device gate remains pending. DYT-004A implementation is in progress through the Voice Setup boundary, with its physical accessibility and visual gate pending. DYT-005 voice enrollment is ready for review with its physical-device gate pending.
+Canonical documentation baseline complete. DYT-001 repository foundation checks are green locally, but its iOS and Android development-client gate remains outstanding. DYT-002 implementation is in progress with its physical-device gate pending. DYT-003 implementation is in progress with automated persistence and cleanup checks green; its physical-device gate remains pending. DYT-004A implementation is in progress through the Voice Setup boundary, with its physical accessibility and visual gate pending. DYT-005 voice enrollment and DYT-006 production recording are ready for review with their physical-device gates pending.
 
 ## Ticket status
 
 Completed: none.
 Active: DYT-001, DYT-002, DYT-003, DYT-004.
 Blocked: none.
-Ready for review: DYT-005.
+Ready for review: DYT-005, DYT-006.
 Verified: none.
-Not started: DYT-006 through DYT-012.
+Not started: DYT-007 through DYT-012.
 
 ## Blockers and prerequisites
 
@@ -28,6 +28,8 @@ Expo SDK 57 repository foundation, DYT-002 recording-spike configuration, DYT-00
 2026-09-26: `npm run check` passed formatting, lint, TypeScript, 14 test suites with 66 tests, documentation links/placeholders, and route smoke checks. `npx expo config --type public`, native config introspection, and `npx expo export --platform web` passed for SQLCipher, SecureStore backup configuration, audio recording, notification/font/Reanimated/SVG dependencies, and the route graph. Watchman emitted a recrawl warning during Jest and Node emitted the expected SQLite experimental warning; neither affected results. Physical iOS 17+ and Android 12+ development-client, background-recording, secure persistence, delete-all-data key-removal, safe-area, large-text, dark-mode, reduced-motion, keyboard, touch-target, and screen-reader checks remain pending.
 
 2026-09-30: DYT-005 `npm run check` passed formatting, lint, TypeScript, 19 test suites with 109 tests, documentation links/placeholders, and route smoke checks. `npx expo export --platform web` and `npx expo config --type public` passed. Speaker model download and sherpa-onnx embedding extraction were exercised only through mocks; device verification is pending.
+
+2026-10-01: DYT-006 `npm run check` passed formatting, lint, TypeScript, 32 test suites with 317 tests, documentation links/placeholders, and route smoke checks. `npx expo export --platform web` passed. Today screens were compared with the prototype through web screenshots; capture, background behavior, interruptions, and recovery were exercised only through a fake recorder, and device verification is pending.
 
 ## Dated decisions
 
@@ -44,3 +46,6 @@ Expo SDK 57 repository foundation, DYT-002 recording-spike configuration, DYT-00
 | 2026-09-25 | `prototype/index.html` and `prototype/tokens.css` are the sole visual and interaction authority; the historical PNG is non-authoritative. | Design/engineering |
 | 2026-09-30 | Speaker identification uses the English CAM++ sherpa-onnx model, downloaded on first use and verified by pinned size and md5 instead of being committed to the repository. | Engineering |
 | 2026-09-30 | Ready copy reads "every day" because the MVP schedule has no repeat-day selection. | Design/engineering |
+| 2026-10-01 | Closed audio chunks are stored as BLOBs inside the SQLCipher database with `secure_delete` on, instead of separately encrypted files; only the active chunk exists as a plaintext sandbox file. | Privacy/engineering |
+| 2026-10-01 | Chunk `deleteAfter` is close time plus 24 hours, and the expiry sweep runs at app launch. | Privacy/engineering |
+| 2026-10-01 | Timed privacy breaks auto-resume only while the app is in the foreground; otherwise the session stays paused until the user resumes. | Product/engineering |

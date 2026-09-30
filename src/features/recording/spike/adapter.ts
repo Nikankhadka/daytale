@@ -1,81 +1,17 @@
 import type { PermissionResponse } from 'expo';
-import type { AudioMode, AudioRecorder, RecordingOptions, RecordingStatus } from 'expo-audio';
+import type { RecordingStatus } from 'expo-audio';
+
+import {
+  CHUNK_ROTATION_SECONDS,
+  createSerialQueue,
+  expoAudioNative,
+  RECORDING_AUDIO_MODE,
+  RECORDING_OPTIONS,
+  type RecordingNative,
+  type RecordingRecorder,
+} from '../recorder';
 
 export type RecordingState = 'idle' | 'prepared' | 'recording' | 'paused' | 'stopped';
-
-export type RecordingRecorder = Pick<
-  AudioRecorder,
-  'prepareToRecordAsync' | 'record' | 'pause' | 'stop'
-> & {
-  currentTime?: number;
-  uri?: string | null;
-};
-
-export type RecordingNative = {
-  getRecordingPermissionsAsync: () => Promise<PermissionResponse>;
-  requestRecordingPermissionsAsync: () => Promise<PermissionResponse>;
-  setAudioModeAsync: (mode: Partial<AudioMode>) => Promise<void>;
-  deleteFile: (uri: string) => Promise<void>;
-};
-
-export const SPIKE_CHUNK_TARGET_SECONDS = 30;
-
-/**
- * The spike records one compressed mono voice file with a 30-second active-capture
- * target. Production chunk rotation, encryption, and persistence intentionally do
- * not belong here.
- */
-export const RECORDING_OPTIONS: RecordingOptions = {
-  directory: 'cache',
-  extension: '.m4a',
-  sampleRate: 16_000,
-  numberOfChannels: 1,
-  bitRate: 32_000,
-  android: {
-    extension: '.m4a',
-    outputFormat: 'mpeg4',
-    audioEncoder: 'aac',
-    audioSource: 'voice_recognition',
-  },
-  ios: {
-    extension: '.m4a',
-    sampleRate: 16_000,
-    outputFormat: 'aac ',
-    audioQuality: 32,
-  },
-  web: {
-    mimeType: 'audio/webm',
-    bitsPerSecond: 32_000,
-  },
-};
-
-export const RECORDING_AUDIO_MODE: Partial<AudioMode> = {
-  allowsRecording: true,
-  allowsBackgroundRecording: true,
-  shouldPlayInBackground: false,
-  playsInSilentMode: true,
-  interruptionMode: 'doNotMix',
-  shouldRouteThroughEarpiece: false,
-};
-
-export const expoAudioNative: RecordingNative = {
-  getRecordingPermissionsAsync: async () => {
-    const { getRecordingPermissionsAsync } = await import('expo-audio');
-    return getRecordingPermissionsAsync();
-  },
-  requestRecordingPermissionsAsync: async () => {
-    const { requestRecordingPermissionsAsync } = await import('expo-audio');
-    return requestRecordingPermissionsAsync();
-  },
-  setAudioModeAsync: async (mode) => {
-    const { setAudioModeAsync } = await import('expo-audio');
-    return setAudioModeAsync(mode);
-  },
-  deleteFile: async (uri) => {
-    const { deleteAsync } = await import('expo-file-system/legacy');
-    return deleteAsync(uri, { idempotent: true });
-  },
-};
 
 export class RecordingSpikeAdapter {
   private currentState: RecordingState = 'idle';
@@ -84,12 +20,12 @@ export class RecordingSpikeAdapter {
 
   private currentRecordingUri: string | null = null;
 
-  private commandQueue: Promise<void> = Promise.resolve();
+  private readonly enqueue = createSerialQueue();
 
   public constructor(
     private readonly recorder: RecordingRecorder,
     private readonly native: RecordingNative = expoAudioNative,
-    private readonly targetSeconds = SPIKE_CHUNK_TARGET_SECONDS,
+    private readonly targetSeconds = CHUNK_ROTATION_SECONDS,
   ) {}
 
   public get state(): RecordingState {
@@ -208,18 +144,12 @@ export class RecordingSpikeAdapter {
       this.currentRecordingUri = null;
     });
   }
-
-  private enqueue(command: () => Promise<void>): Promise<void> {
-    const next = this.commandQueue.then(command, command);
-    this.commandQueue = next.catch(() => undefined);
-    return next;
-  }
 }
 
 export function createRecordingSpikeAdapter(
   recorder: RecordingRecorder,
   native: RecordingNative = expoAudioNative,
-  targetSeconds = SPIKE_CHUNK_TARGET_SECONDS,
+  targetSeconds = CHUNK_ROTATION_SECONDS,
 ): RecordingSpikeAdapter {
   return new RecordingSpikeAdapter(recorder, native, targetSeconds);
 }

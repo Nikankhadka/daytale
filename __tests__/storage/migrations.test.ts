@@ -85,7 +85,7 @@ describe('storage schema migrations', () => {
     await database.closeAsync();
   });
 
-  it('creates the section-5 tables and operation identity table at schema version five', async () => {
+  it('creates the section-5 tables and operation identity table at schema version six', async () => {
     await applyMigrations(database);
 
     const version = database.native.prepare('PRAGMA user_version').get() as {
@@ -97,7 +97,7 @@ describe('storage schema migrations', () => {
       )
       .all() as { name: string }[];
 
-    expect(version.user_version).toBe(5);
+    expect(version.user_version).toBe(6);
     expect(rows.map((row) => row.name)).toEqual([...tableNames].sort());
     expect(
       (database.native.prepare('PRAGMA foreign_keys').get() as { foreign_keys: number })
@@ -124,7 +124,7 @@ describe('storage schema migrations', () => {
     expect(
       (database.native.prepare('PRAGMA user_version').get() as { user_version: number })
         .user_version,
-    ).toBe(5);
+    ).toBe(6);
   });
 
   it('upgrades an existing version-one database with operation identity and retry support', async () => {
@@ -147,7 +147,7 @@ describe('storage schema migrations', () => {
     expect(
       (database.native.prepare('PRAGMA user_version').get() as { user_version: number })
         .user_version,
-    ).toBe(5);
+    ).toBe(6);
     expect(
       database.native
         .prepare(
@@ -174,7 +174,7 @@ describe('storage schema migrations', () => {
     expect(
       (database.native.prepare('PRAGMA user_version').get() as { user_version: number })
         .user_version,
-    ).toBe(5);
+    ).toBe(6);
     expect(
       (
         database.native.prepare('PRAGMA table_info(recording_sessions)').all() as { name: string }[]
@@ -210,6 +210,52 @@ describe('storage schema migrations', () => {
     database.native.exec('DELETE FROM app_preferences');
     expect(() => insertPreferences('ready')).not.toThrow();
     expect(() => insertPreferences('sideways')).toThrow();
+  });
+
+  it('upgrades a version-five database with a nullable audio blob column and keeps its chunks', async () => {
+    await applyMigrations(database, MIGRATIONS.slice(0, 5));
+    expect(
+      (database.native.prepare('PRAGMA user_version').get() as { user_version: number })
+        .user_version,
+    ).toBe(5);
+    database.native
+      .prepare(
+        `INSERT INTO recording_sessions (id, scheduled_start, scheduled_end, timezone, status, pause_intervals, created_at, updated_at)
+         VALUES (?, '2026-09-26T08:00:00.000Z', '2026-09-26T17:00:00.000Z', 'UTC', 'recording', '[]', '2026-09-26T08:00:00.000Z', '2026-09-26T08:00:00.000Z')`,
+      )
+      .run(sessionId);
+    database.native
+      .prepare(
+        `INSERT INTO audio_chunks (id, session_id, sequence, started_at, codec, sample_rate, encrypted_path, sha256, state, delete_after, created_at)
+         VALUES (?, ?, 0, '2026-09-26T08:00:00.000Z', 'aac', 16000, 'file:///cache/a.m4a', ?, 'closed', '2026-09-27T08:00:00.000Z', '2026-09-26T08:00:00.000Z')`,
+      )
+      .run(chunkId, sessionId, '0'.repeat(64));
+
+    await applyMigrations(database);
+
+    expect(
+      (
+        database.native.prepare('PRAGMA table_info(audio_chunks)').all() as {
+          name: string;
+          notnull: number;
+          type: string;
+        }[]
+      ).find((column) => column.name === 'audio'),
+    ).toEqual(expect.objectContaining({ type: 'BLOB', notnull: 0 }));
+    expect(database.native.prepare('SELECT id, audio FROM audio_chunks').all()).toEqual([
+      { id: chunkId, audio: null },
+    ]);
+    database.native
+      .prepare('UPDATE audio_chunks SET audio = ? WHERE id = ?')
+      .run(new Uint8Array([1, 2, 3]), chunkId);
+    expect(
+      (database.native.prepare('SELECT audio FROM audio_chunks').get() as { audio: Uint8Array })
+        .audio,
+    ).toEqual(new Uint8Array([1, 2, 3]));
+    expect(
+      (database.native.prepare('PRAGMA user_version').get() as { user_version: number })
+        .user_version,
+    ).toBe(6);
   });
 
   it('rolls back a failing migration without changing schema or user_version', async () => {
@@ -395,8 +441,9 @@ describe('storage schema migrations', () => {
 
     expect(initialized).toBe(injectedDatabase);
     expect(injectedDatabase.execAsync.mock.calls[0][0]).toBe("PRAGMA key = 'test-key';");
+    expect(injectedDatabase.execAsync).toHaveBeenCalledWith('PRAGMA secure_delete = ON;');
     expect(injectedDatabase.native.prepare('PRAGMA user_version').get()).toEqual({
-      user_version: 5,
+      user_version: 6,
     });
     expect(DATABASE_NAME).toBe('daytale.db');
   });

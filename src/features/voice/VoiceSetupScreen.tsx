@@ -5,7 +5,7 @@ import { getBootstrappedStorage } from '../../storage/bootstrap';
 import type { VoiceProfileRepository } from '../../storage/repositories';
 import { PrimaryButton, ScreenScaffold } from '../../shared/ui/ScreenScaffold';
 import { useDaytaleTheme } from '../../theme/useDaytaleTheme';
-import { RECORDING_AUDIO_MODE, RECORDING_OPTIONS } from '../recording/spike/adapter';
+import { RECORDING_AUDIO_MODE, RECORDING_OPTIONS } from '../recording/recorder';
 import {
   VOICE_SAMPLE_COUNT,
   VoiceEnrollmentController,

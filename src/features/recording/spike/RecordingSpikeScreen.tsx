@@ -5,9 +5,9 @@ import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } fr
 import { Button, StyleSheet, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
+import { RECORDING_OPTIONS } from '../recorder';
 import {
   createRecordingSpikeAdapter,
-  RECORDING_OPTIONS,
   type RecordingSpikeAdapter,
   type RecordingState,
 } from './adapter';
