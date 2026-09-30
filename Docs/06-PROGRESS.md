@@ -4,16 +4,16 @@ This file records current delivery evidence and decisions. It does not repeat re
 
 ## Current milestone
 
-Canonical documentation baseline complete. DYT-001 repository foundation checks are green locally, but its iOS and Android development-client gate remains outstanding. DYT-002 implementation is in progress with its physical-device gate pending. DYT-003 implementation is in progress with automated persistence and cleanup checks green; its physical-device gate remains pending. DYT-004A implementation is in progress through the Voice Setup boundary, with its physical accessibility and visual gate pending. DYT-005 voice enrollment and DYT-006 production recording are ready for review with their physical-device gates pending.
+Canonical documentation baseline complete. DYT-001 repository foundation checks are green locally, but its iOS and Android development-client gate remains outstanding. DYT-002 implementation is in progress with its physical-device gate pending. DYT-003 implementation is in progress with automated persistence and cleanup checks green; its physical-device gate remains pending. DYT-004A implementation is in progress through the Voice Setup boundary, with its physical accessibility and visual gate pending. DYT-005 voice enrollment, DYT-006 production recording, and DYT-007 local transcription are ready for review with their physical-device gates pending.
 
 ## Ticket status
 
 Completed: none.
 Active: DYT-001, DYT-002, DYT-003, DYT-004.
 Blocked: none.
-Ready for review: DYT-005, DYT-006.
+Ready for review: DYT-005, DYT-006, DYT-007.
 Verified: none.
-Not started: DYT-007 through DYT-012.
+Not started: DYT-008 through DYT-012.
 
 ## Blockers and prerequisites
 
@@ -30,6 +30,8 @@ Expo SDK 57 repository foundation, DYT-002 recording-spike configuration, DYT-00
 2026-09-30: DYT-005 `npm run check` passed formatting, lint, TypeScript, 19 test suites with 109 tests, documentation links/placeholders, and route smoke checks. `npx expo export --platform web` and `npx expo config --type public` passed. Speaker model download and sherpa-onnx embedding extraction were exercised only through mocks; device verification is pending.
 
 2026-10-01: DYT-006 `npm run check` passed formatting, lint, TypeScript, 32 test suites with 317 tests, documentation links/placeholders, and route smoke checks. `npx expo export --platform web` passed. Today screens were compared with the prototype through web screenshots; capture, background behavior, interruptions, and recovery were exercised only through a fake recorder, and device verification is pending.
+
+2026-10-01: DYT-007 `npm run check` passed formatting, lint, TypeScript, 40 test suites with 429 tests, documentation links/placeholders, and route smoke checks. `npx expo export --platform web` and iOS and Android `expo export:embed` release bundles of the transcription slice passed. The iOS WAV transcoder was compiled with `swiftc` and decoded 16, 44.1, and 48 kHz inputs to 16 kHz mono PCM16; whisper.cpp itself ran only through a mocked binding, and device verification is pending.
 
 ## Dated decisions
 
@@ -49,3 +51,7 @@ Expo SDK 57 repository foundation, DYT-002 recording-spike configuration, DYT-00
 | 2026-10-01 | Closed audio chunks are stored as BLOBs inside the SQLCipher database with `secure_delete` on, instead of separately encrypted files; only the active chunk exists as a plaintext sandbox file. | Privacy/engineering |
 | 2026-10-01 | Chunk `deleteAfter` is close time plus 24 hours, and the expiry sweep runs at app launch. | Privacy/engineering |
 | 2026-10-01 | Timed privacy breaks auto-resume only while the app is in the foreground; otherwise the session stays paused until the user resumes. | Product/engineering |
+| 2026-10-01 | Local transcription pins `whisper.rn` 0.7.4 with the multilingual `ggml-small-q5_1` model and the Silero v5.1.2 VAD model, downloaded on first use and verified by pinned size and md5; the device performance gate may downgrade to a smaller model. | Engineering |
+| 2026-10-01 | A local Expo module decodes stored AAC chunks to 16 kHz mono PCM16 WAV for whisper.cpp, instead of adding a general audio library. | Engineering |
+| 2026-10-01 | Transcript confidence is a heuristic (VAD coverage, repetition loops, speech rate, out-of-set language) because the binding exposes no token probabilities; low-confidence segments are kept and marked, not rewritten. | Engineering |
+| 2026-10-01 | Each transcript segment is tagged `ne` when it contains Devanagari letters and `en` otherwise; whisper is pinned to the one language the user speaks and auto-detects when both are selected. | Product/engineering |

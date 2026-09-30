@@ -66,6 +66,11 @@ export type ClosedAudioChunkWrite = {
   recovered?: boolean;
 };
 
+export type ChunkTranscriptWrite = {
+  chunkId: string;
+  segments: TranscriptSegment[];
+};
+
 export type StorageRepositories = {
   appPreferences: EntityRepository<AppPreferences>;
   voiceProfiles: VoiceProfileRepository;
@@ -86,6 +91,10 @@ export type StorageRepositories = {
     input: ClosedAudioChunkWrite,
   ) => Promise<RecordingSessionOperationResult | null>;
   readAudioChunkBytes: (id: string) => Promise<Uint8Array | null>;
+  /** Stores a closed chunk's transcript and deletes its audio atomically; false if not closed. */
+  saveChunkTranscript: (input: ChunkTranscriptWrite) => Promise<boolean>;
+  /** Deletes a closed chunk's unusable audio without a transcript; false if not closed. */
+  discardClosedChunk: (id: string) => Promise<boolean>;
 };
 
 type SqlRow = Record<string, unknown>;
@@ -226,6 +235,8 @@ export function createStorageRepositories(database: MigrationDatabase): StorageR
       applyRecordingSessionOperation(database, operation, action),
     saveClosedAudioChunk: (input) => saveClosedAudioChunk(database, input),
     readAudioChunkBytes: (id) => readAudioChunkBytes(database, id),
+    saveChunkTranscript: (input) => saveChunkTranscript(database, input),
+    discardClosedChunk: (id) => discardClosedChunk(database, id),
   };
 }
 
@@ -391,6 +402,45 @@ export async function readAudioChunkBytes(
     validateStorageId(id),
   );
   return row?.audio ?? null;
+}
+
+/**
+ * Makes a closed chunk's transcript durable and deletes its audio in one exclusive transaction.
+ * Returns false and writes nothing when the chunk is no longer `closed`, so a repeat is harmless.
+ */
+export async function saveChunkTranscript(
+  database: MigrationDatabase,
+  input: ChunkTranscriptWrite,
+): Promise<boolean> {
+  const chunkId = validateStorageId(input.chunkId);
+  const segments = input.segments.map((segment) => validateTranscriptSegment(segment));
+  if (segments.some((segment) => segment.chunkId !== chunkId)) {
+    throw new StorageRepositoryError('The transcript segments do not belong to the chunk.');
+  }
+  return withExclusiveTransaction(database, async (transaction) => {
+    if (!(await isClosedChunk(transaction, chunkId))) {
+      return false;
+    }
+    for (const segment of segments) {
+      await writeTranscriptSegment(transaction, segment);
+    }
+    await settleChunk(transaction, chunkId, 'transcribed');
+    return true;
+  });
+}
+
+export async function discardClosedChunk(
+  database: MigrationDatabase,
+  id: string,
+): Promise<boolean> {
+  const chunkId = validateStorageId(id);
+  return withExclusiveTransaction(database, async (transaction) => {
+    if (!(await isClosedChunk(transaction, chunkId))) {
+      return false;
+    }
+    await settleChunk(transaction, chunkId, 'deleted');
+    return true;
+  });
 }
 
 export async function saveTranscriptSegment(
@@ -847,6 +897,27 @@ async function writeAudioChunk(
     record.deleteAfter,
     record.createdAt,
     audio ?? null,
+  );
+}
+
+async function isClosedChunk(database: MigrationTransaction, chunkId: string): Promise<boolean> {
+  const row = await database.getFirstAsync<{ state: string }>(
+    'SELECT state FROM audio_chunks WHERE id = ?',
+    chunkId,
+  );
+  return row?.state === 'closed';
+}
+
+async function settleChunk(
+  database: MigrationTransaction,
+  chunkId: string,
+  state: 'transcribed' | 'deleted',
+): Promise<void> {
+  await run(
+    database,
+    'UPDATE audio_chunks SET state = ?, audio = NULL WHERE id = ?',
+    state,
+    chunkId,
   );
 }
 

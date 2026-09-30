@@ -10,7 +10,7 @@ Status values are `Not Started`, `In Progress`, `Blocked`, `Ready for Review`, a
 | DYT-004 | Prototype-faithful shell and onboarding | In Progress | DYT-001, DYT-003 |
 | DYT-005 | Voice enrollment and speaker identification | Ready for Review | DYT-002, DYT-003 |
 | DYT-006 | Production recording and recovery | Ready for Review | DYT-002, DYT-003, DYT-005 |
-| DYT-007 | Local transcription | Not Started | DYT-005, DYT-006 |
+| DYT-007 | Local transcription | Ready for Review | DYT-005, DYT-006 |
 | DYT-008 | Cloud Run and Gemini journal API | Not Started | DYT-001 |
 | DYT-009 | Processing, clarification, and journals | Not Started | DYT-003, DYT-007, DYT-008 |
 | DYT-010 | Native recording controls | Not Started | DYT-006 |
@@ -131,7 +131,7 @@ Implementation evidence (2026-10-01): `src/features/recording/` promotes the spi
 
 ## DYT-007 - Local transcription
 
-Status: `Not Started`
+Status: `Ready for Review`
 Dependencies: DYT-005, DYT-006
 
 Outcome: Select and pin a whisper.cpp React Native binding and transcribe English, Nepali, and mixed-language chunks locally with timestamps and confidence.
@@ -144,6 +144,8 @@ Definition of Done: supported fixtures produce usable segments, raw audio never 
 
 Automated verification: language, mixed-language, timestamps, silence, malformed audio, confidence, and deletion tests.
 Physical-device verification: representative iOS and Android performance, storage, thermal, and battery checks.
+
+Implementation evidence (2026-10-01): `src/features/transcription/` pins `whisper.rn` 0.7.4 (whisper.cpp) with the multilingual `ggml-small-q5_1` model and the Silero VAD model, both downloaded on first use and verified by pinned size and md5. A local Expo module, `modules/audio-decoder/`, decodes each stored AAC chunk to a 16 kHz mono PCM16 WAV in a cache scratch directory that is emptied at the start of every run, and both temporary files are deleted after each chunk. Silent chunks skip transcription. Each segment gets chunk-relative millisecond timestamps, a per-segment `en` or `ne` tag from its script, speaker attribution scored against the ready voice profile (`unknown` for windows under one second or when no profile is ready), and a heuristic transcript confidence. Low-confidence segments are kept with their score, never rewritten. The transcript segments are inserted and the chunk audio is set to NULL in one exclusive transaction, so re-running is idempotent. Undecodable or hash-mismatched chunks are discarded without a transcript, other failures leave the chunk closed for retry, and one content-free success receipt is written once no closed chunk remains. Results carry only counts and codes, never text, audio, or paths. `npm run check` passes 40 test suites with 429 tests. Web export and iOS and Android release bundles of the slice pass. The iOS transcoder was compiled and run against real AVFoundation on macOS; the Android decoder and both module builds are unverified until a development-client build. Known limits: confidence is a heuristic because the binding exposes no token probabilities, whisper timestamp units are confirmed from source only, and nothing invokes transcription until the DYT-009 orchestrator. Physical-device verification remains outstanding.
 
 ## DYT-008 - Cloud Run and Gemini journal API
 

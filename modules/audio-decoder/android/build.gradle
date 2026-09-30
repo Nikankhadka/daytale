@@ -1,0 +1,15 @@
+plugins {
+  id 'com.android.library'
+  id 'expo-module-gradle-plugin'
+}
+
+group = 'expo.modules.audiodecoder'
+version = '1.0.0'
+
+android {
+  namespace "expo.modules.audiodecoder"
+  defaultConfig {
+    versionCode 1
+    versionName "1.0.0"
+  }
+}

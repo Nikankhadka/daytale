@@ -11,9 +11,9 @@ web-build/
 coverage/
 expo-env.d.ts
 
-# Generated native projects
-ios/
-android/
+# Generated native projects (root only: modules/*/ios and modules/*/android hold hand-written sources)
+/ios/
+/android/
 .kotlin/
 
 # Metro and debug output

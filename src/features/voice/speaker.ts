@@ -71,22 +71,25 @@ export function createSherpaSpeakerEmbeddingProvider(
     await initialization;
   };
 
+  const embed = async (filePath: string, startMs: number, durationMs: number) => {
+    await prepare();
+    if (client === undefined) {
+      throw new VoiceEnrollmentError('The speaker model is unavailable.');
+    }
+
+    // processFile is WAV-only on iOS; the windowed call decodes the recorded M4A on both platforms.
+    const result = await client.processFileWindow(filePath, startMs, durationMs);
+    if (!result.success) {
+      throw new VoiceEnrollmentError(result.error ?? 'The voice sample could not be analyzed.');
+    }
+    return validateSpeakerEmbedding(result.embedding);
+  };
+
   return {
     modelVersion,
     prepare,
-    embeddingFromFile: async (filePath) => {
-      await prepare();
-      if (client === undefined) {
-        throw new VoiceEnrollmentError('The speaker model is unavailable.');
-      }
-
-      // processFile is WAV-only on iOS; the windowed call decodes the recorded M4A on both platforms.
-      const result = await client.processFileWindow(filePath, 0, MAX_WINDOW_MS);
-      if (!result.success) {
-        throw new VoiceEnrollmentError(result.error ?? 'The voice sample could not be analyzed.');
-      }
-      return validateSpeakerEmbedding(result.embedding);
-    },
+    embeddingFromFile: (filePath) => embed(filePath, 0, MAX_WINDOW_MS),
+    embeddingFromWindow: embed,
   };
 }
 

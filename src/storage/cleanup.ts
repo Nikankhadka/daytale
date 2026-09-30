@@ -187,40 +187,98 @@ export async function cleanupExpiredSession(
       await transaction.runAsync(statement, validatedSessionId);
     }
 
-    const deletedKinds = [...CLEANUP_RECORD_KINDS];
-    const receiptId = validateStorageId(uuid());
-    const contentFreeHash = await hash(
-      JSON.stringify({
-        sessionId: validatedSessionId,
-        reason,
-        completedAt,
-        deletedKinds,
-      }),
-    );
-    const receipt = validateCleanupReceipt({
-      id: receiptId,
+    return insertReceipt(transaction, {
       sessionId: validatedSessionId,
       reason,
-      deletedKinds,
+      deletedKinds: [...CLEANUP_RECORD_KINDS],
       completedAt,
-      contentFreeHash,
-      createdAt: completedAt,
+      uuid,
+      hash,
     });
-
-    await transaction.runAsync(
-      `INSERT INTO cleanup_receipts
-       (id, session_id, reason, deleted_kinds, completed_at, content_free_hash)
-       VALUES (?, ?, ?, ?, ?, ?)`,
-      receipt.id,
-      receipt.sessionId ?? null,
-      receipt.reason,
-      JSON.stringify(receipt.deletedKinds),
-      receipt.completedAt,
-      receipt.contentFreeHash,
-    );
-
-    return receipt;
   });
+}
+
+/**
+ * Records that a session's chunk audio is gone after transcription. Writes one content-free
+ * receipt once no chunk is still `closed` and at least one was transcribed or discarded, and
+ * returns null when that is not yet true or the session already has its success receipt.
+ */
+export async function writeSuccessReceipt(
+  database: CleanupDatabase,
+  sessionId: string,
+  dependencies: Pick<CleanupDependencies, 'hash' | 'uuid' | 'now'> = {},
+): Promise<CleanupReceipt | null> {
+  const validatedSessionId = validateStorageId(sessionId);
+  const completedAt = validateUtcTimestamp((dependencies.now ?? defaultNow)());
+
+  return withExclusiveTransaction(database, async (transaction) => {
+    const counts = await transaction.getFirstAsync<{ waiting: number; settled: number }>(
+      `SELECT COALESCE(SUM(state = 'closed'), 0) AS waiting,
+              COALESCE(SUM(state IN ('transcribed', 'deleted')), 0) AS settled
+       FROM audio_chunks WHERE session_id = ?`,
+      validatedSessionId,
+    );
+    const existing = await transaction.getFirstAsync<{ id: string }>(
+      "SELECT id FROM cleanup_receipts WHERE session_id = ? AND reason = 'success'",
+      validatedSessionId,
+    );
+    if (counts === null || counts.waiting > 0 || counts.settled === 0 || existing !== null) {
+      return null;
+    }
+    return insertReceipt(transaction, {
+      sessionId: validatedSessionId,
+      reason: 'success',
+      deletedKinds: ['audio_chunks'],
+      completedAt,
+      uuid: dependencies.uuid ?? defaultUuid,
+      hash: dependencies.hash ?? defaultHash,
+    });
+  });
+}
+
+async function insertReceipt(
+  transaction: MigrationTransaction,
+  input: {
+    sessionId: string;
+    reason: CleanupReceipt['reason'];
+    deletedKinds: CleanupReceipt['deletedKinds'];
+    completedAt: string;
+    uuid: () => string;
+    hash: (value: string) => Promise<string>;
+  },
+): Promise<CleanupReceipt> {
+  const receiptId = validateStorageId(input.uuid());
+  const contentFreeHash = await input.hash(
+    JSON.stringify({
+      sessionId: input.sessionId,
+      reason: input.reason,
+      completedAt: input.completedAt,
+      deletedKinds: input.deletedKinds,
+    }),
+  );
+  const receipt = validateCleanupReceipt({
+    id: receiptId,
+    sessionId: input.sessionId,
+    reason: input.reason,
+    deletedKinds: input.deletedKinds,
+    completedAt: input.completedAt,
+    contentFreeHash,
+    createdAt: input.completedAt,
+  });
+
+  await transaction.runAsync(
+    `INSERT INTO cleanup_receipts
+     (id, session_id, reason, deleted_kinds, completed_at, content_free_hash)
+     VALUES (?, ?, ?, ?, ?, ?)`,
+    receipt.id,
+    receipt.sessionId ?? null,
+    receipt.reason,
+    JSON.stringify(receipt.deletedKinds),
+    receipt.completedAt,
+    receipt.contentFreeHash,
+  );
+
+  return receipt;
 }
 
 /** Deletes failed sessions whose retry window has passed and writes their content-free receipts. */

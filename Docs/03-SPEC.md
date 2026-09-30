@@ -170,7 +170,7 @@ Cleanup receipts contain no transcript, journal, filename, name, or free text. T
 2. Start validates microphone permission, available storage, and a `ready` voice profile. It opens a mono compressed recording and moves to `recording`.
 3. Rotate chunks on a bounded interval selected and documented by the recording spike. Close, hash, encrypt, and persist each chunk before opening the next.
 4. Pause closes the active chunk, persists a pause interval, and stops capture. Resume opens a new sequence. Stop and scheduled end close the final chunk and move to `transcribing`.
-5. whisper.cpp, through a React Native binding selected and pinned during DYT-007, transcribes locally with timestamps and language tags. Language may switch within a segment set.
+5. whisper.cpp, through the pinned `whisper.rn` binding, transcribes locally with timestamps and language tags. Language may switch within a segment set.
 6. sherpa-onnx compares speech embeddings with the encrypted enrolled profile. Attribution thresholds are calibrated on multiple-speaker fixtures. Below threshold, use `unknown`.
 7. Delete each audio chunk after its transcript is durable. If transcription, analysis, or generation fails, retain only encrypted retry material until `retryUntil` (maximum 24 hours).
 8. After final journal save, delete transcripts, extracted events, and clarification data in one transaction and append a content-free cleanup receipt.

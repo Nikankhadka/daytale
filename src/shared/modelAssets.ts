@@ -85,6 +85,6 @@ function isValid(file: { size: number; md5: string | null }, asset: ModelAsset):
   return file.size === asset.bytes && file.md5?.toLowerCase() === asset.md5;
 }
 
-function toPlainPath(uri: string): string {
+export function toPlainPath(uri: string): string {
   return decodeURI(uri.replace(/^file:\/\//, '')).replace(/\/+$/, '');
 }

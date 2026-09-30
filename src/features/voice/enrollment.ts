@@ -13,6 +13,12 @@ export type SpeakerEmbeddingProvider = {
   /** Optional warm-up (e.g. model download) so callers can show progress before recording. */
   prepare?: () => Promise<void>;
   embeddingFromFile: (filePath: string) => Promise<readonly number[]>;
+  /** Embeds one time window of a recording. Providers that cannot do it leave it undefined. */
+  embeddingFromWindow?: (
+    filePath: string,
+    startMs: number,
+    durationMs: number,
+  ) => Promise<readonly number[]>;
 };
 
 export type VoiceEnrollmentSnapshot = {
@@ -22,6 +28,12 @@ export type VoiceEnrollmentSnapshot = {
 };
 
 export type SpeakerClassification = 'user' | 'other' | 'unknown';
+
+export type SpeakerScore = {
+  speaker: SpeakerClassification;
+  /** Cosine score (0..1) of the best candidate; 0 when the profile or embedding is unusable. */
+  confidence: number;
+};
 
 export class VoiceEnrollmentError extends Error {
   public constructor(message: string) {
@@ -113,41 +125,51 @@ export function cosineSimilarity(left: readonly number[], right: readonly number
   return dot / Math.sqrt(leftMagnitude * rightMagnitude);
 }
 
-export function classifySpeaker(
+type SpeakerScoreOptions = {
+  userThreshold?: number;
+  otherEmbeddings?: readonly (readonly number[])[];
+  otherThreshold?: number;
+};
+
+const UNKNOWN_SPEAKER: SpeakerScore = { speaker: 'unknown', confidence: 0 };
+
+const clampUnit = (value: number): number => Math.min(1, Math.max(0, value));
+
+/**
+ * Labels a voice and says how close it was. A match carries its own cosine score; an unmatched
+ * but valid voice stays 'unknown' and carries the best candidate score it fell short with.
+ */
+export function scoreSpeaker(
   profile: VoiceProfile,
   queryEmbedding: unknown,
-  options: {
-    userThreshold?: number;
-    otherEmbeddings?: readonly (readonly number[])[];
-    otherThreshold?: number;
-  } = {},
-): SpeakerClassification {
+  options: SpeakerScoreOptions = {},
+): SpeakerScore {
   if (profile.status !== 'ready' || profile.sampleCount !== VOICE_SAMPLE_COUNT) {
-    return 'unknown';
+    return UNKNOWN_SPEAKER;
   }
 
   let enrolled: SpeakerEmbedding;
   try {
     const decoded = decodeEmbeddingEnvelope(profile.encryptedEmbeddingBlob);
     if (decoded.modelVersion !== profile.modelVersion) {
-      return 'unknown';
+      return UNKNOWN_SPEAKER;
     }
     enrolled = decoded.embedding;
   } catch {
-    return 'unknown';
+    return UNKNOWN_SPEAKER;
   }
 
   let query: SpeakerEmbedding;
   try {
     query = validateSpeakerEmbedding(queryEmbedding);
   } catch {
-    return 'unknown';
+    return UNKNOWN_SPEAKER;
   }
 
   const userScore = cosineSimilarity(enrolled, query);
   const userThreshold = options.userThreshold ?? VOICE_MATCH_THRESHOLD;
   if (Number.isFinite(userScore) && userScore >= userThreshold) {
-    return 'user';
+    return { speaker: 'user', confidence: clampUnit(userScore) };
   }
 
   const otherThreshold = options.otherThreshold ?? VOICE_MATCH_THRESHOLD;
@@ -155,7 +177,23 @@ export function classifySpeaker(
     ...(options.otherEmbeddings ?? []).map((embedding) => cosineSimilarity(embedding, query)),
     Number.NEGATIVE_INFINITY,
   );
-  return Number.isFinite(otherScore) && otherScore >= otherThreshold ? 'other' : 'unknown';
+  if (Number.isFinite(otherScore) && otherScore >= otherThreshold) {
+    return { speaker: 'other', confidence: clampUnit(otherScore) };
+  }
+
+  const closest = [userScore, otherScore].filter(Number.isFinite);
+  return {
+    speaker: 'unknown',
+    confidence: closest.length === 0 ? 0 : clampUnit(Math.max(...closest)),
+  };
+}
+
+export function classifySpeaker(
+  profile: VoiceProfile,
+  queryEmbedding: unknown,
+  options: SpeakerScoreOptions = {},
+): SpeakerClassification {
+  return scoreSpeaker(profile, queryEmbedding, options).speaker;
 }
 
 export class VoiceEnrollmentController {

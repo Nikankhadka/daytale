@@ -6,6 +6,7 @@ export {
   cosineSimilarity,
   decodeEmbeddingEnvelope,
   encodeEmbeddingEnvelope,
+  scoreSpeaker,
   VOICE_MATCH_THRESHOLD,
   VOICE_MODEL_VERSION,
   VOICE_PROFILE_ID,
@@ -18,6 +19,7 @@ export type {
   SpeakerClassification,
   SpeakerEmbedding,
   SpeakerEmbeddingProvider,
+  SpeakerScore,
   VoiceEnrollmentSnapshot,
 } from './enrollment';
 export {
