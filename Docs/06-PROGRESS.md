@@ -4,20 +4,20 @@ This file records current delivery evidence and decisions. It does not repeat re
 
 ## Current milestone
 
-Canonical documentation baseline complete. DYT-001 repository foundation checks are green locally, but its iOS and Android development-client gate remains outstanding. DYT-002 implementation is in progress with its physical-device gate pending. DYT-003 implementation is in progress with automated persistence and cleanup checks green; its physical-device gate remains pending. DYT-004A implementation is in progress through the Voice Setup boundary, with its physical accessibility and visual gate pending. DYT-005 voice enrollment, DYT-006 production recording, and DYT-007 local transcription are ready for review with their physical-device gates pending.
+Canonical documentation baseline complete. DYT-001 repository foundation checks are green locally, but its iOS and Android development-client gate remains outstanding. DYT-002 implementation is in progress with its physical-device gate pending. DYT-003 implementation is in progress with automated persistence and cleanup checks green; its physical-device gate remains pending. DYT-004A implementation is in progress through the Voice Setup boundary, with its physical accessibility and visual gate pending. DYT-005 voice enrollment, DYT-006 production recording, and DYT-007 local transcription are ready for review with their physical-device gates pending. DYT-008 journal API is ready for review with its Cloud Run deployment and device gate pending.
 
 ## Ticket status
 
 Completed: none.
 Active: DYT-001, DYT-002, DYT-003, DYT-004.
 Blocked: none.
-Ready for review: DYT-005, DYT-006, DYT-007.
+Ready for review: DYT-005, DYT-006, DYT-007, DYT-008.
 Verified: none.
-Not started: DYT-008 through DYT-012.
+Not started: DYT-009 through DYT-012.
 
 ## Blockers and prerequisites
 
-There is no repository implementation blocker. DYT-001 and DYT-002 still need Apple and Google developer access plus physical devices for development-build and background-recording verification. DYT-008 needs the Google Cloud/Firebase project and a paid Gemini service configuration; the key must be provided only when that ticket starts and stored in Secret Manager.
+There is no repository implementation blocker. DYT-001 and DYT-002 still need Apple and Google developer access plus physical devices for development-build and background-recording verification. DYT-008 deployment needs the Google Cloud/Firebase project, App Check registration, and a paid Gemini key stored only in Secret Manager.
 
 ## Latest verified build
 
@@ -32,6 +32,8 @@ Expo SDK 57 repository foundation, DYT-002 recording-spike configuration, DYT-00
 2026-10-01: DYT-006 `npm run check` passed formatting, lint, TypeScript, 32 test suites with 317 tests, documentation links/placeholders, and route smoke checks. `npx expo export --platform web` passed. Today screens were compared with the prototype through web screenshots; capture, background behavior, interruptions, and recovery were exercised only through a fake recorder, and device verification is pending.
 
 2026-10-01: DYT-007 `npm run check` passed formatting, lint, TypeScript, 40 test suites with 429 tests, documentation links/placeholders, and route smoke checks. `npx expo export --platform web` and iOS and Android `expo export:embed` release bundles of the transcription slice passed. The iOS WAV transcoder was compiled with `swiftc` and decoded 16, 44.1, and 48 kHz inputs to 16 kHz mono PCM16; whisper.cpp itself ran only through a mocked binding, and device verification is pending.
+
+2026-10-01: DYT-008 `npm run check` passed formatting, lint, TypeScript, 40 test suites with 429 tests, documentation links/placeholders, route smoke checks, and the journal API service check (TypeScript plus 107 `node:test` tests). A local server with fake App Check and Gemini was exercised with curl for 200, 400, 401, 413, 429, 502, and 503, and log lines held no content. The Docker image built and answered an unauthenticated request with 401. No deployment, real App Check token, or live Gemini call has run.
 
 ## Dated decisions
 
@@ -55,3 +57,8 @@ Expo SDK 57 repository foundation, DYT-002 recording-spike configuration, DYT-00
 | 2026-10-01 | A local Expo module decodes stored AAC chunks to 16 kHz mono PCM16 WAV for whisper.cpp, instead of adding a general audio library. | Engineering |
 | 2026-10-01 | Transcript confidence is a heuristic (VAD coverage, repetition loops, speech rate, out-of-set language) because the binding exposes no token probabilities; low-confidence segments are kept and marked, not rewritten. | Engineering |
 | 2026-10-01 | Each transcript segment is tagged `ne` when it contains Devanagari letters and `en` otherwise; whisper is pinned to the one language the user speaks and auto-detects when both are selected. | Product/engineering |
+| 2026-10-01 | The journal API lives in `service/journal-api/` as a Node 22 service run directly from TypeScript, with `node:http`, `node:test`, and no web framework; its dependency-free `contract.ts` is shared with the app for response validation. | Engineering |
+| 2026-10-01 | Event kinds are `moment`, `activity`, `conversation`, `plan`, and `reflection`; question reasons are `missing_context`, `ambiguous_speaker`, and `unclear_speech`. | Product/engineering |
+| 2026-10-01 | Unsupported analyze events are dropped rather than failing the response; unsupported generate output fails the response. Malformed model output is retried once, then answers 502. | Engineering |
+| 2026-10-01 | Unsupported people, places, and feelings are detected heuristically (Latin capitalized words and an English feeling lexicon must appear in the evidence); Devanagari names are not detected. | Engineering |
+| 2026-10-01 | The mobile journal API client (App Check token, response re-validation, retry until `retryUntil`) is built with DYT-009, which owns processing. | Engineering |

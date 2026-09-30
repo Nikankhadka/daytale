@@ -18,5 +18,7 @@ jobs:
           cache: npm
       - name: Install dependencies
         run: npm ci
+      - name: Install journal API dependencies
+        run: npm ci --prefix service/journal-api
       - name: Verify foundation
         run: npm run check

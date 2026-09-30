@@ -27,6 +27,7 @@ Requirements: Node.js 22+, npm 10+, and Expo tooling for local development. Inst
 
 ```sh
 npm ci
+npm ci --prefix service/journal-api
 npm run check
 ```
 

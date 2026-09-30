@@ -3,11 +3,11 @@
 Daytale: private, device-first daily journaling app. Single Expo package (not a monorepo).
 
 ## Commands
-- Install: `npm ci` (Node 22 / npm 10 per .nvmrc + package.json engines).
-- Full gate, fixed order: `npm run check` = format -> lint -> typecheck -> jest -> check:docs -> check:routes.
+- Install: `npm ci && npm ci --prefix service/journal-api` (Node 22 / npm 10 per .nvmrc + package.json engines; CI installs both the same way).
+- Full gate, fixed order: `npm run check` = format -> lint -> typecheck -> jest -> check:docs -> check:routes -> check:service (journal API typecheck + node:test).
 - Single test: `npx jest __tests__/<file>.test.ts --runInBand` (e.g. `routes.test.ts`).
 - Format fix: `npm run format:write`. Run app: `npm start`.
-- CI (.github/workflows/ci.yml) runs `npm ci && npm run check` on push to main, feat/**, fix/** and every PR. Keep the chain green.
+- CI (.github/workflows/ci.yml) runs both installs then `npm run check` on push to main, feat/**, fix/** and every PR. Keep the chain green.
 
 ## Native build gotcha
 - Requires an EAS dev-client build (`eas build --profile development --platform ios|android`). Expo Go will NOT work: app.json enables expo-sqlite SQLCipher, @siteed/sherpa-onnx.rn, expo-audio background recording, expo-secure-store, expo-notifications - native modules Expo Go lacks.

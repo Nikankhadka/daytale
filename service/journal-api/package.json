@@ -1,0 +1,24 @@
+{
+  "name": "daytale-journal-api",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "description": "Stateless Cloud Run service for the Daytale journal API (analyze and generate).",
+  "engines": {
+    "node": ">=22.18 <23"
+  },
+  "scripts": {
+    "start": "node src/server.ts",
+    "typecheck": "tsc -p tsconfig.json",
+    "test": "node --test test/*.test.ts",
+    "check": "npm run typecheck && npm test"
+  },
+  "dependencies": {
+    "@google/genai": "2.25.0",
+    "firebase-admin": "14.5.0"
+  },
+  "devDependencies": {
+    "@types/node": "22.20.4",
+    "typescript": "6.0.3"
+  }
+}

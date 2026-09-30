@@ -11,7 +11,7 @@ Status values are `Not Started`, `In Progress`, `Blocked`, `Ready for Review`, a
 | DYT-005 | Voice enrollment and speaker identification | Ready for Review | DYT-002, DYT-003 |
 | DYT-006 | Production recording and recovery | Ready for Review | DYT-002, DYT-003, DYT-005 |
 | DYT-007 | Local transcription | Ready for Review | DYT-005, DYT-006 |
-| DYT-008 | Cloud Run and Gemini journal API | Not Started | DYT-001 |
+| DYT-008 | Cloud Run and Gemini journal API | Ready for Review | DYT-001 |
 | DYT-009 | Processing, clarification, and journals | Not Started | DYT-003, DYT-007, DYT-008 |
 | DYT-010 | Native recording controls | Not Started | DYT-006 |
 | DYT-011 | Accessibility, privacy, and visual quality | Not Started | DYT-004, DYT-009, DYT-010 |
@@ -149,7 +149,7 @@ Implementation evidence (2026-10-01): `src/features/transcription/` pins `whispe
 
 ## DYT-008 - Cloud Run and Gemini journal API
 
-Status: `Not Started`
+Status: `Ready for Review`
 Dependencies: DYT-001
 
 Outcome: Deploy stateless `/v1/journal/analyze` and `/v1/journal/generate` with App Check, Secret Manager, structured validation, size limits, Gemini configuration, retry responses, and redacted logging.
@@ -162,6 +162,8 @@ Definition of Done: API key exists only in Secret Manager, request/response bodi
 
 Automated verification: valid/malformed output, App Check, payload limit, prompt injection, unsupported facts, maximum questions, retry, and log-redaction tests.
 Physical-device verification: authenticated mobile requests over Wi-Fi and cellular with offline recovery.
+
+Implementation evidence (2026-10-01): `service/journal-api/` is a stateless Node 22 service with no build step and two runtime dependencies (`@google/genai`, `firebase-admin`). It serves both versioned endpoints behind Firebase App Check, verified before the body is read. Requests are strictly parsed (unknown keys, bad dates or time zones, duplicate segment ids, and limits answer 400; bodies over 1 MiB answer 413 while streaming). Gemini `gemini-3.8-flash` is called with a JSON response schema, medium thinking, no tools, and no cached content, with transcript data sent only inside a delimited untrusted-data block. Model output is validated again: malformed output is retried once and then answers 502; events without known evidence, `user` events without user evidence, events outside their evidence span, and events naming people, places, or feelings missing from their evidence are dropped; questions are capped at two. Upstream rate limits answer 429 with `Retry-After`, timeouts 504, and other failures 503. Every response carries a server `X-Request-Id`, and each log line holds only the request id, route, status, duration, error code, and counts. `src/contract.ts` has no imports so the app can reuse it for its own validation. `npm run check` now includes `check:service` (TypeScript plus 107 `node:test` tests over real HTTP, with a log-redaction assertion after every test). A local run with fake App Check and Gemini returned 200, 400, 401, 413, 429, 502, and 503 as specified, and the Docker image built and rejected an unauthenticated request with 401. Known limits: the grounding check covers Latin capitalized names and an English feeling lexicon only and does not check the first word of a sentence. Cloud Run deployment, Secret Manager, real App Check, a live Gemini call, and physical-device verification remain outstanding.
 
 ## DYT-009 - Processing, clarification, and journals
 

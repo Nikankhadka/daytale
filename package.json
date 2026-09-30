@@ -13,15 +13,16 @@
     "android": "expo start --android",
     "ios": "expo start --ios",
     "web": "expo start --web",
-    "format": "prettier --check \"app/**/*.{ts,tsx}\" \"src/**/*.{ts,tsx}\" \"modules/**/*.ts\" \"scripts/**/*.mjs\" \"__tests__/**/*.{ts,tsx}\" \"*.{json,cjs,mjs,ts,tsx}\"",
-    "format:write": "prettier --write \"app/**/*.{ts,tsx}\" \"src/**/*.{ts,tsx}\" \"modules/**/*.ts\" \"scripts/**/*.mjs\" \"__tests__/**/*.{ts,tsx}\" \"*.{json,cjs,mjs,ts,tsx}\"",
+    "format": "prettier --check \"app/**/*.{ts,tsx}\" \"src/**/*.{ts,tsx}\" \"modules/**/*.ts\" \"scripts/**/*.mjs\" \"__tests__/**/*.{ts,tsx}\" \"service/journal-api/{src,test}/**/*.ts\" \"*.{json,cjs,mjs,ts,tsx}\"",
+    "format:write": "prettier --write \"app/**/*.{ts,tsx}\" \"src/**/*.{ts,tsx}\" \"modules/**/*.ts\" \"scripts/**/*.mjs\" \"__tests__/**/*.{ts,tsx}\" \"service/journal-api/{src,test}/**/*.ts\" \"*.{json,cjs,mjs,ts,tsx}\"",
     "lint": "eslint .",
     "typecheck": "tsc --noEmit",
     "test": "jest --runInBand",
     "test:watch": "jest --watch",
     "check:docs": "node scripts/check-docs.mjs",
     "check:routes": "node scripts/check-routes.mjs",
-    "check": "npm run format && npm run lint && npm run typecheck && npm test && npm run check:docs && npm run check:routes"
+    "check:service": "npm --prefix service/journal-api run check",
+    "check": "npm run format && npm run lint && npm run typecheck && npm test && npm run check:docs && npm run check:routes && npm run check:service"
   },
   "dependencies": {
     "@expo-google-fonts/figtree": "^0.4.1",
