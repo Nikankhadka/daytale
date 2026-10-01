@@ -71,6 +71,25 @@ export type ChunkTranscriptWrite = {
   segments: TranscriptSegment[];
 };
 
+export type SessionAnalysisWrite = {
+  sessionId: string;
+  events: ExtractedEvent[];
+  questions: ClarificationQuestion[];
+};
+
+export type StoredAnalysis = {
+  events: ExtractedEvent[];
+  questions: ClarificationQuestion[];
+};
+
+export type ClarificationSubmissionWrite = {
+  /** The same session's open questions, already carrying their answered/skipped status. */
+  questions: ClarificationQuestion[];
+  answers: ClarificationAnswer[];
+  /** Applied in the same transaction as the question changes. */
+  sessionOperation: { operation: RecordingOperation; action: RecordingSessionAction };
+};
+
 export type StorageRepositories = {
   appPreferences: EntityRepository<AppPreferences>;
   voiceProfiles: VoiceProfileRepository;
@@ -95,6 +114,15 @@ export type StorageRepositories = {
   saveChunkTranscript: (input: ChunkTranscriptWrite) => Promise<boolean>;
   /** Deletes a closed chunk's unusable audio without a transcript; false if not closed. */
   discardClosedChunk: (id: string) => Promise<boolean>;
+  listTranscriptSegmentsBySession: (sessionId: string) => Promise<TranscriptSegment[]>;
+  listExtractedEventsBySession: (sessionId: string) => Promise<ExtractedEvent[]>;
+  listClarificationQuestionsBySession: (sessionId: string) => Promise<ClarificationQuestion[]>;
+  /** Replaces a session's analysis (events and questions) in one transaction. */
+  replaceSessionAnalysis: (input: SessionAnalysisWrite) => Promise<StoredAnalysis>;
+  /** Settles clarification questions and advances the session in one transaction. */
+  saveClarificationSubmission: (
+    input: ClarificationSubmissionWrite,
+  ) => Promise<RecordingSessionOperationResult>;
 };
 
 type SqlRow = Record<string, unknown>;
@@ -237,6 +265,13 @@ export function createStorageRepositories(database: MigrationDatabase): StorageR
     readAudioChunkBytes: (id) => readAudioChunkBytes(database, id),
     saveChunkTranscript: (input) => saveChunkTranscript(database, input),
     discardClosedChunk: (id) => discardClosedChunk(database, id),
+    listTranscriptSegmentsBySession: (sessionId) =>
+      listTranscriptSegmentsBySession(database, sessionId),
+    listExtractedEventsBySession: (sessionId) => listExtractedEventsBySession(database, sessionId),
+    listClarificationQuestionsBySession: (sessionId) =>
+      listClarificationQuestionsBySession(database, sessionId),
+    replaceSessionAnalysis: (input) => replaceSessionAnalysis(database, input),
+    saveClarificationSubmission: (input) => saveClarificationSubmission(database, input),
   };
 }
 
@@ -440,6 +475,133 @@ export async function discardClosedChunk(
     }
     await settleChunk(transaction, chunkId, 'deleted');
     return true;
+  });
+}
+
+/**
+ * Transcript segments of one session, ordered by chunk sequence and then by their chunk-relative
+ * start. Timestamps restart at zero for every chunk, so the join is what puts them back in time.
+ */
+export async function listTranscriptSegmentsBySession(
+  database: MigrationDatabase,
+  sessionId: string,
+): Promise<TranscriptSegment[]> {
+  const rows = await database.getAllAsync<SqlRow>(
+    `SELECT ts.id, ts.session_id, ts.chunk_id, ts.start_ms, ts.end_ms, ts.text, ts.language,
+            ts.speaker, ts.speaker_confidence, ts.transcript_confidence, ts.created_at
+     FROM transcript_segments ts
+     LEFT JOIN audio_chunks c ON c.id = ts.chunk_id
+     WHERE ts.session_id = ?
+     ORDER BY c.sequence, ts.start_ms, ts.id`,
+    validateStorageId(sessionId),
+  );
+  return rows.map(mapTranscriptSegment);
+}
+
+export async function listExtractedEventsBySession(
+  database: MigrationDatabase,
+  sessionId: string,
+): Promise<ExtractedEvent[]> {
+  const rows = await database.getAllAsync<SqlRow>(
+    `SELECT ${EXTRACTED_EVENT_COLUMNS} FROM extracted_events
+     WHERE session_id = ? ORDER BY start_ms, id`,
+    validateStorageId(sessionId),
+  );
+  return rows.map(mapExtractedEvent);
+}
+
+export async function listClarificationQuestionsBySession(
+  database: MigrationDatabase,
+  sessionId: string,
+): Promise<ClarificationQuestion[]> {
+  const rows = await database.getAllAsync<SqlRow>(
+    `SELECT ${CLARIFICATION_QUESTION_COLUMNS} FROM clarification_questions
+     WHERE session_id = ? ORDER BY start_ms, id`,
+    validateStorageId(sessionId),
+  );
+  return rows.map(mapClarificationQuestion);
+}
+
+/**
+ * Makes one session's analysis durable, replacing anything a previous attempt wrote. The delete
+ * and the inserts share a transaction, so a rerun after a failure can never duplicate events or
+ * questions. The max-two-open-questions guard still applies inside `writeClarificationQuestion`.
+ */
+export async function replaceSessionAnalysis(
+  database: MigrationDatabase,
+  input: SessionAnalysisWrite,
+): Promise<StoredAnalysis> {
+  const sessionId = validateStorageId(input.sessionId);
+  const events = input.events.map((event) => validateExtractedEvent(event));
+  const questions = input.questions.map((question) => validateClarificationQuestion(question));
+  if (events.some((event) => event.sessionId !== sessionId)) {
+    throw new StorageRepositoryError('An extracted event does not belong to the session.');
+  }
+  if (questions.some((question) => question.sessionId !== sessionId)) {
+    throw new StorageRepositoryError('A clarification question does not belong to the session.');
+  }
+  await withExclusiveTransaction(database, async (transaction) => {
+    await assertSessionExists(transaction, sessionId);
+    await run(
+      transaction,
+      `DELETE FROM clarification_answers
+       WHERE question_id IN (SELECT id FROM clarification_questions WHERE session_id = ?)`,
+      sessionId,
+    );
+    await run(transaction, 'DELETE FROM clarification_questions WHERE session_id = ?', sessionId);
+    await run(transaction, 'DELETE FROM extracted_events WHERE session_id = ?', sessionId);
+    for (const event of events) {
+      await writeExtractedEvent(transaction, event);
+    }
+    for (const question of questions) {
+      await writeClarificationQuestion(transaction, question);
+    }
+  });
+  return { events, questions };
+}
+
+/**
+ * Marks a session's clarification answers as answered or skipped and advances it, atomically.
+ * Every question must still be open and owned by the session, so a second submission is refused
+ * rather than rewriting a settled answer.
+ */
+export async function saveClarificationSubmission(
+  database: MigrationDatabase,
+  input: ClarificationSubmissionWrite,
+): Promise<RecordingSessionOperationResult> {
+  const sessionId = validateStorageId(input.sessionOperation.operation.sessionId);
+  const questions = input.questions.map((question) => validateClarificationQuestion(question));
+  const answers = input.answers.map((answer) => validateClarificationAnswer(answer));
+  if (questions.some((question) => question.sessionId !== sessionId)) {
+    throw new StorageRepositoryError('A clarification question does not belong to the session.');
+  }
+  return withExclusiveTransaction(database, async (transaction) => {
+    for (const question of questions) {
+      if (question.status === 'open') {
+        throw new StorageRepositoryError('A clarification submission must settle its questions.');
+      }
+      const existing = await transaction.getFirstAsync<{ session_id: string; status: string }>(
+        'SELECT session_id, status FROM clarification_questions WHERE id = ?',
+        question.id,
+      );
+      if (existing === null || existing.session_id !== sessionId || existing.status !== 'open') {
+        throw new StorageRepositoryError('Clarification question is not open for this session.');
+      }
+      await run(
+        transaction,
+        'UPDATE clarification_questions SET status = ? WHERE id = ?',
+        question.status,
+        question.id,
+      );
+    }
+    for (const answer of answers) {
+      await writeClarificationAnswer(transaction, answer);
+    }
+    return applyRecordingSessionOperationInTransaction(
+      transaction,
+      input.sessionOperation.operation,
+      input.sessionOperation.action,
+    );
   });
 }
 
