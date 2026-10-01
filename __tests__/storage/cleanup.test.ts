@@ -215,7 +215,7 @@ async function insertPreservedMaterial(database: MigrationDatabase): Promise<voi
     1,
     'granted',
     1,
-    'system',
+    'light',
     0,
     timestamps.created,
     timestamps.created,

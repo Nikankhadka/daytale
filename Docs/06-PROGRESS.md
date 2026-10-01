@@ -62,3 +62,4 @@ Expo SDK 57 repository foundation, DYT-002 recording-spike configuration, DYT-00
 | 2026-10-01 | Unsupported analyze events are dropped rather than failing the response; unsupported generate output fails the response. Malformed model output is retried once, then answers 502. | Engineering |
 | 2026-10-01 | Unsupported people, places, and feelings are detected heuristically (Latin capitalized words and an English feeling lexicon must appear in the evidence); Devanagari names are not detected. | Engineering |
 | 2026-10-01 | The mobile journal API client (App Check token, response re-validation, retry until `retryUntil`) is built with DYT-009, which owns processing. | Engineering |
+| 2026-10-01 | Light is the default theme; the user toggles light/dark; the system-follow option was removed; the dark palette was re-derived from the light identity with AA contrast. | Design/engineering |

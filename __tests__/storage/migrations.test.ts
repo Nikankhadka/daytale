@@ -85,7 +85,7 @@ describe('storage schema migrations', () => {
     await database.closeAsync();
   });
 
-  it('creates the section-5 tables and operation identity table at schema version six', async () => {
+  it('creates the section-5 tables and operation identity table at schema version seven', async () => {
     await applyMigrations(database);
 
     const version = database.native.prepare('PRAGMA user_version').get() as {
@@ -97,7 +97,7 @@ describe('storage schema migrations', () => {
       )
       .all() as { name: string }[];
 
-    expect(version.user_version).toBe(6);
+    expect(version.user_version).toBe(7);
     expect(rows.map((row) => row.name)).toEqual([...tableNames].sort());
     expect(
       (database.native.prepare('PRAGMA foreign_keys').get() as { foreign_keys: number })
@@ -124,7 +124,7 @@ describe('storage schema migrations', () => {
     expect(
       (database.native.prepare('PRAGMA user_version').get() as { user_version: number })
         .user_version,
-    ).toBe(6);
+    ).toBe(7);
   });
 
   it('upgrades an existing version-one database with operation identity and retry support', async () => {
@@ -147,7 +147,7 @@ describe('storage schema migrations', () => {
     expect(
       (database.native.prepare('PRAGMA user_version').get() as { user_version: number })
         .user_version,
-    ).toBe(6);
+    ).toBe(7);
     expect(
       database.native
         .prepare(
@@ -174,7 +174,7 @@ describe('storage schema migrations', () => {
     expect(
       (database.native.prepare('PRAGMA user_version').get() as { user_version: number })
         .user_version,
-    ).toBe(6);
+    ).toBe(7);
     expect(
       (
         database.native.prepare('PRAGMA table_info(recording_sessions)').all() as { name: string }[]
@@ -188,7 +188,7 @@ describe('storage schema migrations', () => {
       database.native
         .prepare(
           `INSERT INTO app_preferences (id, first_name, spoken_languages, journal_language, schedule_start_local, schedule_end_local, timezone, notifications_enabled, microphone_permission_state, onboarding_complete, theme, reduced_motion, created_at, updated_at, onboarding_stage)
-           VALUES ('55555555-5555-4555-8555-555555555555', 'Ada', '["en"]', 'en', '08:30', '09:30', 'UTC', 1, 'granted', 0, 'system', 0, '2026-09-26T00:00:00.000Z', '2026-09-26T00:00:00.000Z', ?)`,
+           VALUES ('55555555-5555-4555-8555-555555555555', 'Ada', '["en"]', 'en', '08:30', '09:30', 'UTC', 1, 'granted', 0, 'light', 0, '2026-09-26T00:00:00.000Z', '2026-09-26T00:00:00.000Z', ?)`,
         )
         .run(stage);
 
@@ -255,7 +255,61 @@ describe('storage schema migrations', () => {
     expect(
       (database.native.prepare('PRAGMA user_version').get() as { user_version: number })
         .user_version,
+    ).toBe(7);
+  });
+
+  it('rejects the removed system theme in the current app preferences schema', async () => {
+    await applyMigrations(database);
+
+    expect(() =>
+      database.native
+        .prepare(
+          `INSERT INTO app_preferences (id, spoken_languages, journal_language, schedule_start_local, schedule_end_local, timezone, notifications_enabled, microphone_permission_state, onboarding_complete, theme, reduced_motion, created_at, updated_at, onboarding_stage)
+           VALUES ('66666666-6666-4666-8666-666666666666', '["en"]', 'en', '08:30', '09:30', 'UTC', 1, 'granted', 0, 'system', 0, '2026-09-26T00:00:00.000Z', '2026-09-26T00:00:00.000Z', 'schedule')`,
+        )
+        .run(),
+    ).toThrow(/CHECK/);
+  });
+
+  it('narrows version-six preferences to light or dark and converts a stored system theme', async () => {
+    const preferencesId = '66666666-6666-4666-8666-666666666666';
+    await applyMigrations(database, MIGRATIONS.slice(0, 6));
+    expect(
+      (database.native.prepare('PRAGMA user_version').get() as { user_version: number })
+        .user_version,
     ).toBe(6);
+    database.native
+      .prepare(
+        `INSERT INTO app_preferences (id, first_name, spoken_languages, journal_language, schedule_start_local, schedule_end_local, timezone, notifications_enabled, microphone_permission_state, onboarding_complete, theme, reduced_motion, created_at, updated_at, onboarding_stage)
+         VALUES (?, 'Ada', '["en"]', 'en', '08:30', '09:30', 'UTC', 1, 'granted', 0, 'system', 1, '2026-09-26T00:00:00.000Z', '2026-09-26T00:00:00.000Z', 'schedule')`,
+      )
+      .run(preferencesId);
+
+    await applyMigrations(database);
+
+    expect(
+      (database.native.prepare('PRAGMA user_version').get() as { user_version: number })
+        .user_version,
+    ).toBe(7);
+    expect(database.native.prepare('SELECT * FROM app_preferences').all()).toEqual([
+      {
+        id: preferencesId,
+        first_name: 'Ada',
+        spoken_languages: '["en"]',
+        journal_language: 'en',
+        schedule_start_local: '08:30',
+        schedule_end_local: '09:30',
+        timezone: 'UTC',
+        notifications_enabled: 1,
+        microphone_permission_state: 'granted',
+        onboarding_complete: 0,
+        theme: 'light',
+        reduced_motion: 1,
+        created_at: '2026-09-26T00:00:00.000Z',
+        updated_at: '2026-09-26T00:00:00.000Z',
+        onboarding_stage: 'schedule',
+      },
+    ]);
   });
 
   it('rolls back a failing migration without changing schema or user_version', async () => {
@@ -443,7 +497,7 @@ describe('storage schema migrations', () => {
     expect(injectedDatabase.execAsync.mock.calls[0][0]).toBe("PRAGMA key = 'test-key';");
     expect(injectedDatabase.execAsync).toHaveBeenCalledWith('PRAGMA secure_delete = ON;');
     expect(injectedDatabase.native.prepare('PRAGMA user_version').get()).toEqual({
-      user_version: 6,
+      user_version: 7,
     });
     expect(DATABASE_NAME).toBe('daytale.db');
   });

@@ -3,7 +3,7 @@ import { fireEvent, render, waitFor } from '@testing-library/react-native';
 import { VOICE_PROFILE_ID, VOICE_MODEL_VERSION } from '../../src/features/voice/enrollment';
 import { PreferencesSettingsScreen } from '../../src/features/preferences';
 import { VOICE_SETUP_ROUTE_PATH } from '../../src/navigation/routes';
-import type { VoiceProfile } from '../../src/storage/types';
+import type { AppPreferences, VoiceProfile } from '../../src/storage/types';
 
 const mockPush = jest.fn();
 const mockGetBootstrappedStorage = jest.fn();
@@ -31,8 +31,14 @@ const readyProfile: VoiceProfile = {
   updatedAt: now,
 };
 
+let appPreferencesRepository: {
+  getById: jest.Mock;
+  save: jest.Mock;
+};
+
 function bootstrapWithProfile(initial: VoiceProfile | null) {
   let profile = initial;
+  let preferences: AppPreferences | null = null;
   const voiceProfiles = {
     getById: jest.fn(async () => profile),
     findById: jest.fn(async () => profile),
@@ -42,9 +48,16 @@ function bootstrapWithProfile(initial: VoiceProfile | null) {
       profile = null;
     }),
   };
+  appPreferencesRepository = {
+    getById: jest.fn(async () => preferences),
+    save: jest.fn(async (next: AppPreferences) => {
+      preferences = next;
+      return next;
+    }),
+  };
   mockGetBootstrappedStorage.mockReturnValue({
     database: {},
-    repositories: { voiceProfiles },
+    repositories: { voiceProfiles, appPreferences: appPreferencesRepository },
   });
   return voiceProfiles;
 }
@@ -119,6 +132,28 @@ describe('settings voice profile card', () => {
 
     expect(mockPush).toHaveBeenCalledWith(VOICE_SETUP_ROUTE_PATH);
     expect(VOICE_SETUP_ROUTE_PATH).toBe('/voice-setup');
+  });
+
+  it('toggles dark mode and persists dark then light through the preferences path', async () => {
+    bootstrapWithProfile(readyProfile);
+    const screen = await render(<PreferencesSettingsScreen />);
+    await waitFor(() => expect(screen.getByText('Voice profile ready - 3 samples')).toBeTruthy());
+
+    expect(screen.getByLabelText('Dark mode').props.value).toBe(false);
+
+    await fireEvent(screen.getByLabelText('Dark mode'), 'valueChange', true);
+    await waitFor(() =>
+      expect(appPreferencesRepository.save).toHaveBeenLastCalledWith(
+        expect.objectContaining({ theme: 'dark' }),
+      ),
+    );
+
+    await fireEvent(screen.getByLabelText('Dark mode'), 'valueChange', false);
+    await waitFor(() =>
+      expect(appPreferencesRepository.save).toHaveBeenLastCalledWith(
+        expect.objectContaining({ theme: 'light' }),
+      ),
+    );
   });
 
   it.each([

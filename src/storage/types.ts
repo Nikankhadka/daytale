@@ -1,6 +1,6 @@
 export type UtcTimestamp = string;
 export type Language = 'en' | 'ne';
-export type Theme = 'system' | 'light' | 'dark';
+export type Theme = 'light' | 'dark';
 export type MicrophonePermissionState = 'undetermined' | 'granted' | 'denied' | 'blocked';
 export const ONBOARDING_STAGES = [
   'welcome',
@@ -381,7 +381,7 @@ export function validateAppPreferences(value: unknown): AppPreferences {
     ]),
     onboardingComplete: booleanValue(record, 'onboardingComplete'),
     onboardingStage: enumValue(record, 'onboardingStage', ONBOARDING_STAGES),
-    theme: enumValue(record, 'theme', ['system', 'light', 'dark']),
+    theme: enumValue(record, 'theme', ['light', 'dark']),
     reducedMotion: booleanValue(record, 'reducedMotion'),
     updatedAt: timestamp(record, 'updatedAt'),
   };

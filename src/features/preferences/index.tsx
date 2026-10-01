@@ -43,7 +43,7 @@ export function createDefaultAppPreferences(
     microphonePermissionState: 'undetermined',
     onboardingComplete: false,
     onboardingStage: 'welcome',
-    theme: 'system',
+    theme: 'light',
     reducedMotion: false,
     createdAt: now,
     updatedAt: now,
@@ -209,15 +209,13 @@ export function PreferencesSettingsScreen() {
       <Text style={[styles.sectionTitle, typography.heading, { color: colors.ink }]}>
         Appearance
       </Text>
-      <View style={styles.rowGroup}>
-        {(['system', 'light', 'dark'] as const).map((theme) => (
-          <PreferenceChoice
-            key={theme}
-            label={theme[0].toUpperCase() + theme.slice(1)}
-            selected={current.theme === theme}
-            onPress={() => void save({ theme })}
-          />
-        ))}
+      <View style={[styles.switchRow, { borderColor: colors.line }]}>
+        <Text style={[typography.body, { color: colors.ink, flex: 1 }]}>Dark mode</Text>
+        <Switch
+          accessibilityLabel="Dark mode"
+          onValueChange={(darkMode) => void save({ theme: darkMode ? 'dark' : 'light' })}
+          value={current.theme === 'dark'}
+        />
       </View>
       <View style={[styles.switchRow, { borderColor: colors.line }]}>
         <Text style={[typography.body, { color: colors.ink, flex: 1 }]}>Reduce motion</Text>

@@ -1,4 +1,4 @@
-export const DATABASE_SCHEMA_VERSION = 6;
+export const DATABASE_SCHEMA_VERSION = 7;
 
 function uuidConstraint(column: string): string {
   return `length(${column}) = 36 AND length(replace(${column}, '-', '')) = 32 AND substr(${column}, 9, 1) = '-' AND substr(${column}, 14, 1) = '-' AND substr(${column}, 19, 1) = '-' AND substr(${column}, 24, 1) = '-' AND ${column} NOT GLOB '*[^0-9A-Fa-f-]*' AND substr(${column}, 15, 1) GLOB '[1-5]' AND substr(${column}, 20, 1) GLOB '[89abAB]'`;
@@ -29,7 +29,28 @@ function utcConstraint(column: string): string {
   ].join(' AND ');
 }
 
+// Current app_preferences shape. `theme` is a two-state user choice: light is the
+// default and dark is an explicit toggle. The removed `system` value cannot be
+// narrowed in place, so migration 7 rebuilds older tables into this shape.
 const APP_PREFERENCES_COLUMNS_SQL = `id TEXT PRIMARY KEY NOT NULL CHECK (${UUID_CONSTRAINT}),
+    first_name TEXT,
+    spoken_languages TEXT NOT NULL,
+    journal_language TEXT NOT NULL CHECK (journal_language IN ('en', 'ne')),
+    schedule_start_local TEXT NOT NULL,
+    schedule_end_local TEXT NOT NULL,
+    timezone TEXT NOT NULL,
+    notifications_enabled INTEGER NOT NULL CHECK (notifications_enabled IN (0, 1)),
+    microphone_permission_state TEXT NOT NULL CHECK (microphone_permission_state IN ('undetermined', 'granted', 'denied', 'blocked')),
+    onboarding_complete INTEGER NOT NULL CHECK (onboarding_complete IN (0, 1)),
+    theme TEXT NOT NULL CHECK (theme IN ('light', 'dark')),
+    reduced_motion INTEGER NOT NULL CHECK (reduced_motion IN (0, 1)),
+    created_at TEXT NOT NULL CHECK (${utcConstraint('created_at')}),
+    updated_at TEXT NOT NULL CHECK (${utcConstraint('updated_at')})`;
+
+// Historical shape used by the version-5 table rebuild, which ran before the
+// `system` option was removed. A version-4 database can still hold 'system', so
+// that rebuild keeps the tri-state CHECK; migration 7 narrows it afterwards.
+const APP_PREFERENCES_V5_COLUMNS_SQL = `id TEXT PRIMARY KEY NOT NULL CHECK (${UUID_CONSTRAINT}),
     first_name TEXT,
     spoken_languages TEXT NOT NULL,
     journal_language TEXT NOT NULL CHECK (journal_language IN ('en', 'ne')),
@@ -178,10 +199,21 @@ export const CREATE_ONBOARDING_STAGE_SCHEMA_STATEMENTS = [
 
 // SQLite cannot widen a CHECK constraint in place, so 'ready' needs a table rebuild.
 export const CREATE_READY_ONBOARDING_STAGE_SCHEMA_STATEMENTS = [
-  `CREATE TABLE app_preferences_next (${APP_PREFERENCES_COLUMNS_SQL},
+  `CREATE TABLE app_preferences_next (${APP_PREFERENCES_V5_COLUMNS_SQL},
     onboarding_stage TEXT NOT NULL DEFAULT 'welcome' CHECK (onboarding_stage IN ('welcome', 'languages', 'schedule', 'privacy', 'voice', 'ready'))
   )`,
   `INSERT INTO app_preferences_next SELECT id, first_name, spoken_languages, journal_language, schedule_start_local, schedule_end_local, timezone, notifications_enabled, microphone_permission_state, onboarding_complete, theme, reduced_motion, created_at, updated_at, onboarding_stage FROM app_preferences`,
+  'DROP TABLE app_preferences',
+  'ALTER TABLE app_preferences_next RENAME TO app_preferences',
+] as const;
+
+// SQLite cannot narrow a CHECK constraint in place either, so removing the
+// `system` option needs a table rebuild. Stored 'system' rows become the light default.
+export const CREATE_LIGHT_DARK_THEME_SCHEMA_STATEMENTS = [
+  `CREATE TABLE app_preferences_next (${APP_PREFERENCES_COLUMNS_SQL},
+    onboarding_stage TEXT NOT NULL DEFAULT 'welcome' CHECK (onboarding_stage IN ('welcome', 'languages', 'schedule', 'privacy', 'voice', 'ready'))
+  )`,
+  `INSERT INTO app_preferences_next SELECT id, first_name, spoken_languages, journal_language, schedule_start_local, schedule_end_local, timezone, notifications_enabled, microphone_permission_state, onboarding_complete, CASE WHEN theme = 'system' THEN 'light' ELSE theme END, reduced_motion, created_at, updated_at, onboarding_stage FROM app_preferences`,
   'DROP TABLE app_preferences',
   'ALTER TABLE app_preferences_next RENAME TO app_preferences',
 ] as const;
@@ -198,4 +230,5 @@ export const SCHEMA_SQL = `${[
   ...CREATE_ONBOARDING_STAGE_SCHEMA_STATEMENTS,
   ...CREATE_READY_ONBOARDING_STAGE_SCHEMA_STATEMENTS,
   ...CREATE_AUDIO_BLOB_SCHEMA_STATEMENTS,
+  ...CREATE_LIGHT_DARK_THEME_SCHEMA_STATEMENTS,
 ].join(';\n')};`;
