@@ -83,6 +83,7 @@ export function analyzedResponse(overrides: Partial<AnalyzeResponse> = {}): Anal
 export async function createProcessingFixture(
   options: {
     chunks?: number;
+    chunkStartOffsetsMs?: readonly number[];
     segments?: TranscriptSegment[];
     status?: RecordingSessionStatus;
     journalLanguage?: Language;
@@ -90,7 +91,7 @@ export async function createProcessingFixture(
     analysis?: AnalyzeResult;
   } = {},
 ): Promise<ProcessingFixture> {
-  const storage = await createStorageFixture(options.chunks ?? 1);
+  const storage = await createStorageFixture(options.chunks ?? 1, options.chunkStartOffsetsMs);
   const { repositories } = storage;
 
   await repositories.appPreferences.save({

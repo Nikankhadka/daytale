@@ -24,13 +24,20 @@ export function audioFor(sequence: number): Uint8Array {
   return bytesOf(`m4a-bytes-${sequence}`);
 }
 
-export function makeClosedChunk(sequence: number, audio = audioFor(sequence)): AudioChunk {
+export const CHUNK_DURATION_MS = 30_000;
+
+export function makeClosedChunk(
+  sequence: number,
+  audio = audioFor(sequence),
+  startOffsetMs = sequence * CHUNK_DURATION_MS,
+): AudioChunk {
+  const startedAtMs = Date.parse(CHUNK_STARTED_AT) + startOffsetMs;
   return {
     id: chunkId(sequence),
     sessionId: SESSION_ID,
     sequence,
-    startedAt: new Date(Date.parse(CHUNK_STARTED_AT) + sequence * 30_000).toISOString(),
-    endedAt: new Date(Date.parse(CHUNK_STARTED_AT) + (sequence + 1) * 30_000).toISOString(),
+    startedAt: new Date(startedAtMs).toISOString(),
+    endedAt: new Date(startedAtMs + CHUNK_DURATION_MS).toISOString(),
     codec: 'aac',
     sampleRate: 16_000,
     encryptedPath: `file:///cache/chunk-${sequence}.m4a`,
@@ -71,14 +78,21 @@ export type StorageFixture = {
   repositories: StorageRepositories;
 };
 
-/** A migrated in-memory database holding one transcribing session and `chunks` closed chunks. */
-export async function createStorageFixture(chunks = 1): Promise<StorageFixture> {
+/**
+ * A migrated in-memory database holding one transcribing session and `chunks` closed chunks.
+ * `chunkStartOffsetsMs` overrides individual chunks' offsets from CHUNK_STARTED_AT (defaulting to
+ * the usual 30-second spacing), which lets a test place a boundary at a non-default session time.
+ */
+export async function createStorageFixture(
+  chunks = 1,
+  chunkStartOffsetsMs: readonly number[] = [],
+): Promise<StorageFixture> {
   const database = await createMigratedDatabase();
   const repositories = createStorageRepositories(database);
   await repositories.recordingSessions.save(makeScheduledSession({ status: 'transcribing' }));
   for (let sequence = 0; sequence < chunks; sequence += 1) {
     await repositories.saveClosedAudioChunk({
-      chunk: makeClosedChunk(sequence),
+      chunk: makeClosedChunk(sequence, audioFor(sequence), chunkStartOffsetsMs[sequence]),
       audio: audioFor(sequence),
     });
   }

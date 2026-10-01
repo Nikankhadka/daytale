@@ -1,3 +1,4 @@
+import { StorageRepositoryError } from '../../src/storage/repositories';
 import { SESSION_ID } from './kit';
 import { analyzedQuestion, analyzedResponse, createProcessingFixture } from './kit';
 
@@ -59,6 +60,42 @@ describe('submitClarification', () => {
     expect(await fixture.repositories.clarificationAnswers.list()).toHaveLength(0);
   });
 
+  it('rejects a submission that leaves an open question unanswered', async () => {
+    const { fixture, questions } = await fixtureWithTwoQuestions();
+    const [answered, missed] = questions;
+
+    const result = await fixture.submit([{ questionId: answered.id, answerText: 'partial' }]);
+
+    expect(result.status).toBe('rejected');
+    if (result.status !== 'rejected') {
+      throw new Error('expected a rejected result');
+    }
+    expect(result.code).toBe('missing-question');
+    expect((await fixture.session()).status).toBe('awaiting clarification');
+    const stored = await fixture.repositories.listClarificationQuestionsBySession(SESSION_ID);
+    expect(stored.find((question) => question.id === missed.id)?.status).toBe('open');
+    expect(stored.every((question) => question.status === 'open')).toBe(true);
+    expect(await fixture.repositories.clarificationAnswers.list()).toHaveLength(0);
+  });
+
+  it('reports a rejected advance instead of settling the questions', async () => {
+    const { fixture, questions } = await fixtureWithTwoQuestions();
+    fixture.repositories.saveClarificationSubmission = async () => {
+      throw new StorageRepositoryError('forced rejection');
+    };
+
+    const result = await fixture.submit(
+      questions.map((question) => ({ questionId: question.id, answerText: 'answer' })),
+    );
+
+    expect(result.status).toBe('rejected');
+    if (result.status !== 'rejected') {
+      throw new Error('expected a rejected result');
+    }
+    expect(result.code).toBe('rejected');
+    expect((await fixture.session()).status).toBe('awaiting clarification');
+  });
+
   it('rejects a duplicate question id in one submission', async () => {
     const { fixture, questions } = await fixtureWithTwoQuestions();
     const [question] = questions;
@@ -78,9 +115,12 @@ describe('submitClarification', () => {
 
   it('rejects a second submission once the questions are settled', async () => {
     const { fixture, questions } = await fixtureWithTwoQuestions();
-    const [question] = questions;
-
-    const first = await fixture.submit([{ questionId: question.id, answerText: 'First answer' }]);
+    const [question, other] = questions;
+    // A submission must cover every open question, so the first pass settles both.
+    const first = await fixture.submit([
+      { questionId: question.id, answerText: 'First answer' },
+      { questionId: other.id },
+    ]);
     const second = await fixture.submit([{ questionId: question.id, answerText: 'Second answer' }]);
 
     expect(first.status).toBe('submitted');

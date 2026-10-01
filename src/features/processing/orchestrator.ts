@@ -3,7 +3,11 @@ import { randomUUID } from 'expo-crypto';
 import type { AnalyzeRequest, AnalyzeResponse } from '../../../service/journal-api/src/contract';
 import { LIMITS } from '../../../service/journal-api/src/contract';
 import type { StorageBootstrapResult } from '../../storage/bootstrap';
-import type { StorageRepositories } from '../../storage/repositories';
+import {
+  StorageRepositoryError,
+  type RecordingSessionOperationResult,
+  type StorageRepositories,
+} from '../../storage/repositories';
 import {
   validateStorageId,
   type AppPreferences,
@@ -72,6 +76,7 @@ export type SubmitClarificationResult =
         | 'not-awaiting-clarification'
         | 'unknown-question'
         | 'duplicate-question'
+        | 'missing-question'
         | 'rejected';
       session: RecordingSession | null;
     };
@@ -99,9 +104,10 @@ export function processSession(
 }
 
 /**
- * Records the user's clarification answers (or skips) and advances to `generating`. The question
- * ids must belong to the session and still be open; a question that a previous submission already
- * settled is refused, so a second submission changes nothing.
+ * Records the user's clarification answers (or skips) and advances to `generating`. Every open
+ * question must be covered, and each id must belong to the session and still be open; a submission
+ * that leaves a question open, or one that a previous submission already settled, is refused, so a
+ * session never advances to `generating` with questions still open.
  */
 export function submitClarification(
   dependencies: ClarificationDependencies,
@@ -233,20 +239,37 @@ async function runSubmitClarification(
     }
   }
 
-  const result = await repositories.saveClarificationSubmission({
-    questions,
-    answers: records,
-    sessionOperation: {
-      operation: {
-        id: uuid(),
-        sessionId: id,
-        operationKind: 'processing_generating',
-        status: 'pending',
-        createdAt: at,
+  if (seen.size < open.length) {
+    return { status: 'rejected', code: 'missing-question', session };
+  }
+
+  let result: RecordingSessionOperationResult;
+  try {
+    result = await repositories.saveClarificationSubmission({
+      questions,
+      answers: records,
+      sessionOperation: {
+        operation: {
+          id: uuid(),
+          sessionId: id,
+          operationKind: 'processing_generating',
+          status: 'pending',
+          createdAt: at,
+        },
+        action: { type: 'advance', to: 'generating', at },
       },
-      action: { type: 'advance', to: 'generating', at },
-    },
-  });
+    });
+  } catch (error) {
+    if (!(error instanceof StorageRepositoryError)) {
+      throw error;
+    }
+    // The transaction rolled back, so re-read the untouched session for the result.
+    return {
+      status: 'rejected',
+      code: 'rejected',
+      session: await repositories.recordingSessions.getById(id),
+    };
+  }
   if (result.operation.status !== 'applied') {
     return { status: 'rejected', code: 'rejected', session: result.session };
   }

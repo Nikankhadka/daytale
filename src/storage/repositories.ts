@@ -480,7 +480,10 @@ export async function discardClosedChunk(
 
 /**
  * Transcript segments of one session, ordered by chunk sequence and then by their chunk-relative
- * start. Timestamps restart at zero for every chunk, so the join is what puts them back in time.
+ * start. The returned `startMs`/`endMs` are session-relative: each segment is offset by its chunk's
+ * `started_at` minus the session start (`actual_start`, falling back to `scheduled_start`), with
+ * negative offsets clamped to zero. The persisted rows stay chunk-relative; this join is what puts
+ * every chunk's local timestamps back on the one session timeline the analyze request needs.
  */
 export async function listTranscriptSegmentsBySession(
   database: MigrationDatabase,
@@ -488,14 +491,18 @@ export async function listTranscriptSegmentsBySession(
 ): Promise<TranscriptSegment[]> {
   const rows = await database.getAllAsync<SqlRow>(
     `SELECT ts.id, ts.session_id, ts.chunk_id, ts.start_ms, ts.end_ms, ts.text, ts.language,
-            ts.speaker, ts.speaker_confidence, ts.transcript_confidence, ts.created_at
+            ts.speaker, ts.speaker_confidence, ts.transcript_confidence, ts.created_at,
+            c.started_at AS chunk_started_at,
+            s.actual_start AS session_actual_start,
+            s.scheduled_start AS session_scheduled_start
      FROM transcript_segments ts
      LEFT JOIN audio_chunks c ON c.id = ts.chunk_id
+     LEFT JOIN recording_sessions s ON s.id = ts.session_id
      WHERE ts.session_id = ?
      ORDER BY c.sequence, ts.start_ms, ts.id`,
     validateStorageId(sessionId),
   );
-  return rows.map(mapTranscriptSegment);
+  return rows.map(mapSessionTranscriptSegment);
 }
 
 export async function listExtractedEventsBySession(
@@ -563,7 +570,8 @@ export async function replaceSessionAnalysis(
 /**
  * Marks a session's clarification answers as answered or skipped and advances it, atomically.
  * Every question must still be open and owned by the session, so a second submission is refused
- * rather than rewriting a settled answer.
+ * rather than rewriting a settled answer. A session operation the reducer rejects rolls the whole
+ * transaction back, so questions are never settled while the session stays put.
  */
 export async function saveClarificationSubmission(
   database: MigrationDatabase,
@@ -597,11 +605,18 @@ export async function saveClarificationSubmission(
     for (const answer of answers) {
       await writeClarificationAnswer(transaction, answer);
     }
-    return applyRecordingSessionOperationInTransaction(
+    const result = await applyRecordingSessionOperationInTransaction(
       transaction,
       input.sessionOperation.operation,
       input.sessionOperation.action,
     );
+    if (result.operation.status !== 'applied') {
+      // Throwing rolls the settled questions and answers back with the rejected operation.
+      throw new StorageRepositoryError(
+        'The clarification submission could not advance the session.',
+      );
+    }
+    return result;
   });
 }
 
@@ -1566,6 +1581,21 @@ function mapTranscriptSegment(row: SqlRow): TranscriptSegment {
     transcriptConfidence: row.transcript_confidence,
     createdAt: row.created_at,
   });
+}
+
+function mapSessionTranscriptSegment(row: SqlRow): TranscriptSegment {
+  const segment = mapTranscriptSegment(row);
+  const sessionStart =
+    optionalText(row.session_actual_start) ?? optionalText(row.session_scheduled_start);
+  const chunkStart = optionalText(row.chunk_started_at);
+  if (sessionStart === undefined || chunkStart === undefined) {
+    return segment;
+  }
+  const offsetMs = Date.parse(chunkStart) - Date.parse(sessionStart);
+  if (!Number.isFinite(offsetMs) || offsetMs <= 0) {
+    return segment;
+  }
+  return { ...segment, startMs: segment.startMs + offsetMs, endMs: segment.endMs + offsetMs };
 }
 
 function mapExtractedEvent(row: SqlRow): ExtractedEvent {

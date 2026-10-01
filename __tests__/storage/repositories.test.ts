@@ -542,6 +542,64 @@ describe('storage repositories', () => {
     });
   });
 
+  it('rolls back settled questions and answers when the clarification advance is rejected', async () => {
+    const repositories = createStorageRepositories(database);
+    await repositories.recordingSessions.save(
+      makeSession(ids.session, { status: 'awaiting clarification' }),
+    );
+    const makeQuestion = (id: string): ClarificationQuestion => ({
+      id,
+      sessionId: ids.session,
+      startMs: 0,
+      endMs: 1,
+      question: 'opaque question',
+      reason: 'opaque reason',
+      status: 'open',
+      createdAt: t1,
+    });
+    const first = makeQuestion(ids.questionOne);
+    const second = makeQuestion(ids.questionTwo);
+    await repositories.clarificationQuestions.save(first);
+    await repositories.clarificationQuestions.save(second);
+    const answer: ClarificationAnswer = {
+      id: ids.answer,
+      questionId: ids.questionOne,
+      answerText: 'opaque answer',
+      createdAt: t2,
+    };
+
+    // Move the session somewhere `advance to generating` cannot leave, without the reducer.
+    database.native
+      .prepare('UPDATE recording_sessions SET status = ? WHERE id = ?')
+      .run('ready', ids.session);
+
+    await expect(
+      repositories.saveClarificationSubmission({
+        questions: [
+          { ...first, status: 'answered' },
+          { ...second, status: 'skipped' },
+        ],
+        answers: [answer],
+        sessionOperation: {
+          operation: {
+            id: ids.operation,
+            sessionId: ids.session,
+            operationKind: 'processing_generating',
+            status: 'pending',
+            createdAt: t2,
+          },
+          action: { type: 'advance', to: 'generating', at: t2 },
+        },
+      }),
+    ).rejects.toBeInstanceOf(StorageRepositoryError);
+
+    const questions = await repositories.clarificationQuestions.list();
+    expect(questions.map((question) => question.status)).toEqual(['open', 'open']);
+    expect(await repositories.clarificationAnswers.list()).toHaveLength(0);
+    expect((await repositories.recordingSessions.getById(ids.session))?.status).toBe('ready');
+    expect(await repositories.recordingOperations.getById(ids.operation)).toBeNull();
+  });
+
   it('keeps generic recording operation records insert-only', async () => {
     const repositories = createStorageRepositories(database);
     await repositories.recordingSessions.save(makeSession());

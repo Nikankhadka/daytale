@@ -45,7 +45,7 @@ describe('processSession', () => {
     expect(countRows(fixture.database, 'clarification_questions')).toBe(0);
   });
 
-  it('caps stored questions at two even when analysis returns more', async () => {
+  it('trims analysis questions to the shared limit before storing them', async () => {
     const fixture = await createProcessingFixture({
       analysis: analyzedResponse({
         questions: [
@@ -131,6 +131,28 @@ describe('processSession', () => {
       'second thought',
     ]);
     expect(request.segments.map((segment) => segment.confidence)).toEqual([0.95, 0.4]);
+  });
+
+  it('offsets transcript times by each chunk start relative to the session', async () => {
+    const fixture = await createProcessingFixture({
+      chunks: 2,
+      // The second chunk begins 60s after the session start, not the usual 30s spacing.
+      chunkStartOffsetsMs: [0, 60_000],
+      segments: [
+        makeSegment(0, 0, { text: 'first chunk' }),
+        makeSegment(1, 1, { text: 'second chunk' }),
+      ],
+    });
+
+    await fixture.run();
+
+    const request = fixture.analyzeCalls[0];
+    expect(
+      request.segments.map((segment) => [segment.text, segment.startMs, segment.endMs]),
+    ).toEqual([
+      ['first chunk', 0, 900],
+      ['second chunk', 61_000, 61_900],
+    ]);
   });
 
   it('never leaks audio bytes, chunk paths, or embeddings into the analyze payload', async () => {
