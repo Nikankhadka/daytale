@@ -107,7 +107,9 @@ export function PrimaryButton({
       ]}
     >
       {icon}
-      <Text style={[typography.label, { color: secondary ? colors.ink : '#ffffff' }]}>{label}</Text>
+      <Text style={[typography.label, { color: secondary ? colors.ink : colors.onPrimary }]}>
+        {label}
+      </Text>
     </Pressable>
   );
 }

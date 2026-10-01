@@ -257,7 +257,7 @@ export function PromptView({
             label="Start my day"
             onPress={onStart}
             disabled={busy}
-            icon={<LineIcon name="play" color="#ffffff" />}
+            icon={<LineIcon name="play" color={colors.onPrimary} />}
           />
           <Text style={[styles.note, { color: colors.muted, fontFamily: fontRoles.ui }]}>
             Recording stays on your device.
@@ -399,7 +399,7 @@ function CircleButton({ label, caption, kind, onPress }: CircleButtonProps) {
         ]}
       >
         {stop ? (
-          <View style={[styles.stopGlyph, { backgroundColor: '#ffffff' }]} />
+          <View style={[styles.stopGlyph, { backgroundColor: colors.onPrimary }]} />
         ) : (
           <View style={styles.pauseGlyph}>
             <View style={[styles.pauseBar, { backgroundColor: colors.ink }]} />
