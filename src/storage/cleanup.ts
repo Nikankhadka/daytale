@@ -6,6 +6,7 @@ import { type MigrationDatabase, type MigrationTransaction } from './migrations'
 import { invalidateStorageBootstrap } from './bootstrap';
 import {
   applyRecordingSessionOperationInTransaction,
+  insertReceipt,
   type RecordingSessionOperationResult,
   type StorageRepositories,
 } from './repositories';
@@ -15,7 +16,6 @@ import {
   MAX_RETRY_WINDOW_MS,
   type CleanupReceipt,
   type RecordingOperation,
-  validateCleanupReceipt,
   validateStorageId,
 } from './types';
 
@@ -234,51 +234,6 @@ export async function writeSuccessReceipt(
       hash: dependencies.hash ?? defaultHash,
     });
   });
-}
-
-async function insertReceipt(
-  transaction: MigrationTransaction,
-  input: {
-    sessionId: string;
-    reason: CleanupReceipt['reason'];
-    deletedKinds: CleanupReceipt['deletedKinds'];
-    completedAt: string;
-    uuid: () => string;
-    hash: (value: string) => Promise<string>;
-  },
-): Promise<CleanupReceipt> {
-  const receiptId = validateStorageId(input.uuid());
-  const contentFreeHash = await input.hash(
-    JSON.stringify({
-      sessionId: input.sessionId,
-      reason: input.reason,
-      completedAt: input.completedAt,
-      deletedKinds: input.deletedKinds,
-    }),
-  );
-  const receipt = validateCleanupReceipt({
-    id: receiptId,
-    sessionId: input.sessionId,
-    reason: input.reason,
-    deletedKinds: input.deletedKinds,
-    completedAt: input.completedAt,
-    contentFreeHash,
-    createdAt: input.completedAt,
-  });
-
-  await transaction.runAsync(
-    `INSERT INTO cleanup_receipts
-     (id, session_id, reason, deleted_kinds, completed_at, content_free_hash)
-     VALUES (?, ?, ?, ?, ?, ?)`,
-    receipt.id,
-    receipt.sessionId ?? null,
-    receipt.reason,
-    JSON.stringify(receipt.deletedKinds),
-    receipt.completedAt,
-    receipt.contentFreeHash,
-  );
-
-  return receipt;
 }
 
 /** Deletes failed sessions whose retry window has passed and writes their content-free receipts. */

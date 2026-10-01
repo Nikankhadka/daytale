@@ -1,3 +1,4 @@
+import * as Crypto from 'expo-crypto';
 import type { SQLiteBindValue } from 'expo-sqlite';
 
 import type { MigrationDatabase, MigrationTransaction } from './migrations';
@@ -11,6 +12,7 @@ import {
   type ClarificationAnswer,
   type ClarificationQuestion,
   type CleanupReceipt,
+  type CleanupRecordKind,
   type ExtractedEvent,
   type JournalEntry,
   type RecordingOperation,
@@ -37,6 +39,18 @@ export class StorageRepositoryError extends Error {
   public constructor(message: string) {
     super(message);
     this.name = 'StorageRepositoryError';
+  }
+}
+
+/**
+ * A session operation was refused by the reducer inside a write transaction, so the whole
+ * transaction rolled back. Distinct from the validation errors that mean the caller handed in
+ * state the store refuses to persist, so callers can map only this case to a rejected result.
+ */
+export class StorageOperationRejectedError extends StorageRepositoryError {
+  public constructor(message: string) {
+    super(message);
+    this.name = 'StorageOperationRejectedError';
   }
 }
 
@@ -90,6 +104,25 @@ export type ClarificationSubmissionWrite = {
   sessionOperation: { operation: RecordingOperation; action: RecordingSessionAction };
 };
 
+/** The content-free receipt kinds a successful generation removes from a session. */
+export const SESSION_COMPLETION_DELETED_KINDS: CleanupRecordKind[] = [
+  'transcript_segments',
+  'extracted_events',
+  'clarification_questions',
+  'clarification_answers',
+];
+
+export type SessionCompletionWrite = {
+  /** The journal entry to persist; its source events are removed by the same transaction. */
+  journal: JournalEntry;
+  /** Applied in the same transaction as the journal insert and the source cleanup. */
+  sessionOperation: { operation: RecordingOperation; action: RecordingSessionAction };
+  /** Content-free receipt identity; `deletedKinds` is derived from what this operation removes. */
+  receipt: { id: string; completedAt: string };
+  /** Content-free hash of the receipt metadata; defaults to expo-crypto SHA-256. */
+  hash?: (value: string) => Promise<string>;
+};
+
 export type StorageRepositories = {
   appPreferences: EntityRepository<AppPreferences>;
   voiceProfiles: VoiceProfileRepository;
@@ -117,11 +150,17 @@ export type StorageRepositories = {
   listTranscriptSegmentsBySession: (sessionId: string) => Promise<TranscriptSegment[]>;
   listExtractedEventsBySession: (sessionId: string) => Promise<ExtractedEvent[]>;
   listClarificationQuestionsBySession: (sessionId: string) => Promise<ClarificationQuestion[]>;
+  /** The session's journal entry, if generation already produced one. */
+  findJournalEntryBySession: (sessionId: string) => Promise<JournalEntry | null>;
   /** Replaces a session's analysis (events and questions) in one transaction. */
   replaceSessionAnalysis: (input: SessionAnalysisWrite) => Promise<StoredAnalysis>;
   /** Settles clarification questions and advances the session in one transaction. */
   saveClarificationSubmission: (
     input: ClarificationSubmissionWrite,
+  ) => Promise<RecordingSessionOperationResult>;
+  /** Writes the journal and removes its source records and advances the session in one transaction. */
+  completeSessionWithJournal: (
+    input: SessionCompletionWrite,
   ) => Promise<RecordingSessionOperationResult>;
 };
 
@@ -270,8 +309,10 @@ export function createStorageRepositories(database: MigrationDatabase): StorageR
     listExtractedEventsBySession: (sessionId) => listExtractedEventsBySession(database, sessionId),
     listClarificationQuestionsBySession: (sessionId) =>
       listClarificationQuestionsBySession(database, sessionId),
+    findJournalEntryBySession: (sessionId) => findJournalEntryBySession(database, sessionId),
     replaceSessionAnalysis: (input) => replaceSessionAnalysis(database, input),
     saveClarificationSubmission: (input) => saveClarificationSubmission(database, input),
+    completeSessionWithJournal: (input) => completeSessionWithJournal(database, input),
   };
 }
 
@@ -612,10 +653,62 @@ export async function saveClarificationSubmission(
     );
     if (result.operation.status !== 'applied') {
       // Throwing rolls the settled questions and answers back with the rejected operation.
-      throw new StorageRepositoryError(
+      throw new StorageOperationRejectedError(
         'The clarification submission could not advance the session.',
       );
     }
+    return result;
+  });
+}
+
+/**
+ * Persists a generated journal entry and, in one transaction, removes the session's source
+ * records (transcript segments, extracted events, clarification questions and answers), appends a
+ * content-free success receipt, and advances the session to `ready`. A session operation the
+ * reducer rejects throws `StorageOperationRejectedError` and rolls the whole transaction back, so a
+ * journal is never written without the matching cleanup and advance.
+ */
+export async function completeSessionWithJournal(
+  database: MigrationDatabase,
+  input: SessionCompletionWrite,
+): Promise<RecordingSessionOperationResult> {
+  const sessionId = validateStorageId(input.sessionOperation.operation.sessionId);
+  const journal = validateJournalEntry(input.journal);
+  if (journal.sessionId !== sessionId) {
+    throw new StorageRepositoryError('The journal entry does not belong to the session.');
+  }
+  const hash = input.hash ?? defaultCleanupHash;
+  return withExclusiveTransaction(database, async (transaction) => {
+    await assertSessionExists(transaction, sessionId);
+    // The journal's source events must still exist when it is written, so it goes before the delete.
+    await writeJournalEntry(transaction, journal);
+    await run(
+      transaction,
+      `DELETE FROM clarification_answers
+       WHERE question_id IN (SELECT id FROM clarification_questions WHERE session_id = ?)`,
+      sessionId,
+    );
+    await run(transaction, 'DELETE FROM clarification_questions WHERE session_id = ?', sessionId);
+    await run(transaction, 'DELETE FROM extracted_events WHERE session_id = ?', sessionId);
+    await run(transaction, 'DELETE FROM transcript_segments WHERE session_id = ?', sessionId);
+    const result = await applyRecordingSessionOperationInTransaction(
+      transaction,
+      input.sessionOperation.operation,
+      input.sessionOperation.action,
+    );
+    if (result.operation.status !== 'applied') {
+      throw new StorageOperationRejectedError(
+        'The session completion could not advance the session to ready.',
+      );
+    }
+    await insertReceipt(transaction, {
+      sessionId,
+      reason: 'success',
+      deletedKinds: SESSION_COMPLETION_DELETED_KINDS,
+      completedAt: input.receipt.completedAt,
+      uuid: () => input.receipt.id,
+      hash,
+    });
     return result;
   });
 }
@@ -765,6 +858,18 @@ export async function listJournalEntries(database: MigrationDatabase): Promise<J
     `SELECT ${JOURNAL_ENTRY_COLUMNS} FROM journal_entries${ORDER_BY_ID}`,
   );
   return rows.map(mapJournalEntry);
+}
+
+export async function findJournalEntryBySession(
+  database: MigrationDatabase,
+  sessionId: string,
+): Promise<JournalEntry | null> {
+  const row = await database.getFirstAsync<SqlRow>(
+    `SELECT ${JOURNAL_ENTRY_COLUMNS} FROM journal_entries
+     WHERE session_id = ? ORDER BY created_at, id LIMIT 1`,
+    validateStorageId(sessionId),
+  );
+  return row === null ? null : mapJournalEntry(row);
 }
 
 export async function saveCleanupReceipt(
@@ -1286,6 +1391,55 @@ async function writeJournalEntry(
   );
 }
 
+/**
+ * Writes one content-free cleanup receipt inside the caller's transaction. The hash is over the
+ * receipt metadata only, never over deleted content, so the receipt reveals nothing it records.
+ */
+export async function insertReceipt(
+  transaction: MigrationTransaction,
+  input: {
+    sessionId: string;
+    reason: CleanupReceipt['reason'];
+    deletedKinds: CleanupReceipt['deletedKinds'];
+    completedAt: string;
+    uuid: () => string;
+    hash: (value: string) => Promise<string>;
+  },
+): Promise<CleanupReceipt> {
+  const receiptId = validateStorageId(input.uuid());
+  const contentFreeHash = await input.hash(
+    JSON.stringify({
+      sessionId: input.sessionId,
+      reason: input.reason,
+      completedAt: input.completedAt,
+      deletedKinds: input.deletedKinds,
+    }),
+  );
+  const receipt = validateCleanupReceipt({
+    id: receiptId,
+    sessionId: input.sessionId,
+    reason: input.reason,
+    deletedKinds: input.deletedKinds,
+    completedAt: input.completedAt,
+    contentFreeHash,
+    createdAt: input.completedAt,
+  });
+
+  await transaction.runAsync(
+    `INSERT INTO cleanup_receipts
+     (id, session_id, reason, deleted_kinds, completed_at, content_free_hash)
+     VALUES (?, ?, ?, ?, ?, ?)`,
+    receipt.id,
+    receipt.sessionId ?? null,
+    receipt.reason,
+    JSON.stringify(receipt.deletedKinds),
+    receipt.completedAt,
+    receipt.contentFreeHash,
+  );
+
+  return receipt;
+}
+
 async function writeCleanupReceipt(
   database: MigrationTransaction,
   record: CleanupReceipt,
@@ -1437,6 +1591,12 @@ function nullable(value: string | undefined): string | null {
 
 function sqliteBoolean(value: boolean): number {
   return value ? 1 : 0;
+}
+
+function defaultCleanupHash(value: string): Promise<string> {
+  return Crypto.digestStringAsync(Crypto.CryptoDigestAlgorithm.SHA256, value, {
+    encoding: Crypto.CryptoEncoding.HEX,
+  });
 }
 
 function json(value: readonly unknown[]): string {

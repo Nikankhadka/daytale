@@ -1,4 +1,7 @@
-import { StorageRepositoryError } from '../../src/storage/repositories';
+import {
+  StorageOperationRejectedError,
+  StorageRepositoryError,
+} from '../../src/storage/repositories';
 import { SESSION_ID } from './kit';
 import { analyzedQuestion, analyzedResponse, createProcessingFixture } from './kit';
 
@@ -78,10 +81,10 @@ describe('submitClarification', () => {
     expect(await fixture.repositories.clarificationAnswers.list()).toHaveLength(0);
   });
 
-  it('reports a rejected advance instead of settling the questions', async () => {
+  it('maps a rejected session advance to a rejected result instead of settling the questions', async () => {
     const { fixture, questions } = await fixtureWithTwoQuestions();
     fixture.repositories.saveClarificationSubmission = async () => {
-      throw new StorageRepositoryError('forced rejection');
+      throw new StorageOperationRejectedError('forced rejection');
     };
 
     const result = await fixture.submit(
@@ -93,6 +96,20 @@ describe('submitClarification', () => {
       throw new Error('expected a rejected result');
     }
     expect(result.code).toBe('rejected');
+    expect((await fixture.session()).status).toBe('awaiting clarification');
+  });
+
+  it('does not mask an unexpected storage failure as a rejected result', async () => {
+    const { fixture, questions } = await fixtureWithTwoQuestions();
+    fixture.repositories.saveClarificationSubmission = async () => {
+      throw new StorageRepositoryError('unexpected storage failure');
+    };
+
+    await expect(
+      fixture.submit(
+        questions.map((question) => ({ questionId: question.id, answerText: 'answer' })),
+      ),
+    ).rejects.toBeInstanceOf(StorageRepositoryError);
     expect((await fixture.session()).status).toBe('awaiting clarification');
   });
 

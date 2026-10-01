@@ -4,7 +4,12 @@ import { DatabaseSync } from 'node:sqlite';
 import type { SQLiteBindValue, SQLiteRunResult } from 'expo-sqlite';
 
 import { applyMigrations, type MigrationDatabase } from '../../src/storage/migrations';
-import { createStorageRepositories, StorageRepositoryError } from '../../src/storage/repositories';
+import {
+  createStorageRepositories,
+  SESSION_COMPLETION_DELETED_KINDS,
+  StorageOperationRejectedError,
+  StorageRepositoryError,
+} from '../../src/storage/repositories';
 import type {
   AppPreferences,
   AudioChunk,
@@ -598,6 +603,171 @@ describe('storage repositories', () => {
     expect(await repositories.clarificationAnswers.list()).toHaveLength(0);
     expect((await repositories.recordingSessions.getById(ids.session))?.status).toBe('ready');
     expect(await repositories.recordingOperations.getById(ids.operation)).toBeNull();
+  });
+
+  it('prefers actual_start over scheduled_start when rebasing transcript times', async () => {
+    const repositories = createStorageRepositories(database);
+    // Scheduled at t0 but actually started at t1; the chunk is timed from the actual start.
+    await repositories.recordingSessions.save(
+      makeSession(ids.session, { actualStart: t1, updatedAt: t1 }),
+    );
+    await repositories.audioChunks.save(makeChunk());
+    await repositories.transcriptSegments.save({
+      id: ids.transcript,
+      sessionId: ids.session,
+      chunkId: ids.chunk,
+      startMs: 0,
+      endMs: 900,
+      text: 'opaque transcript',
+      language: 'en',
+      speaker: 'user',
+      speakerConfidence: 0.9,
+      transcriptConfidence: 0.8,
+      createdAt: t2,
+    });
+
+    const segments = await repositories.listTranscriptSegmentsBySession(ids.session);
+
+    expect(segments).toHaveLength(1);
+    // actual_start (t1) equals the chunk start, so no offset; scheduled_start would add 60s.
+    expect([segments[0]!.startMs, segments[0]!.endMs]).toEqual([0, 900]);
+  });
+
+  describe('session completion', () => {
+    async function seedGeneratingSession() {
+      const repositories = createStorageRepositories(database);
+      await repositories.recordingSessions.save(
+        makeSession(ids.session, { status: 'generating', actualStart: t1, updatedAt: t2 }),
+      );
+      await repositories.audioChunks.save(makeChunk());
+      await repositories.transcriptSegments.save({
+        id: ids.transcript,
+        sessionId: ids.session,
+        chunkId: ids.chunk,
+        startMs: 0,
+        endMs: 900,
+        text: 'opaque transcript',
+        language: 'en',
+        speaker: 'user',
+        speakerConfidence: 0.9,
+        transcriptConfidence: 0.8,
+        createdAt: t2,
+      });
+      await repositories.extractedEvents.save({
+        id: ids.event,
+        sessionId: ids.session,
+        startMs: 0,
+        endMs: 900,
+        kind: 'moment',
+        summary: 'opaque summary',
+        evidenceSegmentIds: [ids.transcript],
+        speaker: 'user',
+        confidence: 0.8,
+        supported: true,
+        createdAt: t2,
+      });
+      await repositories.clarificationQuestions.save({
+        id: ids.questionOne,
+        sessionId: ids.session,
+        startMs: 0,
+        endMs: 900,
+        question: 'opaque question',
+        reason: 'opaque reason',
+        status: 'answered',
+        createdAt: t2,
+      });
+      await repositories.clarificationAnswers.save({
+        id: ids.answer,
+        questionId: ids.questionOne,
+        answerText: 'opaque answer',
+        createdAt: t2,
+      });
+      return repositories;
+    }
+
+    const journal: JournalEntry = {
+      id: ids.journal,
+      sessionId: ids.session,
+      date: '2026-01-01',
+      timezone: 'UTC',
+      title: 'opaque title',
+      paragraphs: ['opaque paragraph'],
+      contextTags: ['tag'],
+      sourceEventIds: [ids.event],
+      language: 'en',
+      createdAt: t3,
+      updatedAt: t3,
+    };
+
+    function completionWrite() {
+      return {
+        journal,
+        sessionOperation: {
+          operation: {
+            id: ids.operation,
+            sessionId: ids.session,
+            operationKind: 'processing_ready',
+            status: 'pending' as const,
+            createdAt: t3,
+          },
+          action: { type: 'advance' as const, to: 'ready' as const, at: t3 },
+        },
+        receipt: { id: ids.receipt, completedAt: t3 },
+        hash: async () => sha256,
+      };
+    }
+
+    it('writes the journal, cleans the sources, records a receipt and readies the session', async () => {
+      const repositories = await seedGeneratingSession();
+
+      const result = await repositories.completeSessionWithJournal(completionWrite());
+
+      expect(result.operation.status).toBe('applied');
+      expect(result.session.status).toBe('ready');
+      expect(await repositories.findJournalEntryBySession(ids.session)).toMatchObject({
+        id: ids.journal,
+        sourceEventIds: [ids.event],
+      });
+      expect(await repositories.transcriptSegments.list()).toHaveLength(0);
+      expect(await repositories.extractedEvents.list()).toHaveLength(0);
+      expect(await repositories.clarificationQuestions.list()).toHaveLength(0);
+      expect(await repositories.clarificationAnswers.list()).toHaveLength(0);
+      const receipts = await repositories.cleanupReceipts.list();
+      expect(receipts).toHaveLength(1);
+      expect(receipts[0]).toMatchObject({
+        id: ids.receipt,
+        sessionId: ids.session,
+        reason: 'success',
+        contentFreeHash: sha256,
+      });
+      expect([...receipts[0]!.deletedKinds].sort()).toEqual(
+        [...SESSION_COMPLETION_DELETED_KINDS].sort(),
+      );
+      expect(await repositories.recordingOperations.getById(ids.operation)).toMatchObject({
+        status: 'applied',
+      });
+    });
+
+    it('rolls the journal, cleanup, receipt and operation back when the advance is rejected', async () => {
+      const repositories = await seedGeneratingSession();
+      // Move the session somewhere `advance to ready` is refused, without the reducer.
+      database.native
+        .prepare('UPDATE recording_sessions SET status = ? WHERE id = ?')
+        .run('ready', ids.session);
+
+      await expect(
+        repositories.completeSessionWithJournal(completionWrite()),
+      ).rejects.toBeInstanceOf(StorageOperationRejectedError);
+
+      expect(await repositories.journalEntries.list()).toHaveLength(0);
+      expect(await repositories.transcriptSegments.list()).toHaveLength(1);
+      expect(await repositories.extractedEvents.list()).toHaveLength(1);
+      expect(await repositories.clarificationQuestions.list()).toHaveLength(1);
+      expect(await repositories.clarificationAnswers.list()).toHaveLength(1);
+      expect(await repositories.cleanupReceipts.list()).toHaveLength(0);
+      expect(await repositories.recordingOperations.list()).toHaveLength(0);
+      expect((await repositories.recordingSessions.getById(ids.session))?.status).toBe('ready');
+    });
   });
 
   it('keeps generic recording operation records insert-only', async () => {

@@ -1,10 +1,16 @@
 import { randomUUID } from 'expo-crypto';
 
-import type { AnalyzeRequest, AnalyzeResponse } from '../../../service/journal-api/src/contract';
+import type {
+  AnalyzeRequest,
+  AnalyzeResponse,
+  GenerateEvent,
+  GenerateRequest,
+  GenerateResponse,
+} from '../../../service/journal-api/src/contract';
 import { LIMITS } from '../../../service/journal-api/src/contract';
 import type { StorageBootstrapResult } from '../../storage/bootstrap';
 import {
-  StorageRepositoryError,
+  StorageOperationRejectedError,
   type RecordingSessionOperationResult,
   type StorageRepositories,
 } from '../../storage/repositories';
@@ -14,6 +20,7 @@ import {
   type ClarificationAnswer,
   type ClarificationQuestion,
   type ExtractedEvent,
+  type JournalEntry,
   type Language,
   type RecordingSession,
   type TranscriptSegment,
@@ -30,6 +37,12 @@ export type AnalyzeResult =
 
 export type AnalyzeDependency = (request: AnalyzeRequest) => Promise<AnalyzeResult>;
 
+/** What the generation call reports back. A failure is a code, never an HTTP status read here. */
+export type GenerateResult =
+  { status: 'ok'; response: GenerateResponse } | { status: 'failed'; code: string };
+
+export type GenerateDependency = (request: GenerateRequest) => Promise<GenerateResult>;
+
 export type TranscribeDependency = (
   sessionId: string,
   options: { signal?: AbortSignal },
@@ -38,11 +51,20 @@ export type TranscribeDependency = (
 export type ProcessingDependencies = {
   storage: StorageBootstrapResult;
   analyze: AnalyzeDependency;
+  /**
+   * The generation call. There is no default in this slice: the HTTP client that provides one
+   * arrives later, so `processGeneration` requires it via `GenerationDependencies`.
+   */
+  generate?: GenerateDependency;
   /** Defaults to the real local whisper pipeline; tests inject a fake. */
   transcribe?: TranscribeDependency;
   now?: () => Date;
   uuid?: () => string;
+  /** Content-free receipt hash; defaults to expo-crypto SHA-256 inside storage. */
+  hash?: (value: string) => Promise<string>;
 };
+
+export type GenerationDependencies = ProcessingDependencies & { generate: GenerateDependency };
 
 export type ProcessSessionResult =
   | { status: 'noop'; session: RecordingSession | null }
@@ -54,6 +76,11 @@ export type ProcessSessionResult =
       failedStage: 'transcribing' | 'analyzing';
       code: string;
     };
+
+export type ProcessGenerationResult =
+  | { status: 'noop'; session: RecordingSession | null }
+  | { status: 'ready'; session: RecordingSession; journal: JournalEntry }
+  | { status: 'failed'; session: RecordingSession; failedStage: 'generating'; code: string };
 
 export type ClarificationAnswerInput = {
   questionId: string;
@@ -93,7 +120,6 @@ const enqueue = createSerialQueue();
  * Drives the analysis half of the processing pipeline for one session: local transcription, then
  * analysis, ending in either `awaiting clarification` or `generating`. Anything not currently
  * `transcribing` or `analyzing` is a no-op, so a repeat call and a post-restart recovery are safe.
- * Generation is deliberately left to a later slice.
  */
 export function processSession(
   dependencies: ProcessingDependencies,
@@ -101,6 +127,19 @@ export function processSession(
   options: { signal?: AbortSignal } = {},
 ): Promise<ProcessSessionResult> {
   return enqueue(() => runProcessing(dependencies, sessionId, options.signal));
+}
+
+/**
+ * Drives the generation half for one `generating` session: builds the generate request from the
+ * persisted events and answers, calls the injected generation, and on success writes the journal
+ * and clears the session's source records atomically. Only a `generating` session without an
+ * existing journal is processed, so a repeat call, a retry, and a post-restart recovery are safe.
+ */
+export function processGeneration(
+  dependencies: GenerationDependencies,
+  sessionId: string,
+): Promise<ProcessGenerationResult> {
+  return enqueue(() => runGeneration(dependencies, sessionId));
 }
 
 /**
@@ -195,6 +234,86 @@ async function runProcessing(
   };
 }
 
+async function runGeneration(
+  dependencies: GenerationDependencies,
+  sessionId: string,
+): Promise<ProcessGenerationResult> {
+  const { repositories } = dependencies.storage;
+  const id = validateStorageId(sessionId);
+  const session = await repositories.recordingSessions.getById(id);
+  if (session === null) {
+    return { status: 'noop', session: null };
+  }
+  if (session.status !== 'generating') {
+    return { status: 'noop', session };
+  }
+  if ((await repositories.findJournalEntryBySession(id)) !== null) {
+    return { status: 'noop', session };
+  }
+
+  const clock = pipelineClock(dependencies);
+  const request = await buildGenerateRequest(repositories, session);
+  // The generate contract bounds `events` only above (`events.length <= LIMITS.events`), so a
+  // session with nothing extracted is a normal generation, not an error. Open product decision:
+  // whether a silent session should produce a journal at all. The contract decision wins here.
+  let generation: GenerateResult;
+  try {
+    generation = await dependencies.generate(request);
+  } catch {
+    generation = { status: 'failed', code: 'generation-failed' };
+  }
+  if (generation.status === 'failed') {
+    const failed = await fail(repositories, session, 'generating', generation.code, clock);
+    return { status: 'failed', session: failed, failedStage: 'generating', code: generation.code };
+  }
+
+  const at = stamp(session, clock.now());
+  const events = await repositories.listExtractedEventsBySession(id);
+  const journal: JournalEntry = {
+    id: clock.uuid(),
+    sessionId: id,
+    date: request.date,
+    timezone: request.timezone,
+    title: generation.response.title,
+    paragraphs: [...generation.response.paragraphs],
+    contextTags: [...generation.response.contextTags],
+    sourceEventIds: events.map((event) => event.id),
+    language: request.journalLanguage,
+    createdAt: at,
+    updatedAt: at,
+  };
+  try {
+    const result = await repositories.completeSessionWithJournal({
+      journal,
+      sessionOperation: {
+        operation: {
+          id: clock.uuid(),
+          sessionId: id,
+          operationKind: 'processing_ready',
+          status: 'pending',
+          createdAt: at,
+        },
+        action: { type: 'advance', to: 'ready', at },
+      },
+      receipt: { id: clock.uuid(), completedAt: at },
+      hash: dependencies.hash,
+    });
+    return { status: 'ready', session: result.session, journal };
+  } catch (error) {
+    if (!(error instanceof StorageOperationRejectedError)) {
+      throw error;
+    }
+    // The rejected transaction rolled back, so fail the untouched session for a retry.
+    const failed = await fail(repositories, session, 'generating', 'generation-rejected', clock);
+    return {
+      status: 'failed',
+      session: failed,
+      failedStage: 'generating',
+      code: 'generation-rejected',
+    };
+  }
+}
+
 async function runSubmitClarification(
   dependencies: ClarificationDependencies,
   sessionId: string,
@@ -260,7 +379,7 @@ async function runSubmitClarification(
       },
     });
   } catch (error) {
-    if (!(error instanceof StorageRepositoryError)) {
+    if (!(error instanceof StorageOperationRejectedError)) {
       throw error;
     }
     // The transaction rolled back, so re-read the untouched session for the result.
@@ -269,9 +388,6 @@ async function runSubmitClarification(
       code: 'rejected',
       session: await repositories.recordingSessions.getById(id),
     };
-  }
-  if (result.operation.status !== 'applied') {
-    return { status: 'rejected', code: 'rejected', session: result.session };
   }
   const answered = questions.filter((question) => question.status === 'answered').length;
   return {
@@ -317,7 +433,7 @@ async function advance(
 async function fail(
   repositories: StorageRepositories,
   session: RecordingSession,
-  stage: 'transcribing' | 'analyzing',
+  stage: 'transcribing' | 'analyzing' | 'generating',
   code: string,
   clock: PipelineClock,
 ): Promise<RecordingSession> {
@@ -362,6 +478,36 @@ async function buildAnalyzeRequest(
       speaker: segment.speaker,
       confidence: segment.transcriptConfidence,
     })),
+  };
+}
+
+async function buildGenerateRequest(
+  repositories: StorageRepositories,
+  session: RecordingSession,
+): Promise<GenerateRequest> {
+  const startedAt = session.actualStart ?? session.scheduledStart;
+  const events = await repositories.listExtractedEventsBySession(session.id);
+  const answeredIds = new Set(
+    (await repositories.listClarificationQuestionsBySession(session.id))
+      .filter((question) => question.status === 'answered')
+      .map((question) => question.id),
+  );
+  // Skipped questions have no answer row, and the answered filter keeps a stray row out.
+  const answers = (await repositories.clarificationAnswers.list())
+    .filter((answer) => answeredIds.has(answer.questionId))
+    .map((answer) => ({ questionId: answer.questionId, answerText: answer.answerText }));
+  return {
+    date: localDateOf(new Date(startedAt), session.timezone),
+    timezone: session.timezone,
+    journalLanguage: await journalLanguageOf(repositories),
+    // Persisted event fields only: summary and its evidence, no ids, audio bytes, paths or embeddings.
+    events: events.map((event) => ({
+      kind: event.kind as GenerateEvent['kind'],
+      summary: event.summary,
+      evidenceSegmentIds: [...event.evidenceSegmentIds],
+      speaker: event.speaker,
+    })),
+    answers,
   };
 }
 
