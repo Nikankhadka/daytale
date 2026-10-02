@@ -15,10 +15,11 @@ describe('shared control fixes', () => {
     expect(onPress).not.toHaveBeenCalled();
   });
 
-  it('keeps the select open when its own sheet is tapped, closing only on the scrim', async () => {
+  it('drops the options under the field and collapses once one is chosen', async () => {
+    const onChange = jest.fn();
     const screen = await render(
       <Select
-        onChange={jest.fn()}
+        onChange={onChange}
         options={[
           { value: 'en', label: 'English' },
           { value: 'ne', label: 'Nepali' },
@@ -27,13 +28,14 @@ describe('shared control fixes', () => {
       />,
     );
 
-    await fireEvent.press(screen.getByText('English'));
-    await waitFor(() => expect(screen.getByText('Nepali')).toBeTruthy());
+    expect(screen.queryByText('Nepali')).toBeNull();
 
-    await fireEvent.press(screen.getByTestId('select-sheet'));
+    await fireEvent.press(screen.getByText('English'));
+    await waitFor(() => expect(screen.getByTestId('select-menu')).toBeTruthy());
     expect(screen.getByText('Nepali')).toBeTruthy();
 
-    await fireEvent.press(screen.getByTestId('select-scrim'));
-    await waitFor(() => expect(screen.queryByText('Nepali')).toBeNull());
+    await fireEvent.press(screen.getByText('Nepali'));
+    expect(onChange).toHaveBeenCalledWith('ne');
+    await waitFor(() => expect(screen.queryByTestId('select-menu')).toBeNull());
   });
 });

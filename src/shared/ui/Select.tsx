@@ -1,7 +1,6 @@
 import * as React from 'react';
-import { Modal, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { Pressable, ScrollView, StyleSheet, Text } from 'react-native';
 
-import { withAlpha } from '../../theme/color';
 import { useDaytaleTheme } from '../../theme/useDaytaleTheme';
 import { UiIcon } from './uiIcons';
 
@@ -16,8 +15,10 @@ type SelectProps = {
 };
 
 /**
- * The prototype's `.a-select`. React Native has no native `<select>`, so this is
- * a pressable field that opens a modal option list (closest faithful match).
+ * The prototype's `.a-select`. React Native has no native `<select>`, so this is an
+ * inline dropdown: the option list expands under the field inside the screen tree.
+ * Native `Modal` is deliberately not used - an open (or recently dismissed) modal
+ * window on iOS can swallow later native dialogs such as the permission prompts.
  */
 export function Select({
   value,
@@ -35,8 +36,9 @@ export function Select({
       <Pressable
         accessibilityLabel={accessibilityLabel}
         accessibilityRole="button"
+        accessibilityState={{ expanded: open }}
         accessibilityValue={{ text: current?.label ?? placeholder }}
-        onPress={() => setOpen(true)}
+        onPress={() => setOpen((value) => !value)}
         style={[
           styles.select,
           {
@@ -51,53 +53,48 @@ export function Select({
         </Text>
         <UiIcon color={colors.appMuted} name="chevron" size={16} />
       </Pressable>
-      <Modal animationType="slide" onRequestClose={() => setOpen(false)} transparent visible={open}>
-        <Pressable style={styles.scrim} testID="select-scrim" onPress={() => setOpen(false)}>
-          <Pressable
-            onPress={() => undefined}
-            testID="select-sheet"
-            style={[
-              styles.sheet,
-              {
-                backgroundColor: colors.appPaper,
-                borderTopLeftRadius: radii.sheet,
-                borderTopRightRadius: radii.sheet,
-              },
-            ]}
-          >
-            <View style={[styles.handle, { backgroundColor: colors.appLine }]} />
-            <ScrollView>
-              {options.map((option) => {
-                const selected = option.value === value;
-                return (
-                  <Pressable
-                    key={option.value}
-                    accessibilityRole="button"
-                    accessibilityState={{ selected }}
-                    onPress={() => {
-                      onChange(option.value);
-                      setOpen(false);
-                    }}
-                    style={[styles.option, { borderBottomColor: colors.appLine }]}
-                  >
-                    <Text
-                      style={[
-                        typography.body,
-                        { color: selected ? colors.appCherry : colors.appInk },
-                      ]}
-                    >
-                      {option.label}
-                    </Text>
-                    {selected ? (
-                      <UiIcon color={colors.appCherry} name="check" size={17} strokeWidth={2.4} />
-                    ) : null}
-                  </Pressable>
-                );
-              })}
-            </ScrollView>
-          </Pressable>
-        </Pressable>
-      </Modal>
+      {open ? (
+        <ScrollView
+          nestedScrollEnabled
+          style={[
+            styles.menu,
+            {
+              backgroundColor: colors.appSurface,
+              borderColor: colors.appLine,
+              borderRadius: radii.control,
+            },
+          ]}
+          testID="select-menu"
+        >
+          {options.map((option, index) => {
+            const selected = option.value === value;
+            return (
+              <Pressable
+                key={option.value}
+                accessibilityRole="button"
+                accessibilityState={{ selected }}
+                onPress={() => {
+                  onChange(option.value);
+                  setOpen(false);
+                }}
+                style={[
+                  styles.option,
+                  index > 0 ? { borderTopColor: colors.appLine, borderTopWidth: 1 } : null,
+                ]}
+              >
+                <Text
+                  style={[typography.body, { color: selected ? colors.appCherry : colors.appInk }]}
+                >
+                  {option.label}
+                </Text>
+                {selected ? (
+                  <UiIcon color={colors.appCherry} name="check" size={17} strokeWidth={2.4} />
+                ) : null}
+              </Pressable>
+            );
+          })}
+        </ScrollView>
+      ) : null}
     </>
   );
 }
@@ -152,31 +149,16 @@ const styles = StyleSheet.create({
     paddingVertical: 12,
     width: '100%',
   },
-  scrim: {
-    backgroundColor: withAlpha('#0B0B0B', 0.42),
-    flex: 1,
-    justifyContent: 'flex-end',
-  },
-  sheet: {
-    maxHeight: '70%',
-    paddingBottom: 32,
-    paddingHorizontal: 24,
-    paddingTop: 12,
-  },
-  handle: {
-    alignSelf: 'center',
-    borderRadius: 2,
-    height: 4,
-    marginBottom: 16,
-    marginTop: 8,
-    width: 38,
+  menu: {
+    borderWidth: 1.5,
+    maxHeight: 288,
+    overflow: 'hidden',
   },
   option: {
     alignItems: 'center',
-    borderBottomWidth: StyleSheet.hairlineWidth,
     flexDirection: 'row',
     justifyContent: 'space-between',
     minHeight: 52,
-    paddingHorizontal: 4,
+    paddingHorizontal: 16,
   },
 });
