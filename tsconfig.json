@@ -13,5 +13,6 @@
     "${configDir}/android",
     "${configDir}/ios",
     "${configDir}/service"
-  ]
+  ],
+  "include": ["**/*.ts", "**/*.tsx", ".expo/types/**/*.ts", "expo-env.d.ts"]
 }

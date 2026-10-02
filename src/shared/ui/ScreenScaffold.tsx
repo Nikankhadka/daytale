@@ -14,6 +14,8 @@ type ScreenScaffoldProps = {
   mascotState?: MascotState;
   loading?: boolean;
   error?: string;
+  /** The welcome screen uses the prototype's larger 27px heading. */
+  largeTitle?: boolean;
 };
 
 export function ScreenScaffold({
@@ -25,42 +27,44 @@ export function ScreenScaffold({
   mascotState,
   loading = false,
   error,
+  largeTitle = false,
 }: ScreenScaffoldProps) {
-  const { colors, spacing, typography } = useDaytaleTheme();
+  const { colors, typography } = useDaytaleTheme();
+  const titleRole = largeTitle ? typography.titleLarge : typography.title;
 
   return (
     <SafeAreaView
       testID="screen-scaffold-safe-area"
-      style={[styles.safe, { backgroundColor: colors.background }]}
+      style={[styles.safe, { backgroundColor: colors.appPaper }]}
       edges={['top', 'bottom']}
     >
-      <ScrollView
-        contentContainerStyle={[styles.content, { padding: spacing.xl }]}
-        keyboardShouldPersistTaps="handled"
-      >
+      <ScrollView contentContainerStyle={styles.content} keyboardShouldPersistTaps="handled">
         {mascotState ? <DaytaleMascot state={mascotState} /> : null}
-        <Text style={[styles.eyebrow, typography.eyebrow, { color: colors.primary }]}>
+        <Text style={[styles.eyebrow, typography.eyebrow, { color: colors.appMuted }]}>
           {eyebrow}
         </Text>
         <Text
           accessibilityRole="header"
-          style={[styles.title, typography.title, { color: colors.ink }]}
+          style={[styles.title, titleRole, { color: colors.appInk }]}
         >
           {title}
         </Text>
         {description ? (
-          <Text style={[styles.description, typography.body, { color: colors.muted }]}>
+          <Text style={[styles.description, typography.sub, { color: colors.appMuted }]}>
             {description}
           </Text>
         ) : null}
         {loading ? (
           <View accessibilityLabel="Loading" style={styles.loading}>
-            <ActivityIndicator color={colors.primary} />
+            <ActivityIndicator color={colors.appCherry} />
           </View>
         ) : (
           <>
             {error ? (
-              <Text accessibilityRole="alert" style={[styles.error, { color: colors.error }]}>
+              <Text
+                accessibilityRole="alert"
+                style={[styles.error, typography.label, { color: colors.appRecording }]}
+              >
                 {error}
               </Text>
             ) : null}
@@ -77,7 +81,10 @@ type PrimaryButtonProps = {
   label: string;
   onPress: () => void;
   disabled?: boolean;
+  /** Prototype `.a-btn-ghost`: transparent with a hairline border. */
   secondary?: boolean;
+  /** Prototype `.a-btn-danger`: recording-soft fill with recording text. */
+  danger?: boolean;
   /** Decorative glyph drawn before the label. */
   icon?: ReactNode;
 };
@@ -87,9 +94,27 @@ export function PrimaryButton({
   onPress,
   disabled = false,
   secondary = false,
+  danger = false,
   icon,
 }: PrimaryButtonProps) {
   const { colors, radii, typography } = useDaytaleTheme();
+
+  const base = danger
+    ? { backgroundColor: colors.appRecordingSoft, borderWidth: 0 }
+    : secondary
+      ? { backgroundColor: 'transparent', borderColor: colors.appLine, borderWidth: 1.5 }
+      : { backgroundColor: colors.appCherry, borderWidth: 0 };
+
+  const pressedStyle = disabled
+    ? { opacity: 0.45 }
+    : danger
+      ? { opacity: 0.82 }
+      : secondary
+        ? { backgroundColor: colors.appSakuraMist, borderColor: colors.appBlossom }
+        : { backgroundColor: colors.appCherryHover };
+
+  const textColor = danger ? colors.appRecording : secondary ? colors.appInk : colors.appOnPrimary;
+
   return (
     <Pressable
       accessibilityRole="button"
@@ -99,25 +124,20 @@ export function PrimaryButton({
       style={({ pressed }) => [
         styles.button,
         { borderRadius: radii.control },
-        secondary
-          ? { backgroundColor: colors.surface, borderColor: colors.line, borderWidth: 1 }
-          : { backgroundColor: colors.primary },
-        pressed && !disabled ? { opacity: 0.82 } : null,
-        disabled ? { opacity: 0.45 } : null,
+        base,
+        pressed ? pressedStyle : null,
       ]}
     >
       {icon}
-      <Text style={[typography.label, { color: secondary ? colors.ink : colors.onPrimary }]}>
-        {label}
-      </Text>
+      <Text style={[typography.button, { color: textColor }]}>{label}</Text>
     </Pressable>
   );
 }
 
 const styles = StyleSheet.create({
   safe: { flex: 1 },
-  content: { flexGrow: 1, paddingBottom: 40 },
-  eyebrow: { marginBottom: 8 },
+  content: { flexGrow: 1, paddingBottom: 24, paddingHorizontal: 24, paddingTop: 6 },
+  eyebrow: { marginBottom: 8, textTransform: 'uppercase' },
   title: { marginBottom: 12 },
   description: { marginBottom: 24 },
   loading: { alignItems: 'center', paddingVertical: 32 },
@@ -127,9 +147,10 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     flexDirection: 'row',
     gap: 8,
-    minHeight: 52,
+    minHeight: 44,
     justifyContent: 'center',
-    marginTop: 10,
-    paddingHorizontal: 20,
+    marginTop: 12,
+    paddingHorizontal: 18,
+    paddingVertical: 15,
   },
 });

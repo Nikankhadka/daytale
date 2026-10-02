@@ -13,6 +13,7 @@ import Svg, { Circle, Path } from 'react-native-svg';
 
 import { DaytaleMascot, type MascotState } from '../../shared/ui/DaytaleMascot';
 import { PrimaryButton } from '../../shared/ui/ScreenScaffold';
+import { withAlpha } from '../../theme/color';
 import { useDaytaleTheme } from '../../theme/useDaytaleTheme';
 
 /** The start blockers the user can act on, each with its own way out. */
@@ -44,11 +45,11 @@ export function BlockerNotice({
   onRetry,
   onSetUpVoice,
 }: BlockerNoticeProps) {
-  const { colors, fontRoles } = useDaytaleTheme();
+  const { colors, typography } = useDaytaleTheme();
   const permission = blocker === 'permission-denied' || blocker === 'permission-blocked';
   return (
     <View accessibilityRole="alert" style={[styles.box, boxColors(colors)]}>
-      <Text style={[styles.boxText, { color: colors.inkSoft, fontFamily: fontRoles.ui }]}>
+      <Text style={[typography.caption, { color: colors.appInkSoft }]}>
         {BLOCKER_COPY[blocker]}
       </Text>
       {permission ? (
@@ -67,7 +68,10 @@ type Colors = ReturnType<typeof useDaytaleTheme>['colors'];
 
 function boxColors(colors: Colors) {
   // The prototype's err-box border: recording at 30% over the soft fill.
-  return { backgroundColor: colors.recordingSoft, borderColor: `${colors.recording}4d` };
+  return {
+    backgroundColor: colors.appRecordingSoft,
+    borderColor: withAlpha(colors.appRecording, 0.3),
+  };
 }
 
 const ICON_PATHS = {
@@ -101,7 +105,8 @@ type TodayFrameProps = {
   top?: React.ReactNode;
   mascot: MascotState;
   title: string;
-  titleSize: number;
+  /** Status screens use the compact 19px heading role. */
+  titleVariant?: 'title' | 'titleSmall';
   /** The morning prompt greets before it shows the mascot. */
   titleFirst?: boolean;
   problem?: string;
@@ -115,24 +120,20 @@ function TodayFrame({
   top,
   mascot,
   title,
-  titleSize,
+  titleVariant = 'title',
   titleFirst = false,
   problem,
   children,
   actions,
 }: TodayFrameProps) {
-  const { colors, fontRoles } = useDaytaleTheme();
+  const { colors, typography } = useDaytaleTheme();
   const heading = (
     <Text
       accessibilityRole="header"
       style={[
         styles.title,
-        {
-          color: colors.ink,
-          fontFamily: fontRoles.display,
-          fontSize: titleSize,
-          lineHeight: Math.round(titleSize * 1.25),
-        },
+        titleVariant === 'titleSmall' ? typography.titleSmall : typography.title,
+        { color: colors.appInk },
       ]}
     >
       {title}
@@ -140,17 +141,14 @@ function TodayFrame({
   );
   const mascotView = <DaytaleMascot state={mascot} />;
   return (
-    <SafeAreaView edges={['top']} style={[styles.safe, { backgroundColor: colors.background }]}>
+    <SafeAreaView edges={['top']} style={[styles.safe, { backgroundColor: colors.appPaper }]}>
       <ScrollView contentContainerStyle={styles.frame} keyboardShouldPersistTaps="handled">
         {top}
         {titleFirst ? heading : mascotView}
         {titleFirst ? mascotView : heading}
         {children}
         {problem ? (
-          <Text
-            accessibilityRole="alert"
-            style={[styles.sub, { color: colors.error, fontFamily: fontRoles.ui }]}
-          >
+          <Text accessibilityRole="alert" style={[typography.sub, { color: colors.appRecording }]}>
             {problem}
           </Text>
         ) : null}
@@ -161,19 +159,15 @@ function TodayFrame({
 }
 
 function Eyebrow({ text }: { text: string }) {
-  const { colors, fontRoles } = useDaytaleTheme();
+  const { colors, typography } = useDaytaleTheme();
   return (
-    <Text style={[styles.eyebrow, { color: colors.muted, fontFamily: fontRoles.mono }]}>
-      {text}
-    </Text>
+    <Text style={[styles.eyebrow, typography.eyebrow, { color: colors.appMuted }]}>{text}</Text>
   );
 }
 
 function Sub({ children }: { children: string }) {
-  const { colors, fontRoles } = useDaytaleTheme();
-  return (
-    <Text style={[styles.sub, { color: colors.muted, fontFamily: fontRoles.ui }]}>{children}</Text>
-  );
+  const { colors, typography } = useDaytaleTheme();
+  return <Text style={[styles.sub, typography.sub, { color: colors.appMuted }]}>{children}</Text>;
 }
 
 type IdleViewProps = {
@@ -185,13 +179,12 @@ type IdleViewProps = {
 };
 
 export function IdleView({ eyebrow, restingUntil, windowLabel, onPreview }: IdleViewProps) {
-  const { colors, fontRoles, radii } = useDaytaleTheme();
+  const { colors, radii, shadows, typography } = useDaytaleTheme();
   return (
     <TodayFrame
       top={<Eyebrow text={eyebrow} />}
       mascot="sleeping"
       title={`Resting until ${restingUntil}.`}
-      titleSize={23}
       actions={
         onPreview ? (
           <PrimaryButton label={'Preview morning prompt →'} onPress={onPreview} secondary />
@@ -204,18 +197,19 @@ export function IdleView({ eyebrow, restingUntil, windowLabel, onPreview }: Idle
         accessibilityLabel={`Next window: ${windowLabel}`}
         style={[
           styles.card,
-          { backgroundColor: colors.surface, borderColor: colors.line, borderRadius: radii.card },
+          {
+            backgroundColor: colors.appSurface,
+            borderColor: colors.appLine,
+            borderRadius: radii.card,
+          },
+          shadows,
         ]}
       >
         <View style={styles.cardText}>
-          <Text style={[styles.cardLabel, { color: colors.ink, fontFamily: fontRoles.uiStrong }]}>
-            Next window
-          </Text>
-          <Text style={[styles.cardValue, { color: colors.muted, fontFamily: fontRoles.ui }]}>
-            {windowLabel}
-          </Text>
+          <Text style={[typography.label, { color: colors.appInk }]}>Next window</Text>
+          <Text style={[typography.caption, { color: colors.appMuted }]}>{windowLabel}</Text>
         </View>
-        <LineIcon name="sun" color={colors.ink} />
+        <LineIcon name="sun" color={colors.appInk} />
       </View>
     </TodayFrame>
   );
@@ -242,13 +236,12 @@ export function PromptView({
   onChangeTime,
   onSkip,
 }: PromptViewProps) {
-  const { colors, fontRoles } = useDaytaleTheme();
+  const { colors, typography } = useDaytaleTheme();
   return (
     <TodayFrame
       top={<Eyebrow text={eyebrow} />}
       mascot="waking"
       title={name ? `Good morning, ${name}!` : 'Good morning!'}
-      titleSize={24}
       titleFirst
       problem={problem}
       actions={
@@ -257,9 +250,9 @@ export function PromptView({
             label="Start my day"
             onPress={onStart}
             disabled={busy}
-            icon={<LineIcon name="play" color={colors.onPrimary} />}
+            icon={<LineIcon name="play" color={colors.appOnPrimary} />}
           />
-          <Text style={[styles.note, { color: colors.muted, fontFamily: fontRoles.ui }]}>
+          <Text style={[styles.note, typography.caption, { color: colors.appMuted }]}>
             Recording stays on your device.
           </Text>
           <View style={styles.row}>
@@ -299,8 +292,8 @@ function usePulse(reducedMotion: boolean, low: number, duration: number) {
 }
 
 function PulsingDot({ color, pulse }: { color: string; pulse: boolean }) {
-  const { reducedMotion } = useDaytaleTheme();
-  const opacity = usePulse(reducedMotion || !pulse, 0.35, 700);
+  const { reducedMotion, motion } = useDaytaleTheme();
+  const opacity = usePulse(reducedMotion || !pulse, 0.35, motion.pulse);
   const style = useAnimatedStyle(() => ({ opacity: opacity.value }));
   return <Animated.View style={[styles.dot, { backgroundColor: color }, style]} />;
 }
@@ -308,7 +301,7 @@ function PulsingDot({ color, pulse }: { color: string; pulse: boolean }) {
 type StatusPillProps = { label: string; tone: 'recording' | 'paused' };
 
 function StatusPill({ label, tone }: StatusPillProps) {
-  const { colors, fontRoles } = useDaytaleTheme();
+  const { colors, typography } = useDaytaleTheme();
   const recording = tone === 'recording';
   return (
     <View
@@ -316,15 +309,12 @@ function StatusPill({ label, tone }: StatusPillProps) {
       accessibilityLabel={recording ? 'Recording' : label}
       style={[
         styles.pill,
-        { backgroundColor: recording ? colors.recordingSoft : colors.pauseSoft },
+        { backgroundColor: recording ? colors.appRecordingSoft : colors.appPauseSoft },
       ]}
     >
-      <PulsingDot color={recording ? colors.recording : colors.pause} pulse={recording} />
+      <PulsingDot color={recording ? colors.appRecording : colors.appPause} pulse={recording} />
       <Text
-        style={[
-          styles.pillText,
-          { color: recording ? colors.recording : colors.inkSoft, fontFamily: fontRoles.uiStrong },
-        ]}
+        style={[typography.chip, { color: recording ? colors.appRecording : colors.appInkSoft }]}
         importantForAccessibility="no"
       >
         {label}
@@ -336,11 +326,11 @@ function StatusPill({ label, tone }: StatusPillProps) {
 const WAVE_HEIGHTS = [14, 22, 10, 28, 16, 24, 12, 20, 15];
 
 function WaveBar({ height, index }: { height: number; index: number }) {
-  const { colors, reducedMotion } = useDaytaleTheme();
+  const { colors, reducedMotion, motion } = useDaytaleTheme();
   // Different speeds keep the bars out of step without a per-bar delay.
-  const scale = usePulse(reducedMotion, 0.45, 600 + index * 70);
+  const scale = usePulse(reducedMotion, 0.45, motion.waveBase + index * 70);
   const style = useAnimatedStyle(() => ({ height: height * scale.value }));
-  return <Animated.View style={[styles.bar, { backgroundColor: colors.sunDeep }, style]} />;
+  return <Animated.View style={[styles.bar, { backgroundColor: colors.appSunDeep }, style]} />;
 }
 
 /** Decorative only: it reacts to nothing the microphone hears. */
@@ -360,14 +350,11 @@ function Waveform() {
 }
 
 function Timer({ value, dimmed }: { value: string; dimmed?: boolean }) {
-  const { colors, fontRoles } = useDaytaleTheme();
+  const { colors, typography } = useDaytaleTheme();
   return (
     <Text
       accessibilityRole="timer"
-      style={[
-        styles.timer,
-        { color: colors.ink, fontFamily: fontRoles.mono, opacity: dimmed ? 0.55 : 1 },
-      ]}
+      style={[styles.timer, typography.timer, { color: colors.appInk, opacity: dimmed ? 0.55 : 1 }]}
     >
       {value}
     </Text>
@@ -382,7 +369,7 @@ type CircleButtonProps = {
 };
 
 function CircleButton({ label, caption, kind, onPress }: CircleButtonProps) {
-  const { colors, fontRoles } = useDaytaleTheme();
+  const { colors, typography } = useDaytaleTheme();
   const stop = kind === 'stop';
   return (
     <View style={styles.circleItem}>
@@ -393,24 +380,28 @@ function CircleButton({ label, caption, kind, onPress }: CircleButtonProps) {
         style={({ pressed }) => [
           styles.circle,
           stop
-            ? { backgroundColor: colors.recording }
-            : { backgroundColor: colors.pauseSoft, borderColor: colors.pause, borderWidth: 1.5 },
+            ? { backgroundColor: colors.appRecording }
+            : {
+                backgroundColor: colors.appPauseSoft,
+                borderColor: colors.appPause,
+                borderWidth: 1.5,
+              },
           pressed ? { opacity: 0.8 } : null,
         ]}
       >
         {stop ? (
-          <View style={[styles.stopGlyph, { backgroundColor: colors.onPrimary }]} />
+          <View style={[styles.stopGlyph, { backgroundColor: colors.appPaper }]} />
         ) : (
           <View style={styles.pauseGlyph}>
-            <View style={[styles.pauseBar, { backgroundColor: colors.ink }]} />
-            <View style={[styles.pauseBar, { backgroundColor: colors.ink }]} />
+            <View style={[styles.pauseBar, { backgroundColor: colors.appInk }]} />
+            <View style={[styles.pauseBar, { backgroundColor: colors.appInk }]} />
           </View>
         )}
       </Pressable>
       <Text
         accessibilityElementsHidden
         importantForAccessibility="no-hide-descendants"
-        style={[styles.circleLabel, { color: colors.muted, fontFamily: fontRoles.uiStrong }]}
+        style={[typography.caption, { color: colors.appMuted }]}
       >
         {caption}
       </Text>
@@ -431,7 +422,7 @@ export function RecordingView({ elapsed, problem, onPause, onStop }: RecordingVi
       top={<StatusPill label="RECORDING" tone="recording" />}
       mascot="listening"
       title="I'm remembering your day"
-      titleSize={18}
+      titleVariant="titleSmall"
       problem={problem}
       actions={
         <View style={styles.controls}>
@@ -484,7 +475,7 @@ export function PausedView({
       top={<StatusPill label={`PAUSED · ${breakLabel}`} tone="paused" />}
       mascot="paused"
       title={reason ? 'Recording is paused.' : 'Taking a privacy break.'}
-      titleSize={19}
+      titleVariant="titleSmall"
       problem={problem}
       actions={
         <>
@@ -514,13 +505,13 @@ type FailedViewProps = {
 };
 
 export function FailedView({ deadline, busy, problem, onRetry, onDiscard }: FailedViewProps) {
-  const { colors, fontRoles } = useDaytaleTheme();
-  const boxText = [styles.boxText, { color: colors.inkSoft, fontFamily: fontRoles.ui }];
+  const { colors, typography } = useDaytaleTheme();
+  const boxText = [typography.caption, { color: colors.appInkSoft }];
   return (
     <TodayFrame
       mascot="error"
       title="Something interrupted your journal."
-      titleSize={19}
+      titleVariant="titleSmall"
       problem={problem}
       actions={
         <>
@@ -551,10 +542,10 @@ export function FailedView({ deadline, busy, problem, onRetry, onDiscard }: Fail
 
 /** The handoff only; the stages and what follows belong to processing (DYT-009). */
 export function ProcessingView() {
-  const { colors, fontRoles } = useDaytaleTheme();
+  const { colors, typography } = useDaytaleTheme();
   return (
-    <TodayFrame mascot="writing" title={'Writing your Daytale…'} titleSize={19}>
-      <Text style={[styles.note, { color: colors.faint, fontFamily: fontRoles.ui }]}>
+    <TodayFrame mascot="writing" title={'Writing your Daytale…'} titleVariant="titleSmall">
+      <Text style={[styles.note, typography.caption, { color: colors.appFaint }]}>
         Source audio is deleted the moment this finishes.
       </Text>
     </TodayFrame>
@@ -566,43 +557,39 @@ const styles = StyleSheet.create({
   frame: {
     alignItems: 'center',
     flexGrow: 1,
-    gap: 14,
+    gap: 12,
     paddingBottom: 24,
     paddingHorizontal: 24,
-    paddingTop: 28,
+    paddingTop: 24,
   },
-  title: { letterSpacing: -0.2, textAlign: 'center' },
-  eyebrow: { fontSize: 10.5, letterSpacing: 1.05, textTransform: 'uppercase' },
-  sub: { fontSize: 13.5, lineHeight: 20, textAlign: 'center' },
+  title: { textAlign: 'center' },
+  eyebrow: { textTransform: 'uppercase' },
+  sub: { textAlign: 'center' },
   actions: { alignSelf: 'stretch', marginTop: 'auto' },
-  box: { alignSelf: 'stretch', borderRadius: 16, borderWidth: 1, gap: 4, padding: 14 },
-  boxText: { fontSize: 12, lineHeight: 17 },
+  box: { alignSelf: 'stretch', borderWidth: 1, gap: 4, padding: 16 },
   card: {
     alignItems: 'center',
     alignSelf: 'stretch',
     borderWidth: 1,
     flexDirection: 'row',
-    gap: 10,
+    gap: 12,
     justifyContent: 'space-between',
-    marginTop: 6,
-    paddingHorizontal: 18,
-    paddingVertical: 20,
+    marginTop: 8,
+    paddingHorizontal: 16,
+    paddingVertical: 16,
   },
   cardText: { flex: 1, gap: 2 },
-  cardLabel: { fontSize: 13.5 },
-  cardValue: { fontSize: 11.5 },
-  note: { fontSize: 11, marginTop: 10, textAlign: 'center' },
-  row: { flexDirection: 'row', gap: 10 },
+  note: { marginTop: 12, textAlign: 'center' },
+  row: { flexDirection: 'row', gap: 12 },
   rowItem: { flex: 1 },
   pill: {
     alignItems: 'center',
     borderRadius: 999,
     flexDirection: 'row',
-    gap: 7,
-    paddingHorizontal: 13,
+    gap: 8,
+    paddingHorizontal: 14,
     paddingVertical: 6,
   },
-  pillText: { fontSize: 12.5 },
   dot: { borderRadius: 4, height: 7, width: 7 },
   wave: {
     alignItems: 'flex-end',
@@ -612,13 +599,8 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   bar: { borderRadius: 3, opacity: 0.75, width: 3.5 },
-  timer: {
-    fontSize: 44,
-    fontVariant: ['tabular-nums'],
-    letterSpacing: 0.9,
-    textAlign: 'center',
-  },
-  circleItem: { alignItems: 'center', gap: 6 },
+  timer: { fontVariant: ['tabular-nums'], textAlign: 'center' },
+  circleItem: { alignItems: 'center', gap: 8 },
   circle: {
     alignItems: 'center',
     borderRadius: 32,
@@ -626,9 +608,8 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     width: 64,
   },
-  circleLabel: { fontSize: 11.5 },
   stopGlyph: { borderRadius: 3, height: 20, width: 20 },
   pauseGlyph: { flexDirection: 'row', gap: 5 },
   pauseBar: { borderRadius: 2, height: 22, width: 6 },
-  controls: { flexDirection: 'row', gap: 34, justifyContent: 'center' },
+  controls: { flexDirection: 'row', gap: 32, justifyContent: 'center' },
 });

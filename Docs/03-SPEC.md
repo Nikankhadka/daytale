@@ -70,6 +70,8 @@ The recording session is the source of truth for Today. A scheduled session can 
 
 Use the tokens and copy in `prototype/tokens.css` and `prototype/index.html` directly. Do not create a second palette, type scale, mascot set, or copy deck. The implementation must preserve the prototype's Sakura Morning light theme, Night Sakura dark theme, Fredoka/Figtree/Newsreader/IBM Plex Mono font roles, spacing, radii, shadows, static SVG mascot states, and named animation intent.
 
+The concrete token names, values, type scale, spacing, radii, shadows, motion, and component conventions are recorded in [07-DESIGN-SYSTEM](07-DESIGN-SYSTEM.md). That document is the implementation reference; this section owns the requirement.
+
 - Use Reanimated for the prototype's microinteractions. Do not add Rive or Lottie for MVP.
 - Respect safe-area insets on every route and keep bottom actions above the home indicator.
 - Interactive targets are at least 44 by 44 points on iOS and 48 by 48 dp on Android, including icon-only buttons.

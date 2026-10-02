@@ -56,12 +56,15 @@ describe('prototype visual system', () => {
         'Fredoka_600SemiBold',
         'Figtree_400Regular',
         'Figtree_600SemiBold',
+        'Figtree_700Bold',
         'Newsreader_400Regular',
         'IBMPlexMono_400Regular',
+        'IBMPlexMono_500Medium',
       ]),
     );
     expect(DAYTALE_TYPOGRAPHY.title.fontFamily).toBe(DAYTALE_FONT_ROLES.display);
-    expect(DAYTALE_TYPOGRAPHY.body.fontFamily).toBe(DAYTALE_FONT_ROLES.reading);
+    expect(DAYTALE_TYPOGRAPHY.body.fontFamily).toBe(DAYTALE_FONT_ROLES.ui);
+    expect(DAYTALE_TYPOGRAPHY.reading.fontFamily).toBe(DAYTALE_FONT_ROLES.reading);
     expect(DAYTALE_TYPOGRAPHY.label.fontFamily).toBe(DAYTALE_FONT_ROLES.uiStrong);
     expect(DAYTALE_FONT_ROLES.mono).toBe('IBMPlexMono_400Regular');
   });

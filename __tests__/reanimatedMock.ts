@@ -15,7 +15,7 @@ const identity = <T>(value: T) => value;
 
 export default { View: AnimatedView };
 export const cancelAnimation = jest.fn();
-export const Easing = { ease: identity, inOut: () => identity };
+export const Easing = { bezier: () => identity, ease: identity, inOut: () => identity };
 export const useAnimatedStyle = (callback: () => unknown) => callback();
 export const useSharedValue = <T>(value: T) => ({ value });
 export const withRepeat = identity;

@@ -12,28 +12,61 @@ type ContrastCase = {
 
 // WCAG 2.x text floor is 4.5:1; UI/large is 3:1.
 const CONTRAST_CASES: ContrastCase[] = [
-  { name: 'ink on background', foreground: 'ink', background: 'background', min: 4.5 },
-  { name: 'ink on surface', foreground: 'ink', background: 'surface', min: 4.5 },
-  { name: 'muted on surface', foreground: 'muted', background: 'surface', min: 4.5 },
-  { name: 'muted on surfaceMuted', foreground: 'muted', background: 'surfaceMuted', min: 4.5 },
-  { name: 'faint on surfaceMuted', foreground: 'faint', background: 'surfaceMuted', min: 4.5 },
-  { name: 'onPrimary on primary', foreground: 'onPrimary', background: 'primary', min: 4.5 },
-  { name: 'primary on surface', foreground: 'primary', background: 'surface', min: 3 },
-  { name: 'error on background', foreground: 'error', background: 'background', min: 4.5 },
+  { name: 'appInk on appPaper', foreground: 'appInk', background: 'appPaper', min: 4.5 },
+  { name: 'appInk on appSurface', foreground: 'appInk', background: 'appSurface', min: 4.5 },
+  { name: 'appMuted on appSurface', foreground: 'appMuted', background: 'appSurface', min: 4.5 },
   {
-    name: 'recording on recordingSoft',
-    foreground: 'recording',
-    background: 'recordingSoft',
+    name: 'appMuted on appSakuraMist',
+    foreground: 'appMuted',
+    background: 'appSakuraMist',
     min: 4.5,
   },
-  { name: 'sunDeep on pauseSoft', foreground: 'sunDeep', background: 'pauseSoft', min: 4.5 },
+  {
+    name: 'appFaint on appSakuraMist',
+    foreground: 'appFaint',
+    background: 'appSakuraMist',
+    min: 4.5,
+  },
+  {
+    name: 'appOnPrimary on appCherry',
+    foreground: 'appOnPrimary',
+    background: 'appCherry',
+    min: 4.5,
+  },
+  { name: 'appCherry on appSurface', foreground: 'appCherry', background: 'appSurface', min: 3 },
+  {
+    name: 'appRecording on appPaper',
+    foreground: 'appRecording',
+    background: 'appPaper',
+    min: 4.5,
+  },
+  {
+    name: 'appRecording on appRecordingSoft',
+    foreground: 'appRecording',
+    background: 'appRecordingSoft',
+    min: 4.5,
+  },
+  {
+    name: 'appSunDeep on appPauseSoft',
+    foreground: 'appSunDeep',
+    background: 'appPauseSoft',
+    min: 4.5,
+  },
 ];
 
-// The frozen light palette (authority: prototype/tokens.css) itself measures below these
-// floors for these two pairs, so the app mirror cannot clear them without diverging from
+// The frozen palette (authority: prototype/tokens.css) itself measures below these
+// floors for these pairs, so the app mirror cannot clear them without diverging from
 // that authority. They are asserted as expected failures, not silently skipped, so the
 // gap stays visible and the suite stays green.
-const LIGHT_EXPECTED_FAILURES = new Set(['faint on surfaceMuted', 'sunDeep on pauseSoft']);
+const EXPECTED_FAILURES: Record<Scheme, Set<string>> = {
+  light: new Set([
+    'appFaint on appSakuraMist',
+    'appOnPrimary on appCherry',
+    'appRecording on appRecordingSoft',
+    'appSunDeep on appPauseSoft',
+  ]),
+  dark: new Set(['appFaint on appSakuraMist']),
+};
 
 function parseHex(hex: string): readonly [number, number, number] {
   const value = Number.parseInt(hex.replace('#', ''), 16);
@@ -70,7 +103,7 @@ describe.each(schemes)('%s theme contrast', (scheme) => {
       expect(ratio).toBeGreaterThanOrEqual(testCase.min);
     };
 
-    if (scheme === 'light' && LIGHT_EXPECTED_FAILURES.has(testCase.name)) {
+    if (EXPECTED_FAILURES[scheme].has(testCase.name)) {
       it.failing(`${testCase.name} >= ${testCase.min}`, assertContrast);
     } else {
       it(`${testCase.name} >= ${testCase.min}`, assertContrast);

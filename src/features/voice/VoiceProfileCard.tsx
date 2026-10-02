@@ -16,7 +16,7 @@ export type VoiceProfileCardProps = {
 
 export function VoiceProfileCard({ profileRepository }: VoiceProfileCardProps = {}) {
   const router = useRouter();
-  const { colors, radii, typography } = useDaytaleTheme();
+  const { colors, radii, shadows, typography } = useDaytaleTheme();
   // The web fork has no repositories, so the card degrades to an unavailable state.
   const repository = profileRepository ?? getBootstrappedStorage()?.repositories?.voiceProfiles;
   const [profile, setProfile] = React.useState<VoiceProfile | null | undefined>();
@@ -67,16 +67,26 @@ export function VoiceProfileCard({ profileRepository }: VoiceProfileCardProps = 
 
   return (
     <>
-      <Text style={[styles.title, typography.heading, { color: colors.ink }]}>Voice profile</Text>
+      <Text style={[styles.title, typography.heading, { color: colors.appInk }]}>
+        Voice profile
+      </Text>
       <View
         style={[
           styles.card,
-          { backgroundColor: colors.surface, borderColor: colors.line, borderRadius: radii.card },
+          {
+            backgroundColor: colors.appSurface,
+            borderColor: colors.appLine,
+            borderRadius: radii.card,
+          },
+          shadows,
         ]}
       >
-        <Text style={[typography.body, { color: colors.ink }]}>{status}</Text>
+        <Text style={[typography.body, { color: colors.appInk }]}>{status}</Text>
         {error ? (
-          <Text accessibilityRole="alert" style={[typography.caption, { color: colors.error }]}>
+          <Text
+            accessibilityRole="alert"
+            style={[typography.caption, { color: colors.appRecording }]}
+          >
             {error}
           </Text>
         ) : null}
@@ -97,7 +107,7 @@ export function VoiceProfileCard({ profileRepository }: VoiceProfileCardProps = 
             ) : null}
             {confirmingDelete ? (
               <View accessibilityLabel="Delete voice profile confirmation">
-                <Text style={[typography.body, { color: colors.error }]}>
+                <Text style={[typography.body, { color: colors.appRecording }]}>
                   This removes your voice profile from this device. You will need to record three
                   new samples to set it up again.
                 </Text>
@@ -122,6 +132,6 @@ export function VoiceProfileCard({ profileRepository }: VoiceProfileCardProps = 
 }
 
 const styles = StyleSheet.create({
-  title: { marginBottom: 10, marginTop: 20 },
-  card: { borderWidth: 1, gap: 4, padding: 16 },
+  title: { marginBottom: 12, marginTop: 24 },
+  card: { borderWidth: 1, gap: 8, padding: 16 },
 });

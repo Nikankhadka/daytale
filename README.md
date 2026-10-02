@@ -10,6 +10,7 @@ Daytale is a private, device-first daily journaling companion. The canonical doc
 - [User stories](Docs/04-USER-STORIES.md) - numbered stories with acceptance criteria and traceability.
 - [Implementation tickets](Docs/05-TICKETS.md) - ordered backlog and verification obligations.
 - [Progress](Docs/06-PROGRESS.md) - current milestone, evidence, blockers, and dated decisions.
+- [Design system](Docs/07-DESIGN-SYSTEM.md) - prototype token mapping, type scale, spacing, and component conventions.
 
 ## Source authority
 

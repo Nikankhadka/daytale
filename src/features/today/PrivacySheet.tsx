@@ -1,6 +1,7 @@
 import { Modal, Pressable, StyleSheet, Text, View } from 'react-native';
 
 import { BREAK_LABELS, type BreakChoice } from '../recording/breaks';
+import { withAlpha } from '../../theme/color';
 import { useDaytaleTheme } from '../../theme/useDaytaleTheme';
 import { LineIcon } from './views';
 
@@ -15,7 +16,7 @@ const BREAK_CHOICES: BreakChoice[] = ['15m', '1h', 'manual'];
 
 /** One-tap privacy break as a sheet over the running session, so the recording stays in view. */
 export function PrivacySheet({ visible, onChoose, onStopForToday, onCancel }: PrivacySheetProps) {
-  const { colors, fontRoles, reducedMotion, typography } = useDaytaleTheme();
+  const { colors, radii, reducedMotion, typography } = useDaytaleTheme();
   return (
     <Modal
       animationType={reducedMotion ? 'none' : 'slide'}
@@ -23,16 +24,23 @@ export function PrivacySheet({ visible, onChoose, onStopForToday, onCancel }: Pr
       transparent
       visible={visible}
     >
-      <View style={[styles.scrim, { backgroundColor: 'rgba(61, 39, 48, 0.42)' }]}>
+      <View style={[styles.scrim, { backgroundColor: withAlpha(colors.appInk, 0.42) }]}>
         <View
           accessibilityViewIsModal
-          style={[styles.sheet, { backgroundColor: colors.background }]}
+          style={[
+            styles.sheet,
+            {
+              backgroundColor: colors.appPaper,
+              borderTopLeftRadius: radii.sheet,
+              borderTopRightRadius: radii.sheet,
+            },
+          ]}
           testID="privacy-sheet"
         >
-          <View style={[styles.handle, { backgroundColor: colors.line }]} />
+          <View style={[styles.handle, { backgroundColor: colors.appLine }]} />
           <Text
             accessibilityRole="header"
-            style={[styles.title, { color: colors.ink, fontFamily: fontRoles.display }]}
+            style={[styles.title, typography.titleSmall, { color: colors.appInk }]}
           >
             Take a little privacy break?
           </Text>
@@ -41,15 +49,18 @@ export function PrivacySheet({ visible, onChoose, onStopForToday, onCancel }: Pr
               key={choice}
               accessibilityRole="button"
               onPress={() => onChoose(choice)}
-              style={[styles.option, { borderColor: colors.line }]}
+              style={[styles.option, { borderColor: colors.appLine }]}
             >
               <View style={styles.optionLabel}>
-                <LineIcon name="clock" color={colors.ink} />
-                <Text style={[typography.label, { color: colors.ink }]}>
+                <LineIcon name="clock" color={colors.appInk} />
+                <Text style={[typography.label, { color: colors.appInk }]}>
                   {BREAK_LABELS[choice]}
                 </Text>
               </View>
-              <Text importantForAccessibility="no" style={{ color: colors.muted }}>
+              <Text
+                importantForAccessibility="no"
+                style={[typography.label, { color: colors.appMuted }]}
+              >
                 {'›'}
               </Text>
             </Pressable>
@@ -57,15 +68,15 @@ export function PrivacySheet({ visible, onChoose, onStopForToday, onCancel }: Pr
           <Pressable
             accessibilityRole="button"
             onPress={onStopForToday}
-            style={[styles.option, styles.lastOption]}
+            style={[styles.option, styles.lastOption, { borderColor: colors.appLine }]}
           >
             <View style={styles.optionLabel}>
-              <LineIcon name="clock" color={colors.ink} />
-              <Text style={[typography.label, { color: colors.ink }]}>Stop for today</Text>
+              <LineIcon name="clock" color={colors.appInk} />
+              <Text style={[typography.label, { color: colors.appInk }]}>Stop for today</Text>
             </View>
           </Pressable>
           <Pressable accessibilityRole="button" onPress={onCancel} style={styles.cancel}>
-            <Text style={[typography.label, { color: colors.muted }]}>Cancel</Text>
+            <Text style={[typography.label, { color: colors.appMuted }]}>Cancel</Text>
           </Pressable>
         </View>
       </View>
@@ -76,21 +87,19 @@ export function PrivacySheet({ visible, onChoose, onStopForToday, onCancel }: Pr
 const styles = StyleSheet.create({
   scrim: { flex: 1, justifyContent: 'flex-end' },
   sheet: {
-    borderTopLeftRadius: 26,
-    borderTopRightRadius: 26,
-    paddingBottom: 30,
-    paddingHorizontal: 22,
-    paddingTop: 10,
+    paddingBottom: 32,
+    paddingHorizontal: 24,
+    paddingTop: 12,
   },
   handle: {
     alignSelf: 'center',
     borderRadius: 2,
     height: 4,
-    marginBottom: 14,
-    marginTop: 6,
+    marginBottom: 16,
+    marginTop: 8,
     width: 38,
   },
-  title: { fontSize: 19, lineHeight: 24, marginBottom: 6, textAlign: 'center' },
+  title: { marginBottom: 8, textAlign: 'center' },
   option: {
     alignItems: 'center',
     borderBottomWidth: 1,
@@ -99,7 +108,7 @@ const styles = StyleSheet.create({
     minHeight: 52,
     paddingHorizontal: 4,
   },
-  optionLabel: { alignItems: 'center', flexDirection: 'row', gap: 10 },
+  optionLabel: { alignItems: 'center', flexDirection: 'row', gap: 12 },
   lastOption: { borderBottomWidth: 0 },
-  cancel: { alignItems: 'center', justifyContent: 'center', marginTop: 8, minHeight: 48 },
+  cancel: { alignItems: 'center', justifyContent: 'center', marginTop: 12, minHeight: 48 },
 });

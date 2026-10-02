@@ -5,6 +5,7 @@ import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } fr
 import { Button, StyleSheet, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
+import { useDaytaleTheme } from '../../../theme/useDaytaleTheme';
 import { RECORDING_OPTIONS } from '../recorder';
 import {
   createRecordingSpikeAdapter,
@@ -13,6 +14,7 @@ import {
 } from './adapter';
 
 export function RecordingSpikeScreen() {
+  const { colors, radii, typography } = useDaytaleTheme();
   const [permission, setPermission] = useState<PermissionResponse | null>(null);
   const [state, setState] = useState<RecordingState>('idle');
   const [recordingUri, setRecordingUri] = useState<string | null>(null);
@@ -84,25 +86,57 @@ export function RecordingSpikeScreen() {
   };
 
   return (
-    <SafeAreaView style={styles.safeArea} edges={['top', 'left', 'right']}>
+    <SafeAreaView
+      style={[styles.safeArea, { backgroundColor: colors.appPaper }]}
+      edges={['top', 'left', 'right']}
+    >
       <View style={styles.container}>
-        <Text style={styles.eyebrow}>Daytale diagnostic</Text>
-        <Text style={styles.title}>Background recording spike</Text>
-        <Text style={styles.description}>
+        <Text style={[typography.eyebrow, styles.eyebrow, { color: colors.appMuted }]}>
+          Daytale diagnostic
+        </Text>
+        <Text style={[typography.titleLarge, { color: colors.appInk }]}>
+          Background recording spike
+        </Text>
+        <Text style={[typography.sub, { color: colors.appMuted }]}>
           This surface exercises expo-audio commands for physical-device testing. It does not claim
           that background capture works until a device run verifies it.
         </Text>
 
-        <View style={styles.statusCard} accessibilityLabel="Recording spike status">
-          <Text style={styles.statusLabel}>Microphone permission</Text>
-          <Text style={styles.statusValue}>{permissionLabel(permission)}</Text>
-          <Text style={styles.statusLabel}>Adapter state</Text>
-          <Text style={styles.statusValue}>{state}</Text>
-          <Text style={styles.statusLabel}>Recording output</Text>
-          <Text style={styles.outputValue} selectable>
+        <View
+          style={[
+            styles.statusCard,
+            {
+              backgroundColor: colors.appSurface,
+              borderColor: colors.appLine,
+              borderRadius: radii.card,
+            },
+          ]}
+          accessibilityLabel="Recording spike status"
+        >
+          <Text style={[typography.fieldLabel, styles.statusLabel, { color: colors.appMuted }]}>
+            Microphone permission
+          </Text>
+          <Text style={[typography.body, { color: colors.appInk }]}>
+            {permissionLabel(permission)}
+          </Text>
+          <Text style={[typography.fieldLabel, styles.statusLabel, { color: colors.appMuted }]}>
+            Adapter state
+          </Text>
+          <Text style={[typography.body, { color: colors.appInk }]}>{state}</Text>
+          <Text style={[typography.fieldLabel, styles.statusLabel, { color: colors.appMuted }]}>
+            Recording output
+          </Text>
+          <Text style={[typography.monoLabel, { color: colors.appInk }]} selectable>
             {recordingUri ?? 'none available'}
           </Text>
-          {error ? <Text style={styles.error}>{error}</Text> : null}
+          {error ? (
+            <Text
+              accessibilityRole="alert"
+              style={[typography.caption, styles.error, { color: colors.appRecording }]}
+            >
+              {error}
+            </Text>
+          ) : null}
         </View>
 
         <View style={styles.controls}>
@@ -150,7 +184,7 @@ export function RecordingSpikeScreen() {
           />
         </View>
 
-        <Text style={styles.note}>
+        <Text style={[typography.caption, styles.note, { color: colors.appMuted }]}>
           Verification still requires an iOS 17+ or Android 12+ development build, including
           lock-screen and background checks.
         </Text>
@@ -173,7 +207,6 @@ function toErrorMessage(reason: unknown): string {
 const styles = StyleSheet.create({
   safeArea: {
     flex: 1,
-    backgroundColor: '#fffaf8',
   },
   container: {
     flex: 1,
@@ -181,55 +214,23 @@ const styles = StyleSheet.create({
     gap: 16,
   },
   eyebrow: {
-    color: '#8f3148',
-    fontSize: 13,
-    fontWeight: '700',
     textTransform: 'uppercase',
   },
-  title: {
-    color: '#3d2730',
-    fontSize: 28,
-    fontWeight: '700',
-  },
-  description: {
-    color: '#654e56',
-    fontSize: 16,
-    lineHeight: 24,
-  },
   statusCard: {
-    borderColor: '#e6a9a8',
-    borderRadius: 12,
     borderWidth: 1,
     gap: 4,
     padding: 16,
   },
   statusLabel: {
-    color: '#654e56',
-    fontSize: 13,
-    fontWeight: '700',
     marginTop: 4,
   },
-  statusValue: {
-    color: '#3d2730',
-    fontSize: 17,
-  },
-  outputValue: {
-    color: '#3d2730',
-    fontFamily: 'monospace',
-    fontSize: 13,
-  },
   error: {
-    color: '#a12626',
-    fontSize: 14,
     marginTop: 8,
   },
   controls: {
     gap: 12,
   },
   note: {
-    color: '#654e56',
-    fontSize: 13,
-    lineHeight: 19,
     marginTop: 'auto',
   },
 });

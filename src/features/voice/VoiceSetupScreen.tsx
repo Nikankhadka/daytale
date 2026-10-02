@@ -35,7 +35,7 @@ export function VoiceSetupScreen({
   onComplete,
   now,
 }: VoiceSetupScreenProps = {}) {
-  const { colors, typography } = useDaytaleTheme();
+  const { colors, radii, typography } = useDaytaleTheme();
   const repository = profileRepository ?? getBootstrappedStorage()?.repositories?.voiceProfiles;
   const provider = React.useMemo(
     () => speakerProvider ?? createDefaultSpeakerEmbeddingProvider(),
@@ -132,20 +132,23 @@ export function VoiceSetupScreen({
       loading={saving}
       error={error}
     >
-      <Text style={[typography.heading, styles.progress, { color: colors.ink }]}>
+      <Text style={[typography.heading, styles.progress, { color: colors.appInk }]}>
         {snapshot.completed
           ? 'Voice profile ready'
           : `Sample ${Math.min(snapshot.sampleCount + 1, VOICE_SAMPLE_COUNT)} of ${VOICE_SAMPLE_COUNT}`}
       </Text>
-      <Text style={[typography.body, { color: colors.muted }]}>
+      <Text style={[typography.body, { color: colors.appMuted }]}>
         No skip is available. Every sample can be deleted and recorded again.
       </Text>
       <View accessibilityLabel="Voice sample progress" style={styles.samples}>
         {snapshot.slots.map((completed, index) => (
-          <View key={index} style={[styles.sampleRow, { borderColor: colors.line }]}>
-            <Text style={[typography.label, { color: colors.ink }]}>Sample {index + 1}</Text>
+          <View
+            key={index}
+            style={[styles.sampleRow, { borderColor: colors.appLine, borderRadius: radii.card }]}
+          >
+            <Text style={[typography.label, { color: colors.appInk }]}>Sample {index + 1}</Text>
             <Text
-              style={[typography.caption, { color: completed ? colors.success : colors.muted }]}
+              style={[typography.caption, { color: completed ? colors.appLeaf : colors.appMuted }]}
             >
               {completed ? 'Recorded' : 'Waiting'}
             </Text>
@@ -167,7 +170,7 @@ export function VoiceSetupScreen({
           disabled={saving}
         />
       ) : null}
-      <Text style={[typography.caption, styles.note, { color: colors.muted }]}>
+      <Text style={[typography.caption, styles.note, { color: colors.appMuted }]}>
         The encrypted local profile is only created after all three samples succeed. Speaker matches
         below the confidence threshold stay unknown.
       </Text>
@@ -203,7 +206,7 @@ function toErrorMessage(reason: unknown): string {
 
 const styles = StyleSheet.create({
   progress: { marginTop: 8, marginBottom: 12 },
-  samples: { gap: 12, marginTop: 20 },
-  sampleRow: { borderRadius: 16, borderWidth: 1, padding: 16 },
-  note: { marginTop: 20 },
+  samples: { gap: 12, marginTop: 24 },
+  sampleRow: { borderWidth: 1, padding: 16 },
+  note: { marginTop: 24 },
 });

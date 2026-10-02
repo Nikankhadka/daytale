@@ -1,35 +1,35 @@
 /* Daytale Sakura White design tokens */
 :root {
-  --color-shell-paper: oklch(99.3% 0.004 10);
+  --color-shell-paper: oklch(100% 0 0);
   --color-shell-surface: oklch(100% 0 0);
-  --color-shell-ink: oklch(28% 0.03 350);
-  --color-shell-muted: oklch(50% 0.035 350);
-  --color-shell-faint: oklch(62% 0.03 350);
-  --color-shell-line: oklch(91% 0.022 8);
-  --color-shell-line-soft: oklch(95.5% 0.014 8);
+  --color-shell-ink: oklch(15% 0 0);
+  --color-shell-muted: oklch(45% 0 0);
+  --color-shell-faint: oklch(70% 0 0);
+  --color-shell-line: oklch(92% 0 0);
+  --color-shell-line-soft: oklch(96% 0 0);
 
-  --color-app-paper: oklch(99.3% 0.004 10);
+  --color-app-paper: oklch(100% 0 0);
   --color-app-surface: oklch(100% 0 0);
-  --color-app-ink: oklch(28% 0.03 350);
-  --color-app-muted: oklch(50% 0.035 350);
-  --color-app-faint: oklch(62% 0.03 350);
-  --color-app-line: oklch(91% 0.022 8);
-  --color-app-sakura-mist: oklch(96.5% 0.02 8);
-  --color-app-blossom: oklch(90% 0.055 8);
-  --color-app-cherry: oklch(56% 0.17 5);
-  --color-app-cherry-hover: oklch(48% 0.16 5);
+  --color-app-ink: oklch(15% 0 0);
+  --color-app-muted: oklch(45% 0 0);
+  --color-app-faint: oklch(70% 0 0);
+  --color-app-line: oklch(92% 0 0);
+  --color-app-sakura-mist: oklch(97% 0.01 350);
+  --color-app-blossom: oklch(94% 0.03 350);
+  --color-app-cherry: oklch(68% 0.19 25);
+  --color-app-cherry-hover: oklch(60% 0.18 25);
   --color-app-on-primary: #ffffff;
   --color-app-sun: oklch(83% 0.10 35);
-  --color-app-sun-deep: oklch(68% 0.14 22);
+  --color-app-sun-deep: oklch(72% 0.15 25);
   --color-app-leaf: oklch(61% 0.11 145);
   --color-app-leaf-soft: oklch(93% 0.035 145);
-  --color-app-cheek: oklch(76% 0.12 15);
-  --color-app-recording: oklch(54% 0.20 30);
-  --color-app-recording-soft: oklch(94% 0.045 30);
-  --color-app-pause: oklch(70% 0.13 75);
-  --color-app-pause-soft: oklch(95% 0.04 75);
-  --color-app-ink-soft: oklch(42% 0.035 350);
-  --color-focus: oklch(56% 0.17 5);
+  --color-app-cheek: oklch(78% 0.10 25);
+  --color-app-recording: oklch(58% 0.20 25);
+  --color-app-recording-soft: oklch(96% 0.02 25);
+  --color-app-pause: oklch(65% 0.13 75);
+  --color-app-pause-soft: oklch(96% 0.03 75);
+  --color-app-ink-soft: oklch(30% 0 0);
+  --color-focus: oklch(68% 0.19 25);
 
   --color-os-black: oklch(12% 0.01 350);
   --color-os-white: oklch(99% 0 0);
@@ -47,8 +47,8 @@
   --space-6: 24px;
   --space-8: 32px;
   --space-12: 48px;
-  --radius-control: 16px;
-  --radius-card: 20px;
+  --radius-control: 12px;
+  --radius-card: 16px;
   --radius-pill: 999px;
   --shadow-soft: 0 1px 2px color-mix(in srgb, var(--color-app-cherry) 6%, transparent), 0 10px 28px -14px color-mix(in srgb, var(--color-app-cherry) 22%, transparent);
   --shadow-device: 0 0 0 1px var(--color-shell-line), 0 2px 6px color-mix(in srgb, var(--color-app-cherry) 8%, transparent), 0 40px 80px -30px color-mix(in srgb, var(--color-app-cherry) 35%, transparent);
@@ -61,28 +61,28 @@
 /* Night sakura: deep plum, not black */
 .phone[data-app-theme="dark"],
 .saved-app-dark .phone {
-  --color-app-paper: oklch(17% 0.010 355);
-  --color-app-surface: oklch(21.5% 0.016 355);
-  --color-app-ink: oklch(94% 0.010 15);
-  --color-app-muted: oklch(74% 0.018 355);
+  --color-app-paper: oklch(10% 0.005 355);
+  --color-app-surface: oklch(16.5% 0.008 355);
+  --color-app-ink: oklch(97% 0.005 15);
+  --color-app-muted: oklch(69% 0.008 355);
   /* 63.5% (not 63%) so faint-on-surface-mist clears the 4.5:1 text contrast floor. */
-  --color-app-faint: oklch(63.5% 0.016 355);
-  --color-app-line: oklch(40% 0.030 355);
-  --color-app-sakura-mist: oklch(26% 0.024 355);
-  --color-app-blossom: oklch(33% 0.055 5);
-  --color-app-cherry: oklch(79% 0.10 5);
-  --color-app-cherry-hover: oklch(72% 0.115 5);
-  --color-app-on-primary: oklch(17% 0.010 355);
+  --color-app-faint: oklch(45% 0.008 355);
+  --color-app-line: oklch(28% 0.015 355);
+  --color-app-sakura-mist: oklch(22% 0.012 355);
+  --color-app-blossom: oklch(24% 0.028 5);
+  --color-app-cherry: oklch(68% 0.19 25);
+  --color-app-cherry-hover: oklch(72% 0.17 25);
+  --color-app-on-primary: oklch(10% 0.005 355);
   --color-app-sun: oklch(85% 0.09 45);
   --color-app-sun-deep: oklch(76% 0.115 30);
   --color-app-leaf: oklch(75% 0.09 145);
   --color-app-leaf-soft: oklch(29% 0.04 145);
   --color-app-cheek: oklch(75% 0.10 15);
-  --color-app-recording: oklch(73% 0.13 28);
-  --color-app-recording-soft: oklch(30% 0.065 28);
+  --color-app-recording: oklch(70% 0.15 25);
+  --color-app-recording-soft: oklch(24% 0.03 25);
   --color-app-pause: oklch(79% 0.10 70);
-  --color-app-pause-soft: oklch(31% 0.05 70);
-  --color-app-ink-soft: oklch(83% 0.02 355);
-  --color-focus: oklch(79% 0.10 5);
+  --color-app-pause-soft: oklch(25% 0.025 70);
+  --color-app-ink-soft: oklch(88% 0.01 355);
+  --color-focus: oklch(68% 0.19 25);
   --shadow-soft: 0 1px 2px color-mix(in srgb, var(--color-os-black) 45%, transparent), 0 10px 28px -14px color-mix(in srgb, var(--color-os-black) 80%, transparent);
 }

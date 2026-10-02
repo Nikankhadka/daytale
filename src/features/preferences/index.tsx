@@ -155,7 +155,7 @@ export function PreferencesSettingsScreen() {
       error={error}
       loading={saving}
     >
-      <Text style={[styles.sectionTitle, typography.heading, { color: colors.ink }]}>
+      <Text style={[styles.sectionTitle, typography.heading, { color: colors.appInk }]}>
         Spoken languages
       </Text>
       <View style={styles.rowGroup}>
@@ -176,7 +176,7 @@ export function PreferencesSettingsScreen() {
         ))}
       </View>
 
-      <Text style={[styles.sectionTitle, typography.heading, { color: colors.ink }]}>
+      <Text style={[styles.sectionTitle, typography.heading, { color: colors.appInk }]}>
         Journal language
       </Text>
       <View style={styles.rowGroup}>
@@ -195,38 +195,46 @@ export function PreferencesSettingsScreen() {
         ))}
       </View>
 
-      <Text style={[styles.sectionTitle, typography.heading, { color: colors.ink }]}>
+      <Text style={[styles.sectionTitle, typography.heading, { color: colors.appInk }]}>
         About you
       </Text>
       <TextInput
         accessibilityLabel="First name"
         onChangeText={(firstName) => void save({ firstName: firstName.trim() || undefined })}
         placeholder="First name (optional)"
-        style={[styles.scheduleInput, typography.body, { color: colors.ink }]}
+        style={[styles.scheduleInput, typography.label, { color: colors.appInk }]}
         defaultValue={current.firstName}
       />
 
-      <Text style={[styles.sectionTitle, typography.heading, { color: colors.ink }]}>
+      <Text style={[styles.sectionTitle, typography.heading, { color: colors.appInk }]}>
         Appearance
       </Text>
-      <View style={[styles.switchRow, { borderColor: colors.line }]}>
-        <Text style={[typography.body, { color: colors.ink, flex: 1 }]}>Dark mode</Text>
+      <View style={[styles.switchRow, { borderColor: colors.appLine }]}>
+        <Text style={[typography.body, { color: colors.appInk, flex: 1 }]}>Dark mode</Text>
         <Switch
           accessibilityLabel="Dark mode"
+          ios_backgroundColor={colors.appLine}
           onValueChange={(darkMode) => void save({ theme: darkMode ? 'dark' : 'light' })}
+          thumbColor={colors.appSurface}
+          trackColor={{ false: colors.appLine, true: colors.appCherry }}
           value={current.theme === 'dark'}
         />
       </View>
-      <View style={[styles.switchRow, { borderColor: colors.line }]}>
-        <Text style={[typography.body, { color: colors.ink, flex: 1 }]}>Reduce motion</Text>
+      <View style={[styles.switchRow, { borderColor: colors.appLine }]}>
+        <Text style={[typography.body, { color: colors.appInk, flex: 1 }]}>Reduce motion</Text>
         <Switch
           accessibilityLabel="Reduce motion"
+          ios_backgroundColor={colors.appLine}
           onValueChange={(reducedMotion) => void save({ reducedMotion })}
+          thumbColor={colors.appSurface}
+          trackColor={{ false: colors.appLine, true: colors.appCherry }}
           value={current.reducedMotion}
         />
       </View>
 
-      <Text style={[styles.sectionTitle, typography.heading, { color: colors.ink }]}>Schedule</Text>
+      <Text style={[styles.sectionTitle, typography.heading, { color: colors.appInk }]}>
+        Schedule
+      </Text>
       <View style={styles.scheduleRow}>
         <ScheduleField
           label="Start"
@@ -237,7 +245,10 @@ export function PreferencesSettingsScreen() {
       </View>
       <Switch
         accessibilityLabel="Schedule reminders"
+        ios_backgroundColor={colors.appLine}
         onValueChange={(notificationsEnabled) => void save({ notificationsEnabled })}
+        thumbColor={colors.appSurface}
+        trackColor={{ false: colors.appLine, true: colors.appCherry }}
         value={current.notificationsEnabled}
       />
       <PrimaryButton
@@ -248,7 +259,7 @@ export function PreferencesSettingsScreen() {
 
       <VoiceProfileCard />
 
-      <Text style={[styles.sectionTitle, typography.heading, { color: colors.ink }]}>Data</Text>
+      <Text style={[styles.sectionTitle, typography.heading, { color: colors.appInk }]}>Data</Text>
       {!confirmingDelete ? (
         <PrimaryButton
           label="Delete all data"
@@ -257,7 +268,7 @@ export function PreferencesSettingsScreen() {
         />
       ) : (
         <View accessibilityLabel="Delete all data confirmation">
-          <Text style={[typography.body, { color: colors.error }]}>
+          <Text style={[typography.body, { color: colors.appRecording }]}>
             This removes journals, recordings, and preferences from this device.
           </Text>
           <PrimaryButton
@@ -288,13 +299,15 @@ function PreferenceChoice({
       accessibilityState={{ selected }}
       onPress={onPress}
       style={{
-        borderColor: selected ? colors.primary : colors.line,
+        backgroundColor: selected ? colors.appSakuraMist : colors.appSurface,
+        borderColor: selected ? colors.appCherry : colors.appLine,
         borderRadius: radii.control,
-        borderWidth: 1,
-        padding: 14,
+        borderWidth: 1.5,
+        paddingHorizontal: 14,
+        paddingVertical: 13,
       }}
     >
-      <Text style={[typography.label, { color: selected ? colors.primary : colors.ink }]}>
+      <Text style={[typography.label, { color: selected ? colors.appCherry : colors.appInk }]}>
         {label}
       </Text>
     </Pressable>
@@ -313,15 +326,15 @@ function ScheduleField({
   const { colors, typography, radii } = useDaytaleTheme();
   return (
     <View style={styles.scheduleField}>
-      <Text style={[typography.label, { color: colors.ink }]}>{label}</Text>
+      <Text style={[typography.label, { color: colors.appInk }]}>{label}</Text>
       <TextInput
         accessibilityLabel={`${label} schedule time`}
         keyboardType="numbers-and-punctuation"
         onChangeText={onChangeText}
         style={[
           styles.scheduleInput,
-          typography.body,
-          { borderColor: colors.line, borderRadius: radii.control, color: colors.ink },
+          typography.label,
+          { borderColor: colors.appLine, borderRadius: radii.control, color: colors.appInk },
         ]}
         value={value}
       />
@@ -333,16 +346,22 @@ export const SettingsScreen = PreferencesSettingsScreen;
 export const SettingsPlaceholder = PreferencesSettingsScreen;
 
 const styles = StyleSheet.create({
-  sectionTitle: { marginBottom: 10, marginTop: 20 },
+  sectionTitle: { marginBottom: 12, marginTop: 24 },
   rowGroup: { gap: 8 },
-  scheduleRow: { flexDirection: 'row', gap: 10 },
+  scheduleRow: { flexDirection: 'row', gap: 12 },
   scheduleField: { flex: 1 },
-  scheduleInput: { borderWidth: 1, marginTop: 6, minHeight: 48, paddingHorizontal: 12 },
+  scheduleInput: {
+    borderWidth: 1.5,
+    marginTop: 8,
+    minHeight: 48,
+    paddingHorizontal: 14,
+    paddingVertical: 13,
+  },
   switchRow: {
     alignItems: 'center',
     borderBottomWidth: 1,
     borderTopWidth: 1,
     flexDirection: 'row',
-    paddingVertical: 12,
+    paddingVertical: 16,
   },
 });

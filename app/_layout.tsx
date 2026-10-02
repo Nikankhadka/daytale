@@ -6,13 +6,14 @@ import { SafeAreaProvider, SafeAreaView } from 'react-native-safe-area-context';
 
 import { bootstrapStorage } from '../src/storage/bootstrap';
 import { useDaytaleFonts } from '../src/theme/fonts';
-import { DAYTALE_COLORS, DAYTALE_FONT_ROLES, DAYTALE_TYPOGRAPHY } from '../src/theme/tokens';
+import { useDaytaleTheme } from '../src/theme/useDaytaleTheme';
 
 type BootstrapState = 'loading' | 'ready' | 'error';
 
 export default function RootLayout() {
   const [bootstrapState, setBootstrapState] = useState<BootstrapState>('loading');
   const [fontsLoaded, fontError] = useDaytaleFonts();
+  const { scheme, colors, radii, typography } = useDaytaleTheme();
   const mounted = useRef(true);
 
   const attemptBootstrap = useCallback((showLoading: boolean) => {
@@ -45,30 +46,40 @@ export default function RootLayout() {
 
   return (
     <SafeAreaProvider>
-      <StatusBar style="auto" />
+      <StatusBar style={scheme === 'dark' ? 'light' : 'dark'} />
       {showLoading ? (
-        <SafeAreaView edges={['top', 'bottom']} style={styles.safe}>
+        <SafeAreaView
+          edges={['top', 'bottom']}
+          style={[styles.safe, { backgroundColor: colors.appPaper }]}
+        >
           <View accessibilityLabel="Loading Daytale" style={styles.state}>
-            <ActivityIndicator color={DAYTALE_COLORS.light.primary} />
-            <Text style={[DAYTALE_TYPOGRAPHY.body, styles.loadingText]}>Preparing Daytale</Text>
+            <ActivityIndicator color={colors.appCherry} />
+            <Text style={[typography.body, { color: colors.appMuted }]}>Preparing Daytale</Text>
           </View>
         </SafeAreaView>
       ) : bootstrapState === 'error' ? (
-        <SafeAreaView edges={['top', 'bottom']} style={styles.safe}>
+        <SafeAreaView
+          edges={['top', 'bottom']}
+          style={[styles.safe, { backgroundColor: colors.appPaper }]}
+        >
           <View style={styles.state}>
-            <Text accessibilityRole="header" style={DAYTALE_TYPOGRAPHY.title}>
+            <Text accessibilityRole="header" style={[typography.title, { color: colors.appInk }]}>
               We could not open Daytale
             </Text>
-            <Text accessibilityRole="alert" style={DAYTALE_TYPOGRAPHY.body}>
+            <Text accessibilityRole="alert" style={[typography.body, { color: colors.appMuted }]}>
               Your local data is still protected. Try again when you have a moment.
             </Text>
             <Pressable
               accessibilityLabel="Retry opening Daytale"
               accessibilityRole="button"
               onPress={() => attemptBootstrap(true)}
-              style={({ pressed }) => [styles.retry, pressed ? styles.retryPressed : null]}
+              style={({ pressed }) => [
+                styles.retry,
+                { backgroundColor: colors.appCherry, borderRadius: radii.card },
+                pressed ? styles.retryPressed : null,
+              ]}
             >
-              <Text style={[DAYTALE_TYPOGRAPHY.label, styles.retryText]}>Retry</Text>
+              <Text style={[typography.button, { color: colors.appOnPrimary }]}>Retry</Text>
             </Pressable>
           </View>
         </SafeAreaView>
@@ -80,7 +91,7 @@ export default function RootLayout() {
 }
 
 const styles = StyleSheet.create({
-  safe: { backgroundColor: DAYTALE_COLORS.light.background, flex: 1 },
+  safe: { flex: 1 },
   state: {
     alignItems: 'center',
     flex: 1,
@@ -88,16 +99,12 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     padding: 32,
   },
-  loadingText: { color: DAYTALE_COLORS.light.muted },
   retry: {
     alignItems: 'center',
-    backgroundColor: DAYTALE_COLORS.light.primary,
-    borderRadius: 16,
-    minHeight: 52,
+    minHeight: 48,
     justifyContent: 'center',
     minWidth: 140,
     paddingHorizontal: 24,
   },
   retryPressed: { opacity: 0.82 },
-  retryText: { color: '#ffffff', fontFamily: DAYTALE_FONT_ROLES.uiStrong },
 });

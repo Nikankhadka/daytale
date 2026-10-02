@@ -11,7 +11,9 @@ export function JournalScreen() {
       description="Finished journals will gather here when the recording ritual is ready."
       mascotState="writing"
     >
-      <Text style={[typography.body, styles.empty, { color: colors.faint }]}>No journals yet.</Text>
+      <Text style={[typography.sub, styles.empty, { color: colors.appFaint }]}>
+        No journals yet.
+      </Text>
     </ScreenScaffold>
   );
 }

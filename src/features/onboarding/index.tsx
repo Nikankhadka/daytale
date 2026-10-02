@@ -48,7 +48,7 @@ export function OnboardingScreen({
 }: OnboardingScreenProps = {}) {
   const preferences = useSessionStore((state) => state.appPreferences);
   const { colors, typography } = useDaytaleTheme();
-  const bodyStyle = [typography.body, { color: colors.muted }];
+  const bodyStyle = [typography.sub, { color: colors.appMuted }];
   const [step, setStep] = React.useState<OnboardingStep>(() =>
     getInitialOnboardingStep(preferences),
   );
@@ -175,6 +175,7 @@ export function OnboardingScreen({
         title="A quiet little ritual for remembering your day."
         description="Daytale listens only when you invite it, then helps you keep the moments that matter."
         mascotState="sleeping"
+        largeTitle
         loading={saving}
         error={error}
         footer={
@@ -404,12 +405,12 @@ function ReadyStep({
           <Text
             key={language}
             style={[
-              typography.caption,
+              typography.chip,
               styles.tag,
               {
-                backgroundColor: colors.primarySoft,
+                backgroundColor: colors.appBlossom,
                 borderRadius: radii.control,
-                color: colors.primary,
+                color: colors.appCherry,
               },
             ]}
           >
@@ -418,12 +419,12 @@ function ReadyStep({
         ))}
         <Text
           style={[
-            typography.caption,
+            typography.chip,
             styles.tag,
             {
-              backgroundColor: colors.surfaceMuted,
+              backgroundColor: colors.appSakuraMist,
               borderRadius: radii.control,
-              color: colors.muted,
+              color: colors.appMuted,
             },
           ]}
         >
@@ -453,10 +454,14 @@ function LanguageOption({
       onPress={onPress}
       style={[
         styles.option,
-        { borderColor: selected ? colors.primary : colors.line, borderRadius: radii.control },
+        {
+          backgroundColor: selected ? colors.appSakuraMist : colors.appSurface,
+          borderColor: selected ? colors.appCherry : colors.appLine,
+          borderRadius: radii.control,
+        },
       ]}
     >
-      <Text style={[typography.body, { color: colors.ink }]}>
+      <Text style={[typography.label, { color: colors.appInk }]}>
         {selected ? '✓ ' : ''}
         {label}
       </Text>
@@ -476,15 +481,15 @@ function TimeField({
   const { colors, typography, radii } = useDaytaleTheme();
   return (
     <View style={styles.timeField}>
-      <Text style={[typography.label, { color: colors.ink }]}>{label}</Text>
+      <Text style={[typography.label, { color: colors.appInk }]}>{label}</Text>
       <TextInput
         accessibilityLabel={`${label} time`}
         keyboardType="numbers-and-punctuation"
         onChangeText={onChangeText}
         style={[
           styles.input,
-          typography.body,
-          { borderColor: colors.line, borderRadius: radii.control, color: colors.ink },
+          typography.label,
+          { borderColor: colors.appLine, borderRadius: radii.control, color: colors.appInk },
         ]}
         value={value}
       />
@@ -493,16 +498,22 @@ function TimeField({
 }
 
 const styles = StyleSheet.create({
-  option: { borderWidth: 1, marginBottom: 10, padding: 16 },
+  option: { borderWidth: 1.5, marginBottom: 12, paddingHorizontal: 14, paddingVertical: 13 },
   timeField: { marginBottom: 16 },
-  input: { borderWidth: 1, marginTop: 6, minHeight: 48, paddingHorizontal: 14 },
-  tagRow: { flexDirection: 'row', flexWrap: 'wrap', gap: 6 },
-  tag: { overflow: 'hidden', paddingHorizontal: 10, paddingVertical: 4 },
+  input: {
+    borderWidth: 1.5,
+    marginTop: 8,
+    minHeight: 48,
+    paddingHorizontal: 14,
+    paddingVertical: 13,
+  },
+  tagRow: { flexDirection: 'row', flexWrap: 'wrap', gap: 8 },
+  tag: { overflow: 'hidden', paddingHorizontal: 12, paddingVertical: 6 },
   switchRow: {
     alignItems: 'center',
     flexDirection: 'row',
     justifyContent: 'space-between',
-    marginTop: 8,
+    marginTop: 12,
   },
 });
 
