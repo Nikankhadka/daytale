@@ -7,8 +7,17 @@ const requiredRoutes = [
   'app/index.tsx',
   'app/(tabs)/_layout.tsx',
   'app/(tabs)/today.tsx',
-  'app/(tabs)/journal.tsx',
-  'app/(tabs)/settings.tsx',
+  'app/(tabs)/journal/_layout.tsx',
+  'app/(tabs)/journal/index.tsx',
+  'app/(tabs)/journal/detail.tsx',
+  'app/(tabs)/journal/edit.tsx',
+  'app/(tabs)/settings/_layout.tsx',
+  'app/(tabs)/settings/index.tsx',
+  'app/(tabs)/settings/schedule.tsx',
+  'app/(tabs)/settings/languages.tsx',
+  'app/(tabs)/settings/privacy.tsx',
+  'app/onboarding.tsx',
+  'app/voice-setup.tsx',
 ];
 
 const missingRoutes = requiredRoutes.filter((route) => !existsSync(resolve(projectRoot, route)));

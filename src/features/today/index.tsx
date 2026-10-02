@@ -3,19 +3,30 @@ import { useRouter } from 'expo-router';
 import * as React from 'react';
 import { Linking } from 'react-native';
 
-import { TAB_ROUTE_PATHS, VOICE_SETUP_ROUTE_PATH } from '../../navigation/routes';
+import {
+  JOURNAL_ROUTE_PATHS,
+  SETTINGS_ROUTE_PATHS,
+  VOICE_SETUP_ROUTE_PATH,
+} from '../../navigation/routes';
+import { useJournalStore } from '../../state/journal';
 import { useSessionStore } from '../../state/session';
 import { getBootstrappedStorage } from '../../storage/bootstrap';
+import type { ClarificationQuestion } from '../../storage/types';
 import { expoPermissionGateway } from '../permissions';
+import { formatEntryEyebrow, shareEntry } from '../journal';
 import { BREAK_LABELS, endBreak, startBreak, useBreakChoice } from '../recording/breaks';
 import type { CommandFailure, CommandResult } from '../recording/engine';
 import { discardFailedSession, retrySession, skipSession } from '../recording/sessionCommands';
 import { recordingHost, useIsCapturing } from '../recording/useRecordingEngine';
+import { ClarificationView } from './ClarificationView';
+import { JournalReadyView } from './JournalReadyView';
+import { advanceSession, answerClarification, listOpenClarifications } from './clarification';
 import { PrivacySheet } from './PrivacySheet';
 import {
   canPreview,
   describeDeadline,
   formatClock,
+  formatClockAt,
   formatElapsed,
   formatEyebrowDate,
   interruptionReason,
@@ -30,6 +41,7 @@ import {
   ProcessingView,
   PromptView,
   RecordingView,
+  processingStageIndex,
   type Blocker,
 } from './views';
 
@@ -73,6 +85,30 @@ function TodayContent() {
   const now = useNow(session?.status === 'recording');
 
   const kind = todayKind({ session, now, previewing, capturing, busy });
+
+  const journalEntries = useJournalStore((state) => state.entries);
+  const loadJournalEntries = useJournalStore((state) => state.loadEntries);
+  const [questions, setQuestions] = React.useState<ClarificationQuestion[]>([]);
+  const [clarIndex, setClarIndex] = React.useState(0);
+
+  React.useEffect(() => {
+    if (kind !== 'clarification' || !session) {
+      return;
+    }
+    const storage = getBootstrappedStorage();
+    if (!storage) {
+      return;
+    }
+    void listOpenClarifications(storage, session.id)
+      .then(setQuestions)
+      .catch(() => undefined);
+  }, [kind, session]);
+
+  React.useEffect(() => {
+    if (kind === 'journal-ready') {
+      void loadJournalEntries();
+    }
+  }, [kind, loadJournalEntries]);
 
   const status = session?.status;
   // A privacy break only exists while the session is paused.
@@ -177,6 +213,29 @@ function TodayContent() {
       }
     });
 
+  const answer = async (answerText: string | null) => {
+    const storage = getBootstrappedStorage();
+    const question = questions[clarIndex];
+    if (!storage || !session || !question) {
+      setProblem(PROBLEM);
+      return;
+    }
+    setBusy(true);
+    setProblem(undefined);
+    try {
+      await answerClarification(storage, question, answerText);
+      if (clarIndex + 1 < questions.length) {
+        setClarIndex(clarIndex + 1);
+      } else {
+        await advanceSession(storage, session.id, 'generating');
+      }
+    } catch {
+      setProblem(PROBLEM);
+    } finally {
+      setBusy(false);
+    }
+  };
+
   const notice = blocker ? (
     <BlockerNotice
       blocker={blocker}
@@ -210,7 +269,7 @@ function TodayContent() {
           problem={problem}
           notice={notice}
           onStart={() => void start()}
-          onChangeTime={() => router.navigate(TAB_ROUTE_PATHS.settings)}
+          onChangeTime={() => router.push(SETTINGS_ROUTE_PATHS.schedule)}
           onSkip={() => void skip()}
         />
       );
@@ -261,8 +320,48 @@ function TodayContent() {
           onDiscard={() => void discard()}
         />
       );
+    case 'clarification': {
+      const current = questions[clarIndex];
+      if (!current) {
+        return <ProcessingView stageIndex={processingStageIndex(session.status)} />;
+      }
+      const base = Date.parse(session.actualStart ?? session.scheduledStart);
+      return (
+        <ClarificationView
+          busy={busy}
+          index={clarIndex}
+          onAnswer={(label) => void answer(label)}
+          question={current.question}
+          timeLabel={`${formatClockAt(base + current.startMs, timezone)} – ${formatClockAt(
+            base + current.endMs,
+            timezone,
+          )}`}
+          total={questions.length}
+        />
+      );
+    }
+    case 'journal-ready': {
+      const entry = session
+        ? journalEntries.find((item) => item.sessionId === session.id)
+        : undefined;
+      return (
+        <JournalReadyView
+          eyebrow={entry ? formatEntryEyebrow(entry.date) : eyebrow}
+          onEdit={() =>
+            entry && router.push({ pathname: JOURNAL_ROUTE_PATHS.edit, params: { id: entry.id } })
+          }
+          onRead={() =>
+            entry && router.push({ pathname: JOURNAL_ROUTE_PATHS.detail, params: { id: entry.id } })
+          }
+          onShare={() => entry && void shareEntry(entry)}
+          paragraphs={entry?.paragraphs ?? []}
+          tags={entry?.contextTags ?? []}
+          title={entry?.title ?? 'Your day is ready.'}
+        />
+      );
+    }
     default:
-      return <ProcessingView />;
+      return <ProcessingView stageIndex={processingStageIndex(session.status)} />;
   }
 }
 

@@ -9,11 +9,13 @@ This document turns [01-PRD](01-PRD.md) and [02-MVP](02-MVP.md) into buildable b
 
 Daytale has exactly three primary tabs: Today, Journal, and Settings. On first run, onboarding is a linear stack. The following registry covers every prototype state plus the required Voice Setup state. The `prototype/index.html` screen ID is the stable visual reference.
 
+**Prototype-first precedence.** Where `prototype/index.html` renders a screen, its layout and copy are authoritative; this table and the [01-PRD](01-PRD.md) supply behavior the prototype does not show and the required additions it omits. Deliberate deviations are listed inline in the rows below and recorded in [06-PROGRESS](06-PROGRESS.md). Do not restyle a screen, rewrite its copy, or invent a component that the prototype already defines (see [07-DESIGN-SYSTEM](07-DESIGN-SYSTEM.md)).
+
 | ID | Screen | Entry | Required content and behavior | Exit or next state |
 | --- | --- | --- | --- | --- |
-| `welcome` | Welcome | First launch | Mascot, value statement, optional first-name field, Continue | `lang-spoken` |
+| `welcome` | Welcome | First launch | Mascot, value statement, optional first-name field, Continue. The prototype's Welcome renders no name field; the optional first name is a SPEC/PRD addition, styled with the prototype field tokens | `lang-spoken` |
 | `lang-spoken` | Languages | Welcome | Spoken languages (English, Nepali, or both) and journal language; validation prevents empty selection | `schedule` |
-| `schedule` | Schedule | Languages or Settings | Start and end time, timezone derived from device, clear daily summary; end must be after start | `privacy-permissions` or Settings Today |
+| `schedule` | Schedule | Languages or Settings | Start and end time, timezone derived from device, clear daily summary; end must be after start. The prototype's repeat-day chips and reminder-day copy are intentionally omitted: the MVP schedule is daily | `privacy-permissions` or Settings Today |
 | `privacy-permissions` | Privacy and Permissions | Schedule | Plain-language local-audio and transcript-cloud explanation, microphone and notification permission actions, denial recovery | `voice-setup` after required permissions, or blocked state |
 | `voice-setup` | Voice Setup | Permission completion | Three short guided samples, progress, retry/delete, encrypted on-device profile; no skip | `ready` |
 | `ready` | Ready | Voice Setup | Setup summary and start-today action; first name and choices are editable later | `today-idle` |
@@ -22,8 +24,8 @@ Daytale has exactly three primary tabs: Today, Journal, and Settings. On first r
 | `recording` | Recording | Prompt, resume, or scheduled start | Live duration, waveform/mascot state, transcript unavailable while recording, Pause and Stop, system surface parity | `paused`, `processing`, or `today-idle` |
 | `privacy-sheet` | Recording privacy sheet | Recording | Bottom sheet explains microphone state and the next cleanup step; no hidden controls | Dismiss to `recording`, or Stop to `processing` |
 | `paused` | Paused | Recording Pause | Paused duration, Resume and Stop, explicit indication that no audio is captured | `recording` or `processing` |
-| `clarification` | Clarification | Processing | Zero, one, or two time-based timeline cards; answer, skip, and continue actions; no map or location | `processing`/generating, then `journal-ready` |
-| `processing` | Processing | Stop, scheduled end, or clarification continue | Stage label (transcribing, analyzing, generating), progress that does not imply false precision, retry/offline explanation | `clarification`, `journal-ready`, or `error` |
+| `clarification` | Clarification | Processing | Zero, one, or two time-based questions answered with the prototype's one-tap chips (Work, Study, Social, Travel, Gym, Shopping, Other, Ignore); skip via Ignore. A neutral time card replaces the prototype's map/place pin: no map, no location, no pin | `processing`/generating, then `journal-ready` |
+| `processing` | Processing | Stop, scheduled end, or clarification continue | Staged rows using the prototype labels "Transcribing conversations", "Finding key moments", "Summarizing your day", a bar tied to the stage index that does not imply false precision, retry/offline explanation | `clarification`, `journal-ready`, or `error` |
 | `journal-ready` | Journal ready | Final generation | Journal preview, title, tags, Edit, Share, Done; success state is durable before leaving | `journal-detail`, `journal-edit`, or `today-idle` |
 | `journal-list` | Journal list | Journal tab | Chronological cards, search-free MVP list, empty and loading states | `journal-detail` |
 | `journal-detail` | Journal detail | Journal list or Journal ready | Full title, paragraphs, time/context tags, Edit, Share, Delete with confirmation | `journal-edit`, list, or `today-idle` |
@@ -35,6 +37,10 @@ Daytale has exactly three primary tabs: Today, Journal, and Settings. On first r
 | `error` | Recoverable error | Any failed operation | Human-readable cause, Retry, Go back, and data-retention deadline when relevant; no raw diagnostics | Previous safe state or retry |
 
 Every screen has loading, empty, permission, interruption, offline, and failure behavior appropriate to its action. No screen may trap the user behind a disabled button without an explanation.
+
+### Prototype copy deck
+
+Copy is owned by `prototype/index.html`; do not paraphrase it. The rendered string for each screen is its `SCREEN_RENDER` entry in that file, and the per-screen intent notes sit beside the screen registry. Strings the implementation matches verbatim include: onboarding "Your day, written for you.", "What languages are part of your life?", "When should I remember your day?", "Take a little privacy break, always on your terms.", "You're all set."; Today "Resting until {time}.", "Good morning, {name}!", "I'm remembering your day", "Taking a privacy break.", "One tiny question before I finish…", "Writing your Daytale…"; Journal "Your days, written." and "Read full journal →"; Settings "Your Daytale.". The registration route names (`JOURNAL_ROUTE_PATHS`, `SETTINGS_ROUTE_PATHS` in `src/navigation/routes.ts`) are the only sanctioned path strings.
 
 ## 2. Navigation and state machine
 

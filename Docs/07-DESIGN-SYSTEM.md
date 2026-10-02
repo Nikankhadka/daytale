@@ -134,6 +134,40 @@ plus Android elevation. The inline 1px layer is not portable to React Native.
   `appMuted`, 22px line icons, 10.5px Figtree 600 labels.
 - **Lists**: hairline `appLine` separators; bless targets at 44 points or more.
 
+### Shared primitives
+
+Implementation rule: implement each prototype app class once in `src/shared/ui/` and reuse it. Do
+not re-implement a row, chip, or field inside a feature.
+
+| Module | Exports | Prototype class |
+| --- | --- | --- |
+| `src/shared/ui/primitives.tsx` | `Card` | `.a-card` |
+| | `ChoiceRow` | `.a-check-row` + `.a-check` |
+| | `Chip` | `.a-chip`, `.j-context-chip`, `.j-mini-chip` |
+| | `Eyebrow` | `.a-eyebrow` |
+| | `SubText` | `.a-sub` |
+| | `ScreenHeading` / `SectionHeading` | `.a-h1` / card titles |
+| | `FieldLabel` | `.a-field-label` |
+| | `ListRow` / `RowDivider` | `.set-row` |
+| | `InlineConfirm` | `.inline-confirm` |
+| | `ProgressDots` | `.dots` |
+| | `StatusPill` | `.rec-pill`, `.pause-pill` |
+| `src/shared/ui/Select.tsx` | `Select`, `TimeField`, `buildTimeOptions` | `.a-select` |
+| `src/shared/ui/SwitchRow.tsx` | `SwitchRow` | `.a-check-row` + `.switch` |
+| `src/shared/ui/uiIcons.tsx` | `UiIcon` | prototype `uiIcon()` glyphs |
+| `src/shared/ui/ScreenScaffold.tsx` | `ScreenScaffold`, `PrimaryButton` | `.a-btn`, `.a-btn-primary`, `.a-btn-ghost`, `.a-btn-danger` |
+
+React Native approximations, all sanctioned:
+
+- **Select** opens a modal option list; RN has no native `<select>` and no OS wheel picker is added.
+- **Privacy sheet** uses the `.sheet` scrim with opacity only; `filter: blur(2px)` needs `expo-blur`
+  and is intentionally not added.
+- **Journal edit** uses `TextInput multiline` in place of a `contenteditable` region.
+- **Clarification** replaces the prototype `.clar-map` map/place pin with a neutral time card; no
+  map, location, or pin is rendered (see [03-SPEC](03-SPEC.md)).
+- **Reading width**: the prototype's `.j-read p { max-width: 38ch }` has no `ch` unit in RN and is
+  left uncapped.
+
 ## Known contrast gaps
 
 The frozen palette itself measures below the WCAG text floor for a few pairs, so the app mirror

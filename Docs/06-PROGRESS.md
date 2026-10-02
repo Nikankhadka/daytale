@@ -6,14 +6,16 @@ This file records current delivery evidence and decisions. It does not repeat re
 
 Canonical documentation baseline complete. DYT-001 repository foundation checks are green locally, but its iOS and Android development-client gate remains outstanding. DYT-002 implementation is in progress with its physical-device gate pending. DYT-003 implementation is in progress with automated persistence and cleanup checks green; its physical-device gate remains pending. DYT-004A implementation is in progress through the Voice Setup boundary, with its physical accessibility and visual gate pending. DYT-005 voice enrollment, DYT-006 production recording, and DYT-007 local transcription are ready for review with their physical-device gates pending. DYT-008 journal API is ready for review with its Cloud Run deployment and device gate pending.
 
+2026-10-02: DYT-004 prototype-faithful UI shell is rebuilt from the prototype: onboarding copy and layout, a settings hub with schedule/languages/privacy sub-screens, shared UI primitives, and the nested journal/settings route trees. DYT-009 screens (clarification, processing stages, journal-ready, journal list/detail/edit) are built against local Zustand/storage state; the mobile journal API client and generation orchestrator remain the outstanding DYT-009 backend work.
+
 ## Ticket status
 
 Completed: none.
-Active: DYT-001, DYT-002, DYT-003, DYT-004.
+Active: DYT-001, DYT-002, DYT-003, DYT-004, DYT-009.
 Blocked: none.
 Ready for review: DYT-005, DYT-006, DYT-007, DYT-008.
 Verified: none.
-Not started: DYT-009 through DYT-012.
+Not started: DYT-010 through DYT-012.
 
 ## Blockers and prerequisites
 
@@ -34,6 +36,8 @@ Expo SDK 57 repository foundation, DYT-002 recording-spike configuration, DYT-00
 2026-10-01: DYT-007 `npm run check` passed formatting, lint, TypeScript, 40 test suites with 429 tests, documentation links/placeholders, and route smoke checks. `npx expo export --platform web` and iOS and Android `expo export:embed` release bundles of the transcription slice passed. The iOS WAV transcoder was compiled with `swiftc` and decoded 16, 44.1, and 48 kHz inputs to 16 kHz mono PCM16; whisper.cpp itself ran only through a mocked binding, and device verification is pending.
 
 2026-10-01: DYT-008 `npm run check` passed formatting, lint, TypeScript, 40 test suites with 429 tests, documentation links/placeholders, route smoke checks, and the journal API service check (TypeScript plus 107 `node:test` tests). A local server with fake App Check and Gemini was exercised with curl for 200, 400, 401, 413, 429, 502, and 503, and log lines held no content. The Docker image built and answered an unauthenticated request with 401. No deployment, real App Check token, or live Gemini call has run.
+
+2026-10-02: DYT-004/DYT-009 prototype-faithful UI rebuild `npm run check` passed formatting, lint, TypeScript, 42 test suites with 460 tests, documentation links/placeholders, and route smoke checks for the 15 canonical routes. The journal API service check passed with 107 tests. Web screenshot comparison against the prototype, the mobile journal API client and generation orchestrator, the native recording surfaces, and all physical-device gates remain pending.
 
 ## Dated decisions
 
@@ -64,3 +68,10 @@ Expo SDK 57 repository foundation, DYT-002 recording-spike configuration, DYT-00
 | 2026-10-01 | The mobile journal API client (App Check token, response re-validation, retry until `retryUntil`) is built with DYT-009, which owns processing. | Engineering |
 | 2026-10-01 | Light is the default theme; the user toggles light/dark; the system-follow option was removed; the dark palette was re-derived from the light identity with AA contrast. | Design/engineering |
 | 2026-10-02 | React Native adopts the prototype `--color-app-*` token names and one `useDaytaleTheme()` design system across every screen, documented in [07-DESIGN-SYSTEM](07-DESIGN-SYSTEM.md); the frozen palette's inherent contrast gaps are asserted as expected test failures rather than changed. | Design/engineering |
+| 2026-10-02 | Prototype-first precedence for UI: where `prototype/index.html` renders a screen, its layout and copy win; the [03-SPEC](03-SPEC.md) registry supplies behavior the prototype omits and the required additions it lacks (optional first name, voice setup, settings delete-all/voice-profile rows, accessibility). | Design/engineering |
+| 2026-10-02 | Clarification renders a neutral time card in place of the prototype's map/place pin; no map, location, or pin is shown, matching US-016. | Product/engineering |
+| 2026-10-02 | The prototype's repeat-day chips stay omitted (extends 2026-09-30); the schedule is daily and Ready reads "every day". | Design/engineering |
+| 2026-10-02 | Hindi stays omitted; the stored language set is English and Nepali only. | Product/engineering |
+| 2026-10-02 | `Select` is a modal option list, not an OS wheel picker; no picked dependency is added. Sheet blur is approximated with scrim opacity rather than `expo-blur`. | Engineering |
+| 2026-10-02 | Journal and settings sub-screens use nested Expo Router stacks inside each tab so the tab bar stays visible; `scripts/check-routes.mjs` now requires the 15 canonical route files. | Engineering |
+| 2026-10-02 | Journal rows gain a repository `deleteById` (`JournalEntryRepository`); journal-only delete never deletes the parent recording session. | Engineering |

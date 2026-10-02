@@ -13,6 +13,7 @@ import Svg, { Circle, Path } from 'react-native-svg';
 
 import { DaytaleMascot, type MascotState } from '../../shared/ui/DaytaleMascot';
 import { PrimaryButton } from '../../shared/ui/ScreenScaffold';
+import { UiIcon } from '../../shared/ui/uiIcons';
 import { withAlpha } from '../../theme/color';
 import { useDaytaleTheme } from '../../theme/useDaytaleTheme';
 
@@ -540,11 +541,81 @@ export function FailedView({ deadline, busy, problem, onRetry, onDiscard }: Fail
   );
 }
 
-/** The handoff only; the stages and what follows belong to processing (DYT-009). */
-export function ProcessingView() {
+/** The three prototype processing stages, in order. */
+export const PROCESSING_STAGES = [
+  'Transcribing conversations',
+  'Finding key moments',
+  'Summarizing your day',
+] as const;
+
+/** Stage index the stored status maps to; the UI only ever advances forward. */
+export function processingStageIndex(status: string | undefined): number {
+  switch (status) {
+    case 'analyzing':
+      return 1;
+    case 'generating':
+      return 2;
+    case 'ready':
+      return 3;
+    default:
+      return 0;
+  }
+}
+
+/** The processing screen: three staged rows and a determinate bar tied to the stage. */
+export function ProcessingView({ stageIndex = 0 }: { stageIndex?: number }) {
   const { colors, typography } = useDaytaleTheme();
+  const clamped = Math.max(0, Math.min(stageIndex, PROCESSING_STAGES.length));
+  const fill = `${Math.max(6, (clamped / PROCESSING_STAGES.length) * 100)}%` as const;
   return (
     <TodayFrame mascot="writing" title={'Writing your Daytale…'} titleVariant="titleSmall">
+      <View style={styles.steps}>
+        {PROCESSING_STAGES.map((label, index) => {
+          const done = index < clamped;
+          const active = index === clamped;
+          return (
+            <View key={label} style={styles.step}>
+              <View
+                style={[
+                  styles.stepDot,
+                  {
+                    backgroundColor: done
+                      ? colors.appLeaf
+                      : active
+                        ? colors.appCherry
+                        : 'transparent',
+                    borderColor: done || active ? 'transparent' : colors.appLine,
+                  },
+                ]}
+              >
+                {done ? (
+                  <UiIcon color={colors.appPaper} name="check" size={12} strokeWidth={2.4} />
+                ) : (
+                  <Text
+                    style={[
+                      typography.caption,
+                      { color: active ? colors.appPaper : colors.appMuted },
+                    ]}
+                  >
+                    {index + 1}
+                  </Text>
+                )}
+              </View>
+              <Text
+                style={[
+                  typography.label,
+                  { color: active ? colors.appInk : colors.appMuted, opacity: done ? 0.55 : 1 },
+                ]}
+              >
+                {label}
+              </Text>
+            </View>
+          );
+        })}
+      </View>
+      <View style={[styles.track, { backgroundColor: colors.appLine }]}>
+        <View style={[styles.fill, { backgroundColor: colors.appCherry, width: fill }]} />
+      </View>
       <Text style={[styles.note, typography.caption, { color: colors.appFaint }]}>
         Source audio is deleted the moment this finishes.
       </Text>
@@ -612,4 +683,16 @@ const styles = StyleSheet.create({
   pauseGlyph: { flexDirection: 'row', gap: 5 },
   pauseBar: { borderRadius: 2, height: 22, width: 6 },
   controls: { flexDirection: 'row', gap: 32, justifyContent: 'center' },
+  steps: { alignSelf: 'stretch', gap: 14, marginTop: 8, maxWidth: 240 },
+  step: { alignItems: 'center', flexDirection: 'row', gap: 12 },
+  stepDot: {
+    alignItems: 'center',
+    borderRadius: 13,
+    borderWidth: 2,
+    height: 26,
+    justifyContent: 'center',
+    width: 26,
+  },
+  track: { alignSelf: 'stretch', borderRadius: 3, height: 6, marginTop: 4, overflow: 'hidden' },
+  fill: { borderRadius: 3, height: 6 },
 });

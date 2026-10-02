@@ -51,6 +51,10 @@ export type VoiceProfileRepository = EntityRepository<VoiceProfile> & {
   deleteById: (id: string) => Promise<void>;
 };
 
+export type JournalEntryRepository = EntityRepository<JournalEntry> & {
+  deleteById: (id: string) => Promise<void>;
+};
+
 export type RecordingSessionOperationResult = {
   operation: RecordingOperation;
   session: RecordingSession;
@@ -80,7 +84,7 @@ export type StorageRepositories = {
   extractedEvents: EntityRepository<ExtractedEvent>;
   clarificationQuestions: EntityRepository<ClarificationQuestion>;
   clarificationAnswers: EntityRepository<ClarificationAnswer>;
-  journalEntries: EntityRepository<JournalEntry>;
+  journalEntries: JournalEntryRepository;
   cleanupReceipts: EntityRepository<CleanupReceipt>;
   recordingOperations: EntityRepository<RecordingOperation>;
   applyRecordingSessionOperation: (
@@ -216,10 +220,11 @@ export function createStorageRepositories(database: MigrationDatabase): StorageR
       (id) => getClarificationAnswer(database, id),
       () => listClarificationAnswers(database),
     ),
-    journalEntries: createEntityRepository(
+    journalEntries: createJournalEntryRepository(
       (value) => saveJournalEntry(database, value),
       (id) => getJournalEntry(database, id),
       () => listJournalEntries(database),
+      (id) => deleteJournalEntry(database, id),
     ),
     cleanupReceipts: createEntityRepository(
       (value) => saveCleanupReceipt(database, value),
@@ -590,6 +595,13 @@ export async function listJournalEntries(database: MigrationDatabase): Promise<J
   return rows.map(mapJournalEntry);
 }
 
+export async function deleteJournalEntry(database: MigrationDatabase, id: string): Promise<void> {
+  const validatedId = validateStorageId(id);
+  await withExclusiveTransaction(database, async (transaction) => {
+    await run(transaction, 'DELETE FROM journal_entries WHERE id = ?', validatedId);
+  });
+}
+
 export async function saveCleanupReceipt(
   database: MigrationDatabase,
   value: CleanupReceipt,
@@ -731,6 +743,15 @@ function createVoiceProfileRepository(
   list: () => Promise<VoiceProfile[]>,
   deleteById: (id: string) => Promise<void>,
 ): VoiceProfileRepository {
+  return { save, getById, findById: getById, list, deleteById };
+}
+
+function createJournalEntryRepository(
+  save: (value: JournalEntry) => Promise<JournalEntry>,
+  getById: (id: string) => Promise<JournalEntry | null>,
+  list: () => Promise<JournalEntry[]>,
+  deleteById: (id: string) => Promise<void>,
+): JournalEntryRepository {
   return { save, getById, findById: getById, list, deleteById };
 }
 

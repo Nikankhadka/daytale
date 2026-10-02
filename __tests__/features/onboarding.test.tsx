@@ -93,23 +93,25 @@ describe('DYT-004A onboarding and preferences', () => {
     );
 
     await fireEvent.changeText(screen.getByLabelText('First name (optional)'), 'Luna');
-    await fireEvent.press(screen.getByText('Get started'));
-    await waitFor(() => expect(screen.getByText('Which languages feel like home?')).toBeTruthy());
+    await fireEvent.press(screen.getByText('Get Started →'));
+    await waitFor(() =>
+      expect(screen.getByText('What languages are part of your life?')).toBeTruthy(),
+    );
     await waitFor(() => expect(fake.getCurrent()?.firstName).toBe('Luna'));
     expect(fake.getCurrent()?.onboardingStage).toBe('languages');
-    await fireEvent.press(screen.getByText('Continue'));
-    await waitFor(() =>
-      expect(screen.getByText('When should Daytale make space for you?')).toBeTruthy(),
-    );
+    await fireEvent.press(screen.getByText('Continue →'));
+    await waitFor(() => expect(screen.getByText('When should I remember your day?')).toBeTruthy());
     expect(fake.getCurrent()?.spokenLanguages).toEqual(['en']);
     expect(fake.getCurrent()?.onboardingStage).toBe('schedule');
 
-    await fireEvent.press(screen.getByText('Continue'));
-    await waitFor(() => expect(screen.getByText('Privacy and permissions')).toBeTruthy());
+    await fireEvent.press(screen.getByText('Continue →'));
+    await waitFor(() =>
+      expect(screen.getByText('Take a little privacy break, always on your terms.')).toBeTruthy(),
+    );
     expect(fake.getCurrent()?.scheduleStartLocal).toBe('07:00');
     expect(fake.getCurrent()?.onboardingStage).toBe('privacy');
 
-    await fireEvent.press(screen.getByText('Allow microphone and continue'));
+    await fireEvent.press(screen.getByText('Allow & Continue →'));
     await waitFor(() => expect(screen.getByText('Voice setup')).toBeTruthy());
     expect(fake.getCurrent()?.microphonePermissionState).toBe('granted');
     expect(fake.getCurrent()?.onboardingComplete).toBe(false);
@@ -193,9 +195,7 @@ describe('DYT-004A onboarding and preferences', () => {
       />,
     );
 
-    await fireEvent.press(screen.getByText('Allow notifications'));
-    await waitFor(() => expect(screen.getByText(/Notifications are off/)).toBeTruthy());
-    await fireEvent.press(screen.getByText('Allow microphone and continue'));
+    await fireEvent.press(screen.getByText('Allow & Continue →'));
     await waitFor(() => expect(screen.getByText('Open system settings')).toBeTruthy());
     await fireEvent.press(screen.getByText('Open system settings'));
     await waitFor(() => expect(openSettings).toHaveBeenCalled());
@@ -259,7 +259,7 @@ describe('DYT-004A onboarding and preferences', () => {
     const { screen } = await renderReadyScreen();
 
     expect(screen.getByText("You're all set.")).toBeTruthy();
-    expect(screen.getByText('Daytale will greet you at 08:30 every day.')).toBeTruthy();
+    expect(screen.getByText('Daytale will greet you at 8:30 AM every day.')).toBeTruthy();
     expect(screen.getByText('🇬🇧 English')).toBeTruthy();
     expect(screen.getByText('🇳🇵 Nepali')).toBeTruthy();
     expect(screen.getByText('Journal in Nepali')).toBeTruthy();

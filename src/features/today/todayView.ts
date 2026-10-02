@@ -2,7 +2,15 @@ import type { AppPreferences, RecordingSession } from '../../storage/types';
 import { localDateOf } from '../recording/schedule';
 
 /** Which Today screen the stored session, the clock, and the real capture state add up to. */
-export type TodayKind = 'idle' | 'prompt' | 'recording' | 'paused' | 'failed' | 'processing';
+export type TodayKind =
+  | 'idle'
+  | 'prompt'
+  | 'recording'
+  | 'paused'
+  | 'failed'
+  | 'processing'
+  | 'clarification'
+  | 'journal-ready';
 
 export type TodayInputs = {
   session: RecordingSession | null;
@@ -36,10 +44,12 @@ export function todayKind({ session, now, previewing, capturing, busy }: TodayIn
       return 'failed';
     case 'transcribing':
     case 'analyzing':
-    case 'awaiting clarification':
     case 'generating':
-    case 'ready':
       return 'processing';
+    case 'awaiting clarification':
+      return 'clarification';
+    case 'ready':
+      return 'journal-ready';
     default:
       return 'idle';
   }
@@ -71,6 +81,11 @@ export function formatElapsed(session: RecordingSession, now: number, running: b
 export function formatClock(local: string): string {
   const [hour, minute] = local.split(':').map(Number);
   return `${hour % 12 || 12}:${String(minute).padStart(2, '0')} ${hour < 12 ? 'AM' : 'PM'}`;
+}
+
+/** A UTC/epoch instant as "7:00 AM" in the user's timezone. */
+export function formatClockAt(at: number, timezone: string): string {
+  return formatClock(clockIn(timezone, at));
 }
 
 /** "Mon, 14 Apr" for the day the user is living in. */

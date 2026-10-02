@@ -290,6 +290,34 @@ describe('storage repositories', () => {
     expect(stored.pause_intervals).toBe('[]');
   });
 
+  it('deletes a journal entry through its repository without deleting the session', async () => {
+    const repositories = createStorageRepositories(database);
+    await repositories.recordingSessions.save(makeSession());
+    const journal: JournalEntry = {
+      id: ids.journal,
+      sessionId: ids.session,
+      date: '2026-01-02',
+      timezone: 'UTC',
+      title: 'deletable',
+      paragraphs: ['one'],
+      contextTags: [],
+      sourceEventIds: [],
+      language: 'en',
+      createdAt: t2,
+      updatedAt: t2,
+    };
+    await repositories.journalEntries.save(journal);
+
+    await repositories.journalEntries.deleteById(ids.journal);
+
+    expect(await repositories.journalEntries.getById(ids.journal)).toBeNull();
+    await expect(repositories.journalEntries.deleteById(ids.journal)).resolves.toBeUndefined();
+    await expect(repositories.journalEntries.deleteById('not-a-uuid')).rejects.toBeInstanceOf(
+      StorageValidationError,
+    );
+    expect(await repositories.recordingSessions.getById(ids.session)).not.toBeNull();
+  });
+
   it('validates writes and validates JSON arrays when reading', async () => {
     const repositories = createStorageRepositories(database);
     await expect(

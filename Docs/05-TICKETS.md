@@ -93,6 +93,8 @@ Physical-device verification: safe areas, large text, dark mode, reduced motion,
 
 Implementation evidence (2026-09-26): DYT-004A implements the three-tab route shell, prototype token and font mapping, semantic light/dark themes, reduced-motion mascot states, accessible empty/loading/error surfaces, optional name, language and schedule forms, persisted onboarding-stage restoration, native notification and microphone permission boundaries with denial recovery, and explicit delete-all confirmation. The flow stops at the Voice Setup state for DYT-005 to implement. `npm run check` passes formatting, lint, TypeScript, 14 test suites with 66 tests, documentation checks, and route smoke checks; public Expo config, native config introspection, web export, and diff checks pass. Physical safe-area, large-text, dark-mode, reduced-motion, keyboard, touch-target, and screen-reader verification remains outstanding.
 
+Implementation evidence (2026-10-02): the shell and onboarding were rebuilt to the prototype's layout and copy, the settings hub gained schedule/languages/privacy sub-screens under a nested route tree, and shared primitives landed in `src/shared/ui/`. `npm run check` passes with 41 test suites and 453 tests. Web screenshot comparison against the prototype and physical accessibility/visual verification remain outstanding.
+
 ## DYT-005 - Voice enrollment and speaker identification
 
 Status: `Ready for Review`
@@ -167,7 +169,7 @@ Implementation evidence (2026-10-01): `service/journal-api/` is a stateless Node
 
 ## DYT-009 - Processing, clarification, and journals
 
-Status: `Not Started`
+Status: `In Progress`
 Dependencies: DYT-003, DYT-007, DYT-008
 
 Outcome: Connect local transcription to analysis, time-based clarification, generation, local journal CRUD, native share, and lifecycle deletion.
@@ -180,6 +182,8 @@ Definition of Done: a full daily loop works offline where possible, generated co
 
 Automated verification: orchestration, question count, answer/skip, CRUD, share payload, generation validation, retry, and deletion tests.
 Physical-device verification: end-to-end daily loop on both platforms, including offline queue and network recovery.
+
+Implementation evidence (2026-10-02): the Clarification, Processing, Journal Ready, Journal list/detail/edit, empty state, and inline deletion screens are implemented against local Zustand/storage state, including the neutral clarification time card, staged processing rows, native share, and journal-only deletion. The mobile journal API client (App Check token, response re-validation, retry until `retryUntil`) and the transcribe/analyze/generate orchestrator remain outstanding, so the loop does not yet generate a journal end to end; that work stays the DYT-009 device blocker.
 
 ## DYT-010 - Native recording controls
 

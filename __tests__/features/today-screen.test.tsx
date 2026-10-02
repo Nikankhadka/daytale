@@ -194,7 +194,7 @@ describe('Today screen', () => {
       const screen = await show(makeScheduledSession());
       await press(screen, 'Change time');
 
-      expect(mockRouter.navigate).toHaveBeenCalledWith('/(tabs)/settings');
+      expect(mockRouter.push).toHaveBeenCalledWith('/(tabs)/settings/schedule');
     });
 
     it('skips today by discarding the session', async () => {

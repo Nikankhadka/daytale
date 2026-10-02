@@ -82,15 +82,15 @@ describe('today view', () => {
       expect(todayKind(inputs({ session: makeScheduledSession({ status: 'failed' }) }))).toBe(
         'failed',
       );
-      for (const status of [
-        'transcribing',
-        'analyzing',
-        'awaiting clarification',
-        'generating',
-        'ready',
-      ] as const) {
+      for (const status of ['transcribing', 'analyzing', 'generating'] as const) {
         expect(todayKind(inputs({ session: makeScheduledSession({ status }) }))).toBe('processing');
       }
+      expect(
+        todayKind(inputs({ session: makeScheduledSession({ status: 'awaiting clarification' }) })),
+      ).toBe('clarification');
+      expect(todayKind(inputs({ session: makeScheduledSession({ status: 'ready' }) }))).toBe(
+        'journal-ready',
+      );
     });
   });
 

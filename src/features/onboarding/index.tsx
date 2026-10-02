@@ -1,10 +1,24 @@
 import * as React from 'react';
-import { Linking, Pressable, StyleSheet, Switch, Text, TextInput, View } from 'react-native';
+import type { ReactNode } from 'react';
+import { Linking, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 
 import type { PreferencesRepository } from '../preferences';
 import { persistAppPreferences, type AppPreferencesPatch } from '../preferences';
 import { useSessionStore } from '../../state/session';
-import { PrimaryButton, ScreenScaffold } from '../../shared/ui/ScreenScaffold';
+import { DaytaleMascot } from '../../shared/ui/DaytaleMascot';
+import {
+  Chip,
+  ChoiceRow,
+  Eyebrow,
+  FieldLabel,
+  ScreenHeading,
+  SubText,
+} from '../../shared/ui/primitives';
+import { PrimaryButton } from '../../shared/ui/ScreenScaffold';
+import { Select, TimeField } from '../../shared/ui/Select';
+import { SwitchRow } from '../../shared/ui/SwitchRow';
+import { UiIcon } from '../../shared/ui/uiIcons';
 import { useDaytaleTheme } from '../../theme/useDaytaleTheme';
 import type { AppPreferences, Language } from '../../storage/types';
 import type { VoiceProfileRepository } from '../../storage/repositories';
@@ -21,6 +35,14 @@ export type OnboardingStep = 'welcome' | 'languages' | 'schedule' | 'privacy' | 
 export const READY_AUTO_ADVANCE_MS = 1700;
 
 const LANGUAGE_TAGS: Record<Language, string> = { en: '🇬🇧 English', ne: '🇳🇵 Nepali' };
+const LANGUAGE_NAMES: Record<Language, string> = { en: 'English', ne: 'Nepali' };
+const LANGUAGE_NATIVE: Record<Language, string> = { en: 'English', ne: 'नेपाली' };
+const LANGUAGE_FLAGS: Record<Language, string> = { en: '🇬🇧', ne: '🇳🇵' };
+
+function formatClock12(local: string): string {
+  const [hour, minute] = local.split(':').map(Number);
+  return `${hour % 12 || 12}:${String(minute).padStart(2, '0')} ${hour < 12 ? 'AM' : 'PM'}`;
+}
 
 export type OnboardingScreenProps = {
   repository?: PreferencesRepository;
@@ -47,8 +69,7 @@ export function OnboardingScreen({
   timezone,
 }: OnboardingScreenProps = {}) {
   const preferences = useSessionStore((state) => state.appPreferences);
-  const { colors, typography } = useDaytaleTheme();
-  const bodyStyle = [typography.sub, { color: colors.appMuted }];
+  const { colors, radii, typography } = useDaytaleTheme();
   const [step, setStep] = React.useState<OnboardingStep>(() =>
     getInitialOnboardingStep(preferences),
   );
@@ -88,6 +109,12 @@ export function OnboardingScreen({
     }
   };
 
+  const continueWelcome = async () => {
+    if (await save({ firstName: firstName.trim() || undefined, onboardingStage: 'languages' })) {
+      setStep('languages');
+    }
+  };
+
   const continueLanguages = async () => {
     if (spokenLanguages.length === 0) {
       setError('Choose at least one spoken language.');
@@ -115,16 +142,25 @@ export function OnboardingScreen({
     }
   };
 
-  const requestPermission = async () => {
+  const continuePrivacy = async () => {
     setSaving(true);
     setError(undefined);
+    let notifications = notificationsEnabled;
+    try {
+      const response = await permissionGateway.requestNotificationPermissionsAsync();
+      notifications = response.granted;
+    } catch {
+      notifications = false;
+    }
     try {
       const response = await permissionGateway.requestRecordingPermissionsAsync();
       const state = microphonePermissionState(response);
       setMicrophoneState(state);
+      setNotificationsEnabled(notifications);
       if (
         await save({
           microphonePermissionState: state,
+          notificationsEnabled: notifications,
           onboardingStage: state === 'granted' ? 'voice' : 'privacy',
         })
       ) {
@@ -141,20 +177,6 @@ export function OnboardingScreen({
     }
   };
 
-  const requestNotifications = async () => {
-    try {
-      const response = await permissionGateway.requestNotificationPermissionsAsync();
-      const granted = response.granted;
-      if (await save({ notificationsEnabled: granted })) {
-        if (!granted) {
-          setError('Notifications are off. You can try again or continue without reminders.');
-        }
-      }
-    } catch {
-      setError('Notification permission could not be checked. You can continue without reminders.');
-    }
-  };
-
   const openSystemSettings = async () => {
     try {
       await Linking.openSettings();
@@ -163,169 +185,214 @@ export function OnboardingScreen({
     }
   };
 
-  const continueWelcome = async () => {
-    if (await save({ firstName: firstName.trim() || undefined, onboardingStage: 'languages' })) {
-      setStep('languages');
-    }
-  };
-
   if (step === 'welcome') {
     return (
-      <ScreenScaffold
-        title="A quiet little ritual for remembering your day."
-        description="Daytale listens only when you invite it, then helps you keep the moments that matter."
-        mascotState="sleeping"
-        largeTitle
-        loading={saving}
-        error={error}
+      <StepFrame
         footer={
           <PrimaryButton
-            label="Get started"
+            label="Get Started →"
             onPress={() => void continueWelcome()}
             disabled={saving}
           />
         }
       >
-        <TextInput
-          accessibilityLabel="First name (optional)"
-          onChangeText={setFirstName}
-          placeholder="First name (optional)"
-          style={styles.input}
-          value={firstName}
-        />
-        <Text style={bodyStyle}>Everything stays on this device while you find your rhythm.</Text>
-      </ScreenScaffold>
+        <Eyebrow>Daytale</Eyebrow>
+        <ScreenHeading variant="titleLarge" center style={styles.hero}>
+          {'Your day,\nwritten for you.'}
+        </ScreenHeading>
+        <DaytaleMascot state="ready" />
+        <SubText center>You live your day. I&apos;ll remember it.</SubText>
+        <View style={styles.trust}>
+          <TextInput
+            accessibilityLabel="First name (optional)"
+            onChangeText={setFirstName}
+            placeholder="First name (optional)"
+            placeholderTextColor={colors.appFaint}
+            style={[
+              styles.input,
+              typography.body,
+              { borderColor: colors.appLine, borderRadius: radii.control, color: colors.appInk },
+            ]}
+            value={firstName}
+          />
+          <TrustLine icon="lock" text="Your voice stays on your device." />
+          <TrustLine icon="spark" text="Set it once, live your day." />
+          <TrustLine icon="journal" text="Turn everyday moments into a journal." />
+        </View>
+        {error ? (
+          <Text
+            accessibilityRole="alert"
+            style={[typography.label, { color: colors.appRecording }]}
+          >
+            {error}
+          </Text>
+        ) : null}
+      </StepFrame>
     );
   }
 
   if (step === 'languages') {
+    const active = (['en', 'ne'] as Language[]).filter((language) =>
+      spokenLanguages.includes(language),
+    );
     return (
-      <ScreenScaffold
-        title="Which languages feel like home?"
-        description="Choose the languages you may use while speaking."
-        mascotState="waking"
-        loading={saving}
-        error={error}
+      <StepFrame
         footer={
           <PrimaryButton
-            label="Continue"
+            label="Continue →"
             onPress={() => void continueLanguages()}
             disabled={saving}
           />
         }
       >
-        <LanguageOption
-          label="English"
-          selected={spokenLanguages.includes('en')}
-          onPress={() => toggleLanguage('en')}
-        />
-        <LanguageOption
-          label="नेपाली"
-          selected={spokenLanguages.includes('ne')}
-          onPress={() => toggleLanguage('ne')}
-        />
-        <Text style={bodyStyle}>Journal language</Text>
-        <LanguageOption
-          label="English"
-          selected={journalLanguage === 'en'}
-          onPress={() => selectJournalLanguage('en')}
-          single
-        />
-        <LanguageOption
-          label="नेपाली"
-          selected={journalLanguage === 'ne'}
-          onPress={() => selectJournalLanguage('ne')}
-          single
-        />
-      </ScreenScaffold>
+        <ScreenHeading variant="heading">What languages are part of your life?</ScreenHeading>
+        <SubText>I&apos;ll understand and transcribe your conversations.</SubText>
+        {(['en', 'ne'] as Language[]).map((language) => (
+          <ChoiceRow
+            key={language}
+            detail={LANGUAGE_NATIVE[language]}
+            label={LANGUAGE_NAMES[language]}
+            leading={LANGUAGE_FLAGS[language]}
+            onPress={() => toggleLanguage(language)}
+            selected={spokenLanguages.includes(language)}
+          />
+        ))}
+        <View style={styles.block}>
+          <FieldLabel>Write my journal in</FieldLabel>
+          <Select
+            accessibilityLabel="Journal language"
+            onChange={(value) => selectJournalLanguage(value as Language)}
+            options={active.map((language) => ({
+              value: language,
+              label: `${LANGUAGE_FLAGS[language]} ${LANGUAGE_NAMES[language]}`,
+            }))}
+            value={journalLanguage}
+          />
+          <SubText>
+            {`Speak in any of your languages - Daytale still writes one clean journal, in ${
+              LANGUAGE_NAMES[journalLanguage]
+            }.`}
+          </SubText>
+        </View>
+        {error ? (
+          <Text
+            accessibilityRole="alert"
+            style={[typography.label, { color: colors.appRecording }]}
+          >
+            {error}
+          </Text>
+        ) : null}
+      </StepFrame>
     );
   }
 
   if (step === 'schedule') {
     return (
-      <ScreenScaffold
-        title="When should Daytale make space for you?"
-        description="Set a gentle daily window. You can change it later."
-        mascotState="ready"
-        loading={saving}
-        error={error}
+      <StepFrame
         footer={
           <PrimaryButton
-            label="Continue"
+            label="Continue →"
             onPress={() => void continueSchedule()}
             disabled={saving}
           />
         }
       >
-        <TimeField label="Start" value={scheduleStartLocal} onChangeText={setScheduleStartLocal} />
-        <TimeField label="End" value={scheduleEndLocal} onChangeText={setScheduleEndLocal} />
-        <View style={styles.switchRow}>
-          <Text style={bodyStyle}>Remind me in this window</Text>
-          <Switch
-            accessibilityLabel="Remind me in this window"
-            onValueChange={setNotificationsEnabled}
-            value={notificationsEnabled}
+        <ScreenHeading variant="heading">When should I remember your day?</ScreenHeading>
+        <SubText>You can always change this later.</SubText>
+        <View style={styles.block}>
+          <FieldLabel icon="sun">Start time</FieldLabel>
+          <TimeField
+            accessibilityLabel="Start time"
+            onChange={setScheduleStartLocal}
+            value={scheduleStartLocal}
           />
         </View>
-      </ScreenScaffold>
+        <View style={styles.block}>
+          <FieldLabel icon="moon">End time</FieldLabel>
+          <TimeField
+            accessibilityLabel="End time"
+            onChange={setScheduleEndLocal}
+            value={scheduleEndLocal}
+          />
+        </View>
+        <SwitchRow
+          label="Remind me every morning"
+          onValueChange={setNotificationsEnabled}
+          value={notificationsEnabled}
+        />
+        {error ? (
+          <Text
+            accessibilityRole="alert"
+            style={[typography.label, { color: colors.appRecording }]}
+          >
+            {error}
+          </Text>
+        ) : null}
+      </StepFrame>
     );
   }
 
   if (step === 'privacy') {
     return (
-      <ScreenScaffold
-        title="Privacy and permissions"
-        description="Daytale uses the microphone only while you choose to record. Audio stays on this device. If you later enable transcription, transcript text may be sent to the configured transcription service; raw audio is not uploaded by this slice."
-        mascotState="listening"
-        loading={saving}
-        error={error}
-      >
-        <Text style={bodyStyle}>
-          Notifications are optional and only support reminders for your chosen schedule.
-        </Text>
-        <PrimaryButton
-          label={notificationsEnabled ? 'Notifications enabled' : 'Allow notifications'}
-          onPress={() => void requestNotifications()}
-          disabled={saving}
-          secondary
-        />
-        <PrimaryButton
-          label="Allow microphone and continue"
-          onPress={() => void requestPermission()}
-          disabled={saving}
-        />
-        {microphoneState === 'denied' || microphoneState === 'blocked' ? (
+      <StepFrame
+        footer={
           <>
-            <Text style={bodyStyle}>
-              Microphone access is blocked. Open system settings to change it, then retry.
-            </Text>
             <PrimaryButton
-              label="Open system settings"
-              onPress={() => void openSystemSettings()}
-              secondary
+              label="Allow & Continue →"
+              onPress={() => void continuePrivacy()}
+              disabled={saving}
             />
-            <PrimaryButton
-              label="Retry microphone permission"
-              onPress={() => void requestPermission()}
-              secondary
-            />
+            {microphoneState === 'denied' || microphoneState === 'blocked' ? (
+              <PrimaryButton
+                label="Open system settings"
+                onPress={() => void openSystemSettings()}
+                secondary
+              />
+            ) : null}
           </>
+        }
+      >
+        <ScreenHeading variant="heading">
+          Take a little privacy break, always on your terms.
+        </ScreenHeading>
+        <SubText>Here&apos;s exactly how Daytale handles your voice.</SubText>
+        <PrivacyCard
+          icon="lock"
+          text="Speech is transcribed locally wherever possible."
+          title="Processed on your device"
+        />
+        <PrivacyCard
+          icon="trash"
+          text="Raw audio and transcripts are removed automatically."
+          title="Deleted after your journal is written"
+        />
+        <PrivacyCard
+          icon="mic"
+          text="Only while a session you started is active."
+          title="Microphone access"
+        />
+        {error ? (
+          <Text
+            accessibilityRole="alert"
+            style={[typography.label, { color: colors.appRecording }]}
+          >
+            {error}
+          </Text>
         ) : null}
-      </ScreenScaffold>
+      </StepFrame>
     );
   }
 
   if (step === 'ready') {
     return (
       <ReadyStep
-        scheduleStart={scheduleStartLocal}
-        spokenLanguages={spokenLanguages}
         journalLanguage={journalLanguage}
-        saving={saving}
-        error={error}
         onFinish={async () => {
           await save({ onboardingComplete: true, onboardingStage: 'ready' });
         }}
+        saving={saving}
+        scheduleStart={scheduleStartLocal}
+        spokenLanguages={spokenLanguages}
       />
     );
   }
@@ -360,22 +427,81 @@ export function OnboardingScreen({
   }
 }
 
+/** Centered prototype column: content top-aligned, one pinned footer action. */
+function StepFrame({ children, footer }: { children: ReactNode; footer?: ReactNode }) {
+  const { colors } = useDaytaleTheme();
+  return (
+    <SafeAreaView
+      edges={['top', 'bottom']}
+      style={[styles.safe, { backgroundColor: colors.appPaper }]}
+    >
+      <ScrollView contentContainerStyle={styles.frame} keyboardShouldPersistTaps="handled">
+        {children}
+        {footer ? <View style={styles.footer}>{footer}</View> : null}
+      </ScrollView>
+    </SafeAreaView>
+  );
+}
+
+function TrustLine({ icon, text }: { icon: 'lock' | 'spark' | 'journal'; text: string }) {
+  const { colors, typography } = useDaytaleTheme();
+  return (
+    <View style={styles.trustLine}>
+      <TrustGlyph icon={icon} />
+      <Text style={[typography.caption, { color: colors.appMuted }]}>{text}</Text>
+    </View>
+  );
+}
+
+function TrustGlyph({ icon }: { icon: 'lock' | 'spark' | 'journal' }) {
+  const { colors } = useDaytaleTheme();
+  return <UiIcon color={colors.appCherry} name={icon} size={16} />;
+}
+
+function PrivacyCard({
+  icon,
+  title,
+  text,
+}: {
+  icon: 'lock' | 'trash' | 'mic';
+  title: string;
+  text: string;
+}) {
+  const { colors, radii, typography, shadows } = useDaytaleTheme();
+  return (
+    <View
+      style={[
+        styles.privacyCard,
+        {
+          backgroundColor: colors.appSurface,
+          borderColor: colors.appLine,
+          borderRadius: radii.card,
+        },
+        shadows,
+      ]}
+    >
+      <UiIcon color={colors.appCherry} name={icon} size={20} />
+      <View style={styles.privacyText}>
+        <Text style={[typography.label, { color: colors.appInk }]}>{title}</Text>
+        <Text style={[typography.sub, { color: colors.appMuted }]}>{text}</Text>
+      </View>
+    </View>
+  );
+}
+
 function ReadyStep({
   scheduleStart,
   spokenLanguages,
   journalLanguage,
   saving,
-  error,
   onFinish,
 }: {
   scheduleStart: string;
   spokenLanguages: Language[];
   journalLanguage: Language;
   saving: boolean;
-  error?: string;
   onFinish: () => Promise<void>;
 }) {
-  const { colors, radii, typography } = useDaytaleTheme();
   const onFinishRef = React.useRef(onFinish);
   React.useEffect(() => {
     onFinishRef.current = onFinish;
@@ -386,11 +512,7 @@ function ReadyStep({
   }, []);
 
   return (
-    <ScreenScaffold
-      title="You're all set."
-      description={`Daytale will greet you at ${scheduleStart} every day.`}
-      mascotState="celebrating"
-      error={error}
+    <StepFrame
       footer={
         <PrimaryButton
           label="Skip the wait - Go to Today →"
@@ -400,121 +522,54 @@ function ReadyStep({
         />
       }
     >
+      <DaytaleMascot state="celebrating" />
+      <ScreenHeading variant="heading" center>
+        You&apos;re all set.
+      </ScreenHeading>
+      <SubText center>
+        {`Daytale will greet you at ${formatClock12(scheduleStart)} every day.`}
+      </SubText>
       <View style={styles.tagRow}>
         {spokenLanguages.map((language) => (
-          <Text
-            key={language}
-            style={[
-              typography.chip,
-              styles.tag,
-              {
-                backgroundColor: colors.appBlossom,
-                borderRadius: radii.control,
-                color: colors.appCherry,
-              },
-            ]}
-          >
-            {LANGUAGE_TAGS[language]}
-          </Text>
+          <Chip key={language} label={LANGUAGE_TAGS[language]} selected />
         ))}
-        <Text
-          style={[
-            typography.chip,
-            styles.tag,
-            {
-              backgroundColor: colors.appSakuraMist,
-              borderRadius: radii.control,
-              color: colors.appMuted,
-            },
-          ]}
-        >
-          Journal in {journalLanguage === 'ne' ? 'Nepali' : 'English'}
-        </Text>
+        <Chip label={`Journal in ${LANGUAGE_NAMES[journalLanguage]}`} />
       </View>
-    </ScreenScaffold>
-  );
-}
-
-function LanguageOption({
-  label,
-  selected,
-  onPress,
-  single = false,
-}: {
-  label: string;
-  selected: boolean;
-  onPress: () => void;
-  single?: boolean;
-}) {
-  const { colors, radii, typography } = useDaytaleTheme();
-  return (
-    <Pressable
-      accessibilityRole={single ? 'radio' : 'checkbox'}
-      accessibilityState={{ checked: selected, selected }}
-      onPress={onPress}
-      style={[
-        styles.option,
-        {
-          backgroundColor: selected ? colors.appSakuraMist : colors.appSurface,
-          borderColor: selected ? colors.appCherry : colors.appLine,
-          borderRadius: radii.control,
-        },
-      ]}
-    >
-      <Text style={[typography.label, { color: colors.appInk }]}>
-        {selected ? '✓ ' : ''}
-        {label}
-      </Text>
-    </Pressable>
-  );
-}
-
-function TimeField({
-  label,
-  value,
-  onChangeText,
-}: {
-  label: string;
-  value: string;
-  onChangeText: (value: string) => void;
-}) {
-  const { colors, typography, radii } = useDaytaleTheme();
-  return (
-    <View style={styles.timeField}>
-      <Text style={[typography.label, { color: colors.appInk }]}>{label}</Text>
-      <TextInput
-        accessibilityLabel={`${label} time`}
-        keyboardType="numbers-and-punctuation"
-        onChangeText={onChangeText}
-        style={[
-          styles.input,
-          typography.label,
-          { borderColor: colors.appLine, borderRadius: radii.control, color: colors.appInk },
-        ]}
-        value={value}
-      />
-    </View>
+    </StepFrame>
   );
 }
 
 const styles = StyleSheet.create({
-  option: { borderWidth: 1.5, marginBottom: 12, paddingHorizontal: 14, paddingVertical: 13 },
-  timeField: { marginBottom: 16 },
+  safe: { flex: 1 },
+  frame: {
+    alignItems: 'center',
+    flexGrow: 1,
+    gap: 16,
+    paddingBottom: 24,
+    paddingHorizontal: 24,
+    paddingTop: 28,
+  },
+  hero: { marginTop: 2 },
+  block: { alignSelf: 'stretch', gap: 8 },
+  trust: { alignSelf: 'stretch', gap: 10, marginTop: 'auto' },
+  trustLine: { alignItems: 'center', flexDirection: 'row', gap: 10 },
   input: {
     borderWidth: 1.5,
-    marginTop: 8,
     minHeight: 48,
     paddingHorizontal: 14,
     paddingVertical: 13,
   },
-  tagRow: { flexDirection: 'row', flexWrap: 'wrap', gap: 8 },
-  tag: { overflow: 'hidden', paddingHorizontal: 12, paddingVertical: 6 },
-  switchRow: {
-    alignItems: 'center',
+  privacyCard: {
+    alignItems: 'flex-start',
+    alignSelf: 'stretch',
+    borderWidth: 1,
     flexDirection: 'row',
-    justifyContent: 'space-between',
-    marginTop: 12,
+    gap: 12,
+    padding: 16,
   },
+  privacyText: { flex: 1, gap: 3 },
+  tagRow: { flexDirection: 'row', flexWrap: 'wrap', gap: 8, justifyContent: 'center' },
+  footer: { alignSelf: 'stretch', marginTop: 'auto' },
 });
 
 export const OnboardingPlaceholder = OnboardingScreen;
