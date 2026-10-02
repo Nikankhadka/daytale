@@ -130,4 +130,41 @@ describe('voice setup surface', () => {
     expect(screen.getByText('Record sample 2')).toBeTruthy();
     expect(provider.prepare).toHaveBeenCalledTimes(2);
   });
+
+  it('exposes an onboarding-only skip path', async () => {
+    const onSkip = jest.fn(async () => undefined);
+    const screen = await render(
+      <VoiceSetupScreen
+        onSkip={onSkip}
+        profileRepository={createRepository()}
+        sampleRecorder={{ recordSample: jest.fn(), discard: jest.fn() }}
+        speakerProvider={{
+          modelVersion: VOICE_MODEL_VERSION,
+          embeddingFromFile: async () => [1, 0],
+        }}
+      />,
+    );
+
+    await fireEvent.press(screen.getByText('Set up my voice later'));
+    expect(onSkip).toHaveBeenCalledTimes(1);
+  });
+
+  it('disables recording and explains when secure storage is unavailable', async () => {
+    const screen = await render(
+      <VoiceSetupScreen
+        sampleRecorder={{ recordSample: jest.fn(), discard: jest.fn() }}
+        speakerProvider={{
+          modelVersion: VOICE_MODEL_VERSION,
+          embeddingFromFile: async () => [1, 0],
+        }}
+      />,
+    );
+
+    expect(
+      screen.getByText('Voice setup is unavailable until secure storage finishes loading.'),
+    ).toBeTruthy();
+    expect(
+      screen.getByRole('button', { name: 'Record sample 1' }).props.accessibilityState,
+    ).toEqual({ disabled: true });
+  });
 });

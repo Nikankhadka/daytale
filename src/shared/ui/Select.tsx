@@ -42,7 +42,7 @@ export function Select({
           {
             backgroundColor: colors.appSurface,
             borderColor: colors.appLine,
-            borderRadius: 14,
+            borderRadius: radii.control,
           },
         ]}
       >
@@ -52,8 +52,10 @@ export function Select({
         <UiIcon color={colors.appMuted} name="chevron" size={16} />
       </Pressable>
       <Modal animationType="slide" onRequestClose={() => setOpen(false)} transparent visible={open}>
-        <Pressable style={styles.scrim} onPress={() => setOpen(false)}>
-          <View
+        <Pressable style={styles.scrim} testID="select-scrim" onPress={() => setOpen(false)}>
+          <Pressable
+            onPress={() => undefined}
+            testID="select-sheet"
             style={[
               styles.sheet,
               {
@@ -93,7 +95,7 @@ export function Select({
                 );
               })}
             </ScrollView>
-          </View>
+          </Pressable>
         </Pressable>
       </Modal>
     </>
@@ -146,8 +148,8 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     justifyContent: 'space-between',
     minHeight: 48,
-    paddingHorizontal: 14,
-    paddingVertical: 13,
+    paddingHorizontal: 16,
+    paddingVertical: 12,
     width: '100%',
   },
   scrim: {
@@ -157,16 +159,16 @@ const styles = StyleSheet.create({
   },
   sheet: {
     maxHeight: '70%',
-    paddingBottom: 30,
-    paddingHorizontal: 22,
-    paddingTop: 10,
+    paddingBottom: 32,
+    paddingHorizontal: 24,
+    paddingTop: 12,
   },
   handle: {
     alignSelf: 'center',
     borderRadius: 2,
     height: 4,
-    marginBottom: 14,
-    marginTop: 6,
+    marginBottom: 16,
+    marginTop: 8,
     width: 38,
   },
   option: {

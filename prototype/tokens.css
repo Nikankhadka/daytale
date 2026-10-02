@@ -39,6 +39,44 @@
   --font-read: "Newsreader", Georgia, "Times New Roman", serif;
   --font-mono: "IBM Plex Mono", ui-monospace, Menlo, monospace;
 
+  /* Type scale: Apple HIG Large (default). Mirrors DAYTALE_TYPOGRAPHY in src/theme/tokens.ts. */
+  --type-title-large-size: 34px;
+  --type-title-large-lh: 41px;
+  --type-title-large-track: -0.01em;
+  --type-title-size: 28px;
+  --type-title-lh: 34px;
+  --type-title-track: -0.01em;
+  --type-heading-size: 22px;
+  --type-heading-lh: 28px;
+  --type-heading-track: -0.01em;
+  --type-title-small-size: 20px;
+  --type-title-small-lh: 25px;
+  --type-title-small-track: -0.01em;
+  --type-body-size: 17px;
+  --type-body-lh: 22px;
+  --type-read-size: 17px;
+  --type-read-lh: 30px;
+  --type-sub-size: 15px;
+  --type-sub-lh: 20px;
+  --type-label-size: 17px;
+  --type-label-lh: 22px;
+  --type-button-size: 17px;
+  --type-button-lh: 22px;
+  --type-chip-size: 13px;
+  --type-chip-lh: 18px;
+  --type-caption-size: 12px;
+  --type-caption-lh: 16px;
+  --type-field-label-size: 12px;
+  --type-field-label-lh: 16px;
+  --type-eyebrow-size: 11px;
+  --type-eyebrow-lh: 14px;
+  --type-mono-label-size: 11px;
+  --type-mono-label-lh: 14px;
+  --type-timer-size: 44px;
+  --type-timer-lh: 50px;
+  --type-emoji-size: 17px;
+  --type-emoji-small-size: 12px;
+
   --space-1: 4px;
   --space-2: 8px;
   --space-3: 12px;

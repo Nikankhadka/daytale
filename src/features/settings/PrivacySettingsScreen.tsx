@@ -2,6 +2,7 @@ import { useRouter } from 'expo-router';
 import * as React from 'react';
 import { Linking, StyleSheet, Text, View } from 'react-native';
 
+import { ONBOARDING_ROUTE_PATH } from '../../navigation/routes';
 import { Card, InlineConfirm, ListRow, ScreenHeading, SubText } from '../../shared/ui/primitives';
 import { UiIcon, type UiIconName } from '../../shared/ui/uiIcons';
 import { getBootstrappedStorage } from '../../storage/bootstrap';
@@ -50,7 +51,7 @@ export function PrivacySettingsScreen() {
     setError(undefined);
     try {
       await deleteAllAppData(storage.database);
-      router.replace('/onboarding');
+      router.replace(ONBOARDING_ROUTE_PATH);
     } catch {
       setError('Your data could not be removed. Nothing was changed in this screen.');
     } finally {
@@ -131,7 +132,11 @@ export function PrivacySettingsScreen() {
           <ListRow
             chevron
             icon="mic"
-            onPress={() => void Linking.openSettings().catch(() => undefined)}
+            onPress={() =>
+              void Linking.openSettings().catch(() =>
+                setError('System settings could not be opened.'),
+              )
+            }
             subtitle="Microphone and notifications"
             title="Permissions"
           />
@@ -179,7 +184,7 @@ const styles = StyleSheet.create({
     gap: 12,
     padding: 16,
   },
-  infoText: { flex: 1, gap: 3 },
-  cardPad: { paddingHorizontal: 14, paddingVertical: 2 },
-  confirmPad: { paddingBottom: 14, paddingHorizontal: 14, paddingTop: 4 },
+  infoText: { flex: 1, gap: 4 },
+  cardPad: { paddingHorizontal: 16, paddingVertical: 4 },
+  confirmPad: { paddingBottom: 16, paddingHorizontal: 16, paddingTop: 4 },
 });

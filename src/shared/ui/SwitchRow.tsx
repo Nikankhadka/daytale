@@ -51,8 +51,8 @@ const styles = StyleSheet.create({
     gap: 12,
     justifyContent: 'space-between',
     minHeight: 48,
-    paddingHorizontal: 14,
-    paddingVertical: 11,
+    paddingHorizontal: 16,
+    paddingVertical: 12,
   },
-  text: { flex: 1, gap: 1 },
+  text: { flex: 1, gap: 4 },
 });

@@ -133,7 +133,7 @@ export function Card({
           borderColor: colors.appLine,
           borderRadius: radii.card,
           borderWidth: 1,
-          padding: padded ? 16 : 0,
+          padding: padded ? 20 : 0,
         },
         shadows,
         style,
@@ -179,12 +179,21 @@ export function ChoiceRow({
         flexDirection: 'row',
         gap: 12,
         justifyContent: 'space-between',
-        paddingHorizontal: 14,
-        paddingVertical: 11,
+        paddingHorizontal: 16,
+        paddingVertical: 12,
       }}
     >
       <View style={styles.choiceMain}>
-        {leading ? <Text style={styles.flag}>{leading}</Text> : null}
+        {leading ? (
+          <Text
+            style={{
+              fontSize: typography.titleSmall.fontSize,
+              lineHeight: typography.titleSmall.lineHeight,
+            }}
+          >
+            {leading}
+          </Text>
+        ) : null}
         <View style={styles.choiceText}>
           <Text style={[typography.label, { color: colors.appInk }]}>{label}</Text>
           {detail ? (
@@ -226,11 +235,19 @@ type ChipProps = {
   emoji?: string;
   selected?: boolean;
   small?: boolean;
+  disabled?: boolean;
   onPress?: () => void;
 };
 
 /** The prototype's `.a-chip` / `.j-mini-chip`. */
-export function Chip({ label, emoji, selected = false, small = false, onPress }: ChipProps) {
+export function Chip({
+  label,
+  emoji,
+  selected = false,
+  small = false,
+  disabled = false,
+  onPress,
+}: ChipProps) {
   const { colors, radii, typography } = useDaytaleTheme();
   const content = (
     <View
@@ -244,17 +261,32 @@ export function Chip({ label, emoji, selected = false, small = false, onPress }:
         },
       ]}
     >
-      {emoji ? <Text style={small ? styles.chipEmojiSmall : styles.chipEmoji}>{emoji}</Text> : null}
+      {emoji ? (
+        <Text
+          style={{
+            fontSize: small ? typography.caption.fontSize : typography.body.fontSize,
+            lineHeight: small ? typography.caption.lineHeight : typography.body.lineHeight,
+          }}
+        >
+          {emoji}
+        </Text>
+      ) : null}
       <Text style={[typography.chip, { color: selected ? colors.appCherry : colors.appInk }]}>
         {label}
       </Text>
     </View>
   );
-  if (!onPress) {
+  if (!onPress && !disabled) {
     return content;
   }
   return (
-    <Pressable accessibilityRole="button" onPress={onPress}>
+    <Pressable
+      accessibilityRole="button"
+      accessibilityState={{ disabled }}
+      disabled={disabled}
+      onPress={onPress}
+      style={disabled ? styles.chipDisabled : undefined}
+    >
       {content}
     </Pressable>
   );
@@ -342,8 +374,8 @@ export function InlineConfirm({
         borderColor: withAlpha(colors.appRecording, 0.25),
         borderRadius: radii.card,
         borderWidth: 1,
-        gap: 10,
-        padding: 14,
+        gap: 12,
+        padding: 16,
       }}
     >
       <Text style={[typography.sub, { color: colors.appInk }]}>{message}</Text>
@@ -457,10 +489,9 @@ export function StatusPill({ label, tone }: StatusPillProps) {
 const styles = StyleSheet.create({
   center: { textAlign: 'center' },
   eyebrow: { textTransform: 'uppercase' },
-  fieldLabelRow: { alignItems: 'center', flexDirection: 'row', gap: 6 },
-  choiceMain: { alignItems: 'center', flexDirection: 'row', flex: 1, gap: 10 },
-  choiceText: { flex: 1, gap: 1 },
-  flag: { fontSize: 19, lineHeight: 22 },
+  fieldLabelRow: { alignItems: 'center', flexDirection: 'row', gap: 8 },
+  choiceMain: { alignItems: 'center', flexDirection: 'row', flex: 1, gap: 12 },
+  choiceText: { flex: 1, gap: 4 },
   radio: { borderRadius: 11, height: 22, width: 22 },
   check: {
     alignItems: 'center',
@@ -474,21 +505,20 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     borderWidth: 1.5,
     flexDirection: 'row',
-    gap: 7,
+    gap: 8,
     minHeight: 44,
-    paddingHorizontal: 15,
-    paddingVertical: 9,
+    paddingHorizontal: 16,
+    paddingVertical: 8,
   },
-  chipSmall: { minHeight: 24, paddingHorizontal: 9, paddingVertical: 2 },
-  chipEmoji: { fontSize: 16, lineHeight: 19 },
-  chipEmojiSmall: { fontSize: 11, lineHeight: 14 },
+  chipSmall: { minHeight: 24, paddingHorizontal: 8, paddingVertical: 4 },
+  chipDisabled: { opacity: 0.55 },
   listRow: {
     alignItems: 'center',
     flexDirection: 'row',
     gap: 12,
     minHeight: 52,
-    paddingHorizontal: 2,
-    paddingVertical: 10,
+    paddingHorizontal: 4,
+    paddingVertical: 12,
   },
   listIcon: {
     alignItems: 'center',
@@ -497,22 +527,22 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     width: 34,
   },
-  listText: { flex: 1, gap: 1 },
-  confirmRow: { flexDirection: 'row', gap: 10, justifyContent: 'flex-end' },
+  listText: { flex: 1, gap: 4 },
+  confirmRow: { flexDirection: 'row', gap: 12, justifyContent: 'flex-end' },
   confirmButton: {
     alignItems: 'center',
     borderWidth: 1.5,
     justifyContent: 'center',
     minHeight: 44,
-    paddingHorizontal: 18,
+    paddingHorizontal: 20,
   },
-  dots: { flexDirection: 'row', gap: 6, justifyContent: 'center' },
+  dots: { flexDirection: 'row', gap: 8, justifyContent: 'center' },
   pill: {
     alignItems: 'center',
     flexDirection: 'row',
     gap: 8,
-    paddingHorizontal: 14,
-    paddingVertical: 6,
+    paddingHorizontal: 16,
+    paddingVertical: 8,
   },
   dot: { borderRadius: 4, height: 7, width: 7 },
 });

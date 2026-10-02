@@ -60,9 +60,12 @@ export function ScheduleSettingsScreen() {
       </View>
       <SwitchRow
         label="Remind me every morning"
-        onValueChange={(notificationsEnabled) =>
-          void persistAppPreferences({ notificationsEnabled }).catch(() => undefined)
-        }
+        onValueChange={(notificationsEnabled) => {
+          setError(undefined);
+          void persistAppPreferences({ notificationsEnabled }).catch(() =>
+            setError('That preference could not be saved. Please try again.'),
+          );
+        }}
         value={current.notificationsEnabled}
       />
       {error ? (
@@ -84,5 +87,5 @@ export function ScheduleSettingsScreen() {
 
 const styles = StyleSheet.create({
   block: { gap: 8 },
-  note: { borderWidth: 1, borderRadius: 16, padding: 14 },
+  note: { borderWidth: 1, borderRadius: 16, padding: 16 },
 });

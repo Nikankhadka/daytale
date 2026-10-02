@@ -39,6 +39,8 @@ Expo SDK 57 repository foundation, DYT-002 recording-spike configuration, DYT-00
 
 2026-10-02: DYT-004/DYT-009 prototype-faithful UI rebuild `npm run check` passed formatting, lint, TypeScript, 42 test suites with 460 tests, documentation links/placeholders, and route smoke checks for the 15 canonical routes. The journal API service check passed with 107 tests. Web screenshot comparison against the prototype, the mobile journal API client and generation orchestrator, the native recording surfaces, and all physical-device gates remain pending.
 
+2026-10-02: HIG type scale, 8pt spacing normalization, and flow-bug fixes `npm run check` passed formatting, lint, TypeScript, 45 test suites with 473 tests, documentation links/placeholders, the 15 canonical routes, and the journal API service check with 107 tests. `npx expo export --platform web` passed. The flow fixes add tests for journal save/delete failures, settings save/open-settings feedback, last-language selection, the deferred voice-setup path, the null-repository voice screen, the journal-ready handoff, and the shared Chip/Select controls. Interactive web click-through, screenshot comparison against the prototype, and all physical-device gates remain pending.
+
 ## Dated decisions
 
 | Date | Decision | Owner |
@@ -75,3 +77,4 @@ Expo SDK 57 repository foundation, DYT-002 recording-spike configuration, DYT-00
 | 2026-10-02 | `Select` is a modal option list, not an OS wheel picker; no picked dependency is added. Sheet blur is approximated with scrim opacity rather than `expo-blur`. | Engineering |
 | 2026-10-02 | Journal and settings sub-screens use nested Expo Router stacks inside each tab so the tab bar stays visible; `scripts/check-routes.mjs` now requires the 15 canonical route files. | Engineering |
 | 2026-10-02 | Journal rows gain a repository `deleteById` (`JournalEntryRepository`); journal-only delete never deletes the parent recording session. | Engineering |
+| 2026-10-02 | The shared type scale targets the Apple HIG Large (default) text styles (body 17, caption 12, eyebrow/mono floor 11) and spacing sits on the 8pt grid; `prototype/tokens.css` gains `--type-*` variables so the prototype, `src/theme/tokens.ts`, and [07-DESIGN-SYSTEM](07-DESIGN-SYSTEM.md) stay one authority. | Design/engineering |

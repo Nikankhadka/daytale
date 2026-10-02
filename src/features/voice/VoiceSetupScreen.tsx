@@ -25,6 +25,8 @@ export type VoiceSetupScreenProps = {
   speakerProvider?: SpeakerEmbeddingProvider;
   sampleRecorder?: VoiceSampleRecorder;
   onComplete?: () => Promise<void> | void;
+  /** Optional skip path used during onboarding; the standalone route leaves it undefined. */
+  onSkip?: () => Promise<void> | void;
   now?: () => string;
 };
 
@@ -33,6 +35,7 @@ export function VoiceSetupScreen({
   speakerProvider,
   sampleRecorder,
   onComplete,
+  onSkip,
   now,
 }: VoiceSetupScreenProps = {}) {
   const { colors, radii, typography } = useDaytaleTheme();
@@ -61,6 +64,7 @@ export function VoiceSetupScreen({
     slots: Array.from({ length: VOICE_SAMPLE_COUNT }, () => false),
   };
   const nextSlot = snapshot.slots.findIndex((completed) => !completed);
+  const unavailable = controller === null;
 
   const recordSample = async () => {
     if (nextSlot < 0 || saving) {
@@ -118,11 +122,13 @@ export function VoiceSetupScreen({
     }
   };
 
-  const description = preparing
-    ? 'Preparing the on-device voice model. This one-time download can take a minute.'
-    : snapshot.completed
-      ? 'Your voice profile is saved on this device. You can replace any sample to enroll again.'
-      : 'Record three short samples so Daytale can recognize your voice without sending audio to the cloud.';
+  const description = unavailable
+    ? 'Voice setup is unavailable until secure storage finishes loading.'
+    : preparing
+      ? 'Preparing the on-device voice model. This one-time download can take a minute.'
+      : snapshot.completed
+        ? 'Your voice profile is saved on this device. You can replace any sample to enroll again.'
+        : 'Record three short samples so Daytale can recognize your voice without sending audio to the cloud.';
 
   return (
     <ScreenScaffold
@@ -138,7 +144,7 @@ export function VoiceSetupScreen({
           : `Sample ${Math.min(snapshot.sampleCount + 1, VOICE_SAMPLE_COUNT)} of ${VOICE_SAMPLE_COUNT}`}
       </Text>
       <Text style={[typography.body, { color: colors.appMuted }]}>
-        No skip is available. Every sample can be deleted and recorded again.
+        Every sample can be deleted and recorded again.
       </Text>
       <View accessibilityLabel="Voice sample progress" style={styles.samples}>
         {snapshot.slots.map((completed, index) => (
@@ -167,7 +173,15 @@ export function VoiceSetupScreen({
         <PrimaryButton
           label={modelFailed ? 'Retry voice model' : `Record sample ${nextSlot + 1}`}
           onPress={() => void recordSample()}
+          disabled={saving || unavailable}
+        />
+      ) : null}
+      {onSkip ? (
+        <PrimaryButton
+          label="Set up my voice later"
+          onPress={() => void onSkip()}
           disabled={saving}
+          secondary
         />
       ) : null}
       <Text style={[typography.caption, styles.note, { color: colors.appMuted }]}>

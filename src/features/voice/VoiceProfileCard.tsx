@@ -60,7 +60,7 @@ export function VoiceProfileCard({ profileRepository }: VoiceProfileCardProps = 
     repository === undefined
       ? 'Voice profiles are not available on this platform.'
       : profile === undefined
-        ? 'Checking your voice profile...'
+        ? 'Checking your voice profile…'
         : ready
           ? `Voice profile ready - ${profile.sampleCount} samples`
           : 'Voice profile not set up';

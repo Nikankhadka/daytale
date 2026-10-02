@@ -10,6 +10,8 @@ export const TAB_ROUTE_PATHS: Record<PrimaryTab, `/(tabs)/${PrimaryTab}`> = {
 
 export const VOICE_SETUP_ROUTE_PATH = '/voice-setup';
 
+export const ONBOARDING_ROUTE_PATH = '/onboarding';
+
 /** Journal sub-routes live inside the journal tab so the tab bar stays visible. */
 export const JOURNAL_ROUTE_PATHS = {
   list: '/(tabs)/journal',
@@ -27,6 +29,6 @@ export const SETTINGS_ROUTE_PATHS = {
 
 export function routeForOnboardingState(
   onboardingComplete: boolean,
-): '/onboarding' | '/(tabs)/today' {
-  return onboardingComplete ? '/(tabs)/today' : '/onboarding';
+): typeof ONBOARDING_ROUTE_PATH | '/(tabs)/today' {
+  return onboardingComplete ? '/(tabs)/today' : ONBOARDING_ROUTE_PATH;
 }

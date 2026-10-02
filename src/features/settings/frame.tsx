@@ -46,8 +46,8 @@ const styles = StyleSheet.create({
   header: {
     alignItems: 'center',
     flexDirection: 'row',
-    gap: 10,
-    paddingHorizontal: 14,
+    gap: 12,
+    paddingHorizontal: 16,
     paddingTop: 8,
   },
   back: { alignItems: 'center', height: 44, justifyContent: 'center', width: 44 },

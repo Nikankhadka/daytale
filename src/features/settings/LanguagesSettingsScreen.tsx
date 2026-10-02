@@ -1,3 +1,4 @@
+import * as React from 'react';
 import { StyleSheet, Text, View } from 'react-native';
 
 import { ChoiceRow, FieldLabel, SubText } from '../../shared/ui/primitives';
@@ -16,26 +17,32 @@ export function LanguagesSettingsScreen() {
   const preferences = useSessionStore((state) => state.appPreferences);
   const { colors, typography } = useDaytaleTheme();
   const current = preferences ?? createDefaultAppPreferences();
+  const [error, setError] = React.useState<string | undefined>();
 
   const toggle = (language: Language) => {
     const spokenLanguages = current.spokenLanguages.includes(language)
       ? current.spokenLanguages.filter((item) => item !== language)
       : [...current.spokenLanguages, language];
     if (spokenLanguages.length === 0) {
+      setError('Choose at least one spoken language.');
       return;
     }
+    setError(undefined);
     const journalLanguage = spokenLanguages.includes(current.journalLanguage)
       ? current.journalLanguage
       : spokenLanguages[0];
-    void persistAppPreferences({ spokenLanguages, journalLanguage }).catch(() => undefined);
+    void persistAppPreferences({ spokenLanguages, journalLanguage }).catch(() =>
+      setError('That preference could not be saved. Please try again.'),
+    );
   };
 
   const setJournal = (language: Language) => {
     const spokenLanguages = current.spokenLanguages.includes(language)
       ? current.spokenLanguages
       : [...current.spokenLanguages, language];
-    void persistAppPreferences({ journalLanguage: language, spokenLanguages }).catch(
-      () => undefined,
+    setError(undefined);
+    void persistAppPreferences({ journalLanguage: language, spokenLanguages }).catch(() =>
+      setError('That preference could not be saved. Please try again.'),
     );
   };
 
@@ -72,6 +79,11 @@ export function LanguagesSettingsScreen() {
       <Text style={[typography.caption, { color: colors.appFaint }]}>
         At least one spoken language stays selected.
       </Text>
+      {error ? (
+        <Text accessibilityRole="alert" style={[typography.label, { color: colors.appRecording }]}>
+          {error}
+        </Text>
+      ) : null}
     </SettingsFrame>
   );
 }

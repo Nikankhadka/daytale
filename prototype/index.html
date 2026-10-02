@@ -342,51 +342,51 @@ body.reduced-motion *, body.reduced-motion *::before, body.reduced-motion *::aft
    Reusable app components (inside the phone)
    ============================================================ */
 .h-mascot-slot{display:flex;justify-content:center;padding:10px 0 4px}
-.a-eyebrow{font-family:var(--f-mono);font-size:10.5px;letter-spacing:.1em;text-transform:uppercase;color:var(--a-muted)}
-.a-h1{font-family:var(--f-display);font-weight:600;font-size:23px;letter-spacing:-.01em;color:var(--a-text)}
-.a-sub{font-size:13.5px;color:var(--a-muted);line-height:1.5}
-.a-card{background:var(--a-surface);border:1px solid var(--a-line);border-radius:var(--a-r-card);padding:16px;box-shadow:var(--a-shadow)}
+.a-eyebrow{font-family:var(--f-mono);font-size:var(--type-eyebrow-size);line-height:var(--type-eyebrow-lh);letter-spacing:.1em;text-transform:uppercase;color:var(--a-muted)}
+.a-h1{font-family:var(--f-display);font-weight:600;font-size:var(--type-title-size);line-height:var(--type-title-lh);letter-spacing:-.01em;color:var(--a-text)}
+.a-sub{font-size:var(--type-sub-size);color:var(--a-muted);line-height:var(--type-sub-lh)}
+.a-card{background:var(--a-surface);border:1px solid var(--a-line);border-radius:var(--a-r-card);padding:20px;box-shadow:var(--a-shadow)}
 .a-btn{
   display:flex;align-items:center;justify-content:center;gap:8px;
   width:100%;padding:15px 18px;border-radius:var(--a-r-btn);
-  font-family:var(--f-ui);font-weight:700;font-size:15px;
+  font-family:var(--f-ui);font-weight:700;font-size:var(--type-button-size);line-height:var(--type-button-lh);
   transition:transform .1s;
 }
 .a-btn:active{transform:scale(.97)}
 .a-btn-primary{background:var(--color-app-cherry);color:var(--color-app-paper);box-shadow:none}
 .a-btn-ghost{background:var(--a-surface);color:var(--a-text);border:1.5px solid var(--a-line)}
-.a-btn-text{color:var(--a-muted);font-weight:600;font-size:13.5px;padding:8px}
+.a-btn-text{color:var(--a-muted);font-weight:600;font-size:var(--type-sub-size);padding:8px}
 .a-btn-danger{background:var(--a-rec-soft);color:var(--a-rec)}
 .a-stack{display:flex;flex-direction:column;gap:10px}
 .a-row{display:flex;align-items:center;gap:10px}
 .a-chip{
-  min-height:44px;padding:9px 15px;border-radius:999px;border:1.5px solid var(--a-line);font-weight:600;font-size:13px;
+  min-height:44px;padding:9px 15px;border-radius:999px;border:1.5px solid var(--a-line);font-weight:600;font-size:var(--type-chip-size);line-height:var(--type-chip-lh);
   color:var(--a-text);background:var(--a-surface);transition:all .13s;
 }
 .a-chip[aria-pressed="true"]{background:var(--color-app-sakura-mist);color:var(--color-app-cherry-hover);border-color:var(--color-app-cherry)}
-.a-chip.small{padding:6px 12px;font-size:12px}
+.a-chip.small{padding:6px 12px;font-size:var(--type-caption-size)}
 .a-check-row{
   display:flex;align-items:center;justify-content:space-between;gap:12px;
-  padding:13px 14px;border-radius:16px;border:1.5px solid var(--a-line);background:var(--a-surface);
+  padding:12px 16px;border-radius:16px;border:1.5px solid var(--a-line);background:var(--a-surface);
 }
 .a-check-row[data-checked="true"]{border-color:var(--a-sun-deep);background:color-mix(in srgb, var(--a-sun) 12%, var(--a-surface))}
 .a-check{
   width:22px;height:22px;border-radius:7px;border:2px solid var(--a-line);flex:0 0 auto;display:grid;place-items:center;
 }
 .a-check-row[data-checked="true"] .a-check{background:var(--a-sun-deep);border-color:var(--a-sun-deep)}
-.a-flag{font-size:19px;line-height:1}
-.a-lang-name{font-weight:600;font-size:14.5px}
-.a-lang-native{font-size:12px;color:var(--a-muted)}
+.a-flag{font-size:var(--type-emoji-size);line-height:1}
+.a-lang-name{font-weight:600;font-size:var(--type-label-size)}
+.a-lang-native{font-size:var(--type-caption-size);color:var(--a-muted)}
 .a-select{
-  width:100%;padding:13px 14px;border-radius:14px;border:1.5px solid var(--a-line);
+  width:100%;padding:12px 16px;border-radius:14px;border:1.5px solid var(--a-line);
   background:var(--a-surface);color:var(--a-text);font:inherit;font-weight:600;
   appearance:none;-webkit-appearance:none;
   background-image:url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='14' height='14'><path d='M2 4l5 5 5-5' fill='none' stroke='%23735b66' stroke-width='1.6' stroke-linecap='round' stroke-linejoin='round'/></svg>");
   background-repeat:no-repeat;background-position:right 14px center;
 }
-.a-field-label{font-size:12px;font-weight:700;color:var(--a-muted);text-transform:uppercase;letter-spacing:.06em;margin-bottom:6px}
+.a-field-label{font-size:var(--type-field-label-size);line-height:var(--type-field-label-lh);font-weight:700;color:var(--a-muted);text-transform:uppercase;letter-spacing:.06em;margin-bottom:6px}
 .a-time-card{display:flex;align-items:center;justify-content:space-between;padding:14px 16px;border-radius:16px;background:var(--a-surface);border:1px solid var(--a-line)}
-.a-time-card b{font-family:var(--f-display);font-size:20px;font-weight:600}
+.a-time-card b{font-family:var(--f-display);font-size:var(--type-title-small-size);font-weight:600}
 .a-days{display:flex;gap:6px;justify-content:space-between}
 .a-day{
   flex:0 0 auto;
@@ -405,10 +405,10 @@ body.reduced-motion *, body.reduced-motion *::before, body.reduced-motion *::aft
 .dots i[data-on="true"]{background:var(--a-sun-deep);width:16px;border-radius:3px}
 
 /* recording screen */
-.timer{font-family:var(--f-mono);font-weight:500;font-size:44px;letter-spacing:.02em;text-align:center;font-variant-numeric:tabular-nums}
+.timer{font-family:var(--f-mono);font-weight:500;font-size:var(--type-timer-size);line-height:var(--type-timer-lh);letter-spacing:.02em;text-align:center;font-variant-numeric:tabular-nums}
 .rec-pill{
   display:inline-flex;align-items:center;gap:7px;padding:6px 13px;border-radius:999px;
-  background:var(--a-rec-soft);color:var(--a-rec);font-weight:700;font-size:12.5px;margin:0 auto;
+  background:var(--a-rec-soft);color:var(--a-rec);font-weight:700;font-size:var(--type-chip-size);line-height:var(--type-chip-lh);margin:0 auto;
 }
 .rec-pill .rdot{width:7px;height:7px;border-radius:50%;background:var(--a-rec)}
 body:not(.reduced-motion) .rec-pill .rdot{animation:rdot-pulse 1.4s ease-in-out infinite}
@@ -422,7 +422,7 @@ body:not(.reduced-motion) .wave i{animation:wave-bar 1.2s ease-in-out infinite}
 .circle-btn.stop{background:var(--a-rec)}
 .circle-btn.pause{background:var(--a-surface);border:1.5px solid var(--a-line)}
 .circle-btn.resume{background:var(--a-sun-deep)}
-.circle-label{font-size:11.5px;font-weight:600;color:var(--a-muted);text-align:center;margin-top:6px}
+.circle-label{font-size:var(--type-caption-size);font-weight:600;color:var(--a-muted);text-align:center;margin-top:6px}
 
 /* sheet (privacy break) */
 .sheet-scrim{position:absolute;inset:0;background:color-mix(in srgb,var(--a-text) 42%,transparent);z-index:30;display:flex;align-items:flex-end}
@@ -465,27 +465,27 @@ body:not(.reduced-motion) .wave i{animation:wave-bar 1.2s ease-in-out infinite}
 .proc-fill{height:100%;background:var(--color-app-cherry);border-radius:3px;transition:width .4s ease}
 
 /* journal list */
-.j-month{font-family:var(--f-mono);font-size:11px;letter-spacing:.1em;text-transform:uppercase;color:var(--a-muted);margin:14px 0 8px}
+.j-month{font-family:var(--f-mono);font-size:var(--type-mono-label-size);letter-spacing:.1em;text-transform:uppercase;color:var(--a-muted);margin:14px 0 8px}
 .j-item{display:flex;gap:12px;padding:12px 4px;border-bottom:1px solid var(--a-line);align-items:center}
 .j-item:last-child{border-bottom:0}
 .j-date{width:44px;flex:0 0 auto;text-align:center}
-.j-date b{display:block;font-family:var(--f-display);font-size:19px;font-weight:600}
-.j-date span{display:block;font-size:10px;color:var(--a-muted);text-transform:uppercase}
+.j-date b{display:block;font-family:var(--f-display);font-size:var(--type-title-small-size);font-weight:600}
+.j-date span{display:block;font-size:var(--type-mono-label-size);color:var(--a-muted);text-transform:uppercase}
 .j-item-body{flex:1;min-width:0}
-.j-item-title{font-weight:700;font-size:13.5px;margin-bottom:2px}
-.j-item-snip{font-size:12.5px;color:var(--a-muted);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.j-item-title{font-weight:700;font-size:var(--type-label-size);line-height:var(--type-label-lh);margin-bottom:2px}
+.j-item-snip{font-size:var(--type-sub-size);color:var(--a-muted);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .j-item-chips{display:flex;gap:5px;margin-top:5px}
-.j-mini-chip{font-size:10.5px;padding:2px 7px;border-radius:999px;background:var(--a-bg-2);color:var(--a-muted)}
+.j-mini-chip{font-size:var(--type-caption-size);padding:2px 7px;border-radius:999px;background:var(--a-bg-2);color:var(--a-muted)}
 
 /* journal detail — calmer, editorial (PRD: reading mode calmer than Today) */
-.j-read{font-family:var(--f-read);font-size:16px;line-height:1.75;color:var(--a-text)}
+.j-read{font-family:var(--f-read);font-size:var(--type-read-size);line-height:var(--type-read-lh);color:var(--a-text)}
 .j-read p{margin:0 0 14px}
 .j-read p:last-child{margin-bottom:0}
 [contenteditable="true"].j-read{outline:none;border-radius:12px;padding:2px 4px;margin:-2px -4px}
 [contenteditable="true"].j-read:focus{background:color-mix(in srgb, var(--a-sun) 8%, transparent)}
 .j-context-row{display:flex;flex-wrap:wrap;gap:7px;padding:2px 0 4px}
 .j-context-chip{
-  display:inline-flex;align-items:center;gap:5px;font-size:12px;font-weight:600;
+  display:inline-flex;align-items:center;gap:5px;font-size:var(--type-caption-size);line-height:var(--type-caption-lh);font-weight:600;
   padding:5px 11px;border-radius:999px;background:var(--a-bg-2);color:var(--a-ink-soft);
 }
 .j-actionbar{display:flex;gap:8px}
@@ -493,12 +493,12 @@ body:not(.reduced-motion) .wave i{animation:wave-bar 1.2s ease-in-out infinite}
 
 /* settings */
 .set-section{margin-bottom:4px}
-.set-row{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:14px 2px;border-bottom:1px solid var(--a-line)}
+.set-row{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:16px 2px;border-bottom:1px solid var(--a-line)}
 .set-row:last-child{border-bottom:0}
 .set-row-label{display:flex;flex-direction:column;gap:2px}
-.set-row-label b{font-size:13.5px;font-weight:600}
-.set-row-label span{font-size:11.5px;color:var(--a-muted)}
-.set-value{font-size:13px;color:var(--a-muted);font-weight:600}
+.set-row-label b{font-size:var(--type-label-size);line-height:var(--type-label-lh);font-weight:600}
+.set-row-label span{font-size:var(--type-caption-size);color:var(--a-muted)}
+.set-value{font-size:var(--type-sub-size);color:var(--a-muted);font-weight:600}
 .set-danger{color:var(--a-rec)}
 
 /* error */
@@ -506,7 +506,7 @@ body:not(.reduced-motion) .wave i{animation:wave-bar 1.2s ease-in-out infinite}
 
 /* inline confirm (no native dialogs) */
 .inline-confirm{background:var(--a-rec-soft);border:1px solid color-mix(in srgb, var(--a-rec) 25%, transparent);border-radius:16px;padding:14px;display:flex;flex-direction:column;gap:10px}
-.inline-confirm p{font-size:13px;color:var(--a-text);margin:0}
+.inline-confirm p{font-size:var(--type-sub-size);line-height:var(--type-sub-lh);color:var(--a-text);margin:0}
 
 /* ============================================================
    Below-fold reference boards
@@ -1101,7 +1101,7 @@ SCREEN_RENDER['welcome'] = () => `
     <div class="sakura-petals" aria-hidden="true"><i></i><i></i><i></i></div>
     <div>
       <div class="a-eyebrow">Daytale</div>
-      <div class="a-h1" style="font-size:27px;margin-top:2px">Your day,<br>written for you.</div>
+      <div class="a-h1" style="font-size:var(--type-title-large-size);margin-top:2px">Your day,<br>written for you.</div>
     </div>
     <div class="h-mascot-slot" style="padding:6px 0 2px">${mascotSVG('ready',108)}</div>
     <p class="a-sub" style="text-align:center;padding:0 8px">You live your day. I'll remember it.</p>
@@ -1117,12 +1117,12 @@ SCREEN_RENDER['welcome'] = () => `
 SCREEN_RENDER['lang-spoken'] = () => `
   <div class="pad" style="padding-top:18px;display:flex;flex-direction:column;gap:12px;height:100%">
     <div>
-      <div class="a-h1" style="font-size:20px">What languages are part of your life?</div>
+      <div class="a-h1" style="font-size:var(--type-heading-size)">What languages are part of your life?</div>
       <p class="a-sub" style="margin-top:4px">I'll understand and transcribe your conversations.</p>
     </div>
     <div class="a-stack" style="gap:8px">
       ${LANGS.map(l=>`
-        <button class="a-check-row" style="padding:11px 14px" data-checked="${!!state.langs[l.code]}" onclick="toggleLang('${l.code}')">
+        <button class="a-check-row" style="padding:12px 16px" data-checked="${!!state.langs[l.code]}" onclick="toggleLang('${l.code}')">
           <span class="a-row"><span class="a-flag">${l.flag}</span>
             <span><span class="a-lang-name" style="display:block">${l.name}</span><span class="a-lang-native">${l.native}</span></span>
           </span>
@@ -1183,9 +1183,9 @@ SCREEN_RENDER['privacy-permissions'] = () => `
       <p class="a-sub" style="margin-top:6px">Here's exactly how Daytale handles your voice.</p>
     </div>
     <div class="a-stack">
-      <div class="a-row a-card" style="align-items:flex-start;gap:12px">${uiIcon('lock')}<div><b style="display:block;font-size:13.5px">Processed on your device</b><span class="a-sub">Speech is transcribed locally wherever possible.</span></div></div>
-      <div class="a-row a-card" style="align-items:flex-start;gap:12px">${uiIcon('trash')}<div><b style="display:block;font-size:13.5px">Deleted after your journal is written</b><span class="a-sub">Raw audio and transcripts are removed automatically.</span></div></div>
-      <div class="a-row a-card" style="align-items:flex-start;gap:12px">${uiIcon('mic')}<div><b style="display:block;font-size:13.5px">Microphone access</b><span class="a-sub">Only while a session you started is active.</span></div></div>
+      <div class="a-row a-card" style="align-items:flex-start;gap:12px">${uiIcon('lock')}<div><b style="display:block;font-size:var(--type-label-size)">Processed on your device</b><span class="a-sub">Speech is transcribed locally wherever possible.</span></div></div>
+      <div class="a-row a-card" style="align-items:flex-start;gap:12px">${uiIcon('trash')}<div><b style="display:block;font-size:var(--type-label-size)">Deleted after your journal is written</b><span class="a-sub">Raw audio and transcripts are removed automatically.</span></div></div>
+      <div class="a-row a-card" style="align-items:flex-start;gap:12px">${uiIcon('mic')}<div><b style="display:block;font-size:var(--type-label-size)">Microphone access</b><span class="a-sub">Only while a session you started is active.</span></div></div>
     </div>
     <button class="a-btn a-btn-primary" style="margin-top:auto" onclick="finishPermissions()">Allow &amp; Continue →</button>
   </div>
@@ -1224,12 +1224,12 @@ SCREEN_RENDER['today-idle'] = () => `
 SCREEN_RENDER['morning-prompt'] = () => `
   <div class="pad" style="padding-top:30px;display:flex;flex-direction:column;align-items:center;gap:14px;height:100%;text-align:center">
     <div class="a-eyebrow">Mon, ${new Date().getDate()} Apr</div>
-    <div class="a-h1" style="font-size:24px">Good morning, Nikan!</div>
+    <div class="a-h1" style="font-size:var(--type-title-size)">Good morning, Nikan!</div>
     <div class="h-mascot-slot">${mascotSVG('waking',112)}</div>
     <p class="a-sub">Ready for me to remember today?</p>
     <div class="a-stack" style="width:100%;margin-top:auto">
     <button class="a-btn a-btn-primary" onclick="startMyDay()">${uiIcon('play')} Start my day</button>
-      <p style="font-size:11px;color:var(--a-muted);text-align:center">Recording stays on your device.</p>
+      <p style="font-size:var(--type-caption-size);color:var(--a-muted);text-align:center">Recording stays on your device.</p>
       <div class="a-row" style="gap:10px">
         <button class="a-btn a-btn-ghost" onclick="goto('settings-schedule')">Change time</button>
         <button class="a-btn a-btn-ghost" onclick="skipToday()">Skip today</button>
@@ -1242,7 +1242,7 @@ SCREEN_RENDER['recording'] = () => `
   <div class="pad" style="padding-top:26px;display:flex;flex-direction:column;align-items:center;gap:14px;height:100%;text-align:center">
     <div class="rec-pill"><span class="rdot"></span> RECORDING</div>
     <div class="h-mascot-slot">${mascotSVG('listening',108)}</div>
-    <div class="a-h1" style="font-size:18px">I'm remembering your day</div>
+    <div class="a-h1" style="font-size:var(--type-title-small-size)">I'm remembering your day</div>
     <div class="wave" aria-hidden="true">${[14,22,10,28,16,24,12,20,15].map((h,i)=>`<i style="height:${h}px;animation-delay:${i*90}ms"></i>`).join('')}</div>
     <div id="timerDisplay" class="timer">${fmtTime(state.timerSeconds)}</div>
     <p class="a-sub">Live normally — I'll only ask if I need to.</p>
@@ -1259,7 +1259,7 @@ SCREEN_RENDER['privacy-sheet'] = () => `
     <div class="sheet-scrim">
       <div class="sheet">
         <div class="sheet-handle"></div>
-        <div class="a-h1" style="font-size:19px;text-align:center;margin-bottom:2px">Take a little privacy break?</div>
+        <div class="a-h1" style="font-size:var(--type-title-small-size);text-align:center;margin-bottom:2px">Take a little privacy break?</div>
         <p class="a-sub" style="text-align:center;margin-bottom:10px">${mascotSVG('paused',56)}</p>
         <div>
           ${[['15 minutes','15m'],['1 hour','1h'],['Until I resume','manual'],['Stop for today','stop']].map(([label,key])=>`
@@ -1277,7 +1277,7 @@ SCREEN_RENDER['paused'] = () => `
   <div class="pad" style="padding-top:30px;display:flex;flex-direction:column;align-items:center;gap:14px;height:100%;text-align:center">
     <div class="rec-pill pause-pill"><span class="rdot"></span> PAUSED · ${state.breakChoice || 'Until I resume'}</div>
     <div class="h-mascot-slot">${mascotSVG('paused',110)}</div>
-    <div class="a-h1" style="font-size:19px">Taking a privacy break.</div>
+    <div class="a-h1" style="font-size:var(--type-title-small-size)">Taking a privacy break.</div>
     <div class="timer" style="opacity:.55">${fmtTime(state.timerSeconds)}</div>
     <p class="a-sub">Nothing is being recorded right now. Resume whenever you're ready.</p>
     <button class="a-btn a-btn-primary" style="margin-top:auto;width:100%" onclick="resumeSession()">Resume recording</button>
@@ -1290,11 +1290,11 @@ SCREEN_RENDER['clarification'] = () => {
   <div class="pad" style="padding-top:24px;display:flex;flex-direction:column;gap:14px;height:100%">
     <div style="text-align:center">
       <div class="a-eyebrow">Question ${state.clarIndex+1} of ${CLAR_QUESTIONS.length}</div>
-      <div class="a-h1" style="font-size:18px;margin-top:4px">One tiny question before I finish…</div>
+      <div class="a-h1" style="font-size:var(--type-title-small-size);margin-top:4px">One tiny question before I finish…</div>
     </div>
     <div class="h-mascot-slot" style="padding:2px 0">${mascotSVG('thinking',86)}</div>
     <div class="clar-map"><div class="pin"></div><div class="pin-label">${uiIcon('pin')} ${q.place}</div></div>
-    <p style="font-size:13.5px;font-weight:600;text-align:center">${q.time}<br>${q.place}</p>
+    <p style="font-size:var(--type-label-size);font-weight:600;text-align:center">${q.time}<br>${q.place}</p>
     <p class="a-sub" style="text-align:center">What were you doing here?</p>
     <div class="clar-chips" style="justify-content:center;margin-top:auto">
       ${CHIP_OPTIONS.map(c=>`<button class="a-chip" onclick="answerClarification('${c.label}')">${c.emoji?c.emoji+' ':''}${c.label}</button>`).join('')}
@@ -1305,16 +1305,16 @@ SCREEN_RENDER['clarification'] = () => {
 SCREEN_RENDER['processing'] = () => `
   <div class="pad" style="padding-top:34px;display:flex;flex-direction:column;align-items:center;gap:18px;height:100%;text-align:center">
     <div class="h-mascot-slot">${mascotSVG('writing',112)}</div>
-    <div class="a-h1" style="font-size:19px">Writing your Daytale…</div>
+    <div class="a-h1" style="font-size:var(--type-title-small-size)">Writing your Daytale…</div>
     <div class="proc-steps" style="width:100%;max-width:240px">
       ${PROC_STAGES.map((label,i)=>`
         <div class="proc-step ${i<state.procStage?'done':i===state.procStage?'active':''}">
           <span class="proc-dot">${i<state.procStage?'✓':i+1}</span>
-          <span style="font-size:13px;font-weight:600;text-align:left">${label}</span>
+          <span style="font-size:var(--type-label-size);font-weight:600;text-align:left">${label}</span>
         </div>`).join('')}
     </div>
     <div class="proc-track" style="width:100%"><div class="proc-fill" style="width:${Math.max(6,((state.procStage+1)/PROC_STAGES.length)*100)}%"></div></div>
-    <p style="font-size:11px;color:var(--a-faint)">Source audio is deleted the moment this finishes.</p>
+    <p style="font-size:var(--type-caption-size);color:var(--a-faint)">Source audio is deleted the moment this finishes.</p>
   </div>
 `;
 
@@ -1325,7 +1325,7 @@ SCREEN_RENDER['journal-ready'] = () => {
     <div class="sakura-petals" aria-hidden="true"><i></i><i></i><i></i></div>
     <div style="text-align:center">
       <div class="h-mascot-slot">${mascotSVG('celebrating',100)}</div>
-      <div class="a-h1" style="font-size:20px">A productive day</div>
+      <div class="a-h1" style="font-size:var(--type-heading-size)">A productive day</div>
       <div class="a-eyebrow" style="margin-top:2px">Mon, ${e.day} ${e.month}</div>
     </div>
     <div class="j-context-row" style="justify-content:center">${e.chips.map(c=>`<span class="j-context-chip">${chipEmoji(c)}${c}</span>`).join('')}</div>
@@ -1352,7 +1352,7 @@ SCREEN_RENDER['journal-list'] = () => {
   <div class="pad" style="padding-top:22px;height:100%;display:flex;flex-direction:column;gap:14px">
     <div>
       <div class="a-eyebrow">Journal</div>
-      <div class="a-h1" style="font-size:24px">Your days, written.</div>
+      <div class="a-h1" style="font-size:var(--type-title-size)">Your days, written.</div>
     </div>
     ${months.length ? months.map(m=>`
       <div>
@@ -1414,7 +1414,7 @@ SCREEN_RENDER['journal-edit'] = () => {
     </div>
     <div class="a-eyebrow">${e.weekday}, ${e.day} ${e.month} 2026 · ${esc(e.title)}</div>
     <div id="editArea" class="j-read" contenteditable="true" spellcheck="false">${e.body.map(p=>`<p>${esc(p)}</p>`).join('')}</div>
-    <p style="font-size:11px;color:var(--a-faint);text-align:center">You own the final words — Daytale only drafts them.</p>
+    <p style="font-size:var(--type-caption-size);color:var(--a-faint);text-align:center">You own the final words — Daytale only drafts them.</p>
   </div>`;
 };
 
@@ -1422,7 +1422,7 @@ SCREEN_RENDER['settings-root'] = () => `
   <div class="pad" style="padding-top:22px;height:100%;display:flex;flex-direction:column;gap:18px">
     <div>
       <div class="a-eyebrow">Settings</div>
-      <div class="a-h1" style="font-size:24px">Your Daytale.</div>
+      <div class="a-h1" style="font-size:var(--type-title-size)">Your Daytale.</div>
     </div>
     <div class="a-card" style="padding:4px 14px">
       <button class="set-row" style="width:100%;background:none;border:0;cursor:pointer" onclick="goto('settings-schedule')">
@@ -1441,7 +1441,7 @@ SCREEN_RENDER['settings-root'] = () => `
     <div class="a-card" style="padding:4px 14px">
       <div class="set-row"><span class="set-row-label"><b>About Daytale</b><span>Version 1.0 (prototype)</span></span></div>
     </div>
-    <p style="font-size:11px;color:var(--a-faint);text-align:center;margin-top:auto">An alarm clock for your life.</p>
+    <p style="font-size:var(--type-caption-size);color:var(--a-faint);text-align:center;margin-top:auto">An alarm clock for your life.</p>
   </div>
 `;
 
@@ -1449,7 +1449,7 @@ SCREEN_RENDER['settings-schedule'] = () => `
   <div class="pad" style="padding-top:22px;display:flex;flex-direction:column;gap:16px;height:100%">
     <div class="a-row" style="gap:10px">
       <button class="a-btn-text" onclick="goto('settings-root')">‹</button>
-      <div class="a-h1" style="font-size:19px">Schedule</div>
+      <div class="a-h1" style="font-size:var(--type-title-small-size)">Schedule</div>
     </div>
     <div class="a-stack">
       <div>
@@ -1470,7 +1470,7 @@ SCREEN_RENDER['settings-schedule'] = () => `
       </div>
     </div>
     <div class="a-card" style="background:var(--a-sprout-soft);border-color:transparent;margin-top:auto">
-      <p style="font-size:12px;color:var(--a-ink-soft)">Today's Morning Prompt will show at ${state.scheduleStart}.</p>
+      <p style="font-size:var(--type-caption-size);color:var(--a-ink-soft)">Today's Morning Prompt will show at ${state.scheduleStart}.</p>
     </div>
   </div>
 `;
@@ -1479,7 +1479,7 @@ SCREEN_RENDER['settings-languages'] = () => `
   <div class="pad" style="padding-top:22px;display:flex;flex-direction:column;gap:16px;height:100%">
     <div class="a-row" style="gap:10px">
       <button class="a-btn-text" onclick="goto('settings-root')">‹</button>
-      <div class="a-h1" style="font-size:19px">Languages</div>
+      <div class="a-h1" style="font-size:var(--type-title-small-size)">Languages</div>
     </div>
     <div>
       <div class="a-field-label">Spoken languages</div>
@@ -1506,12 +1506,12 @@ SCREEN_RENDER['settings-privacy'] = () => `
   <div class="pad" style="padding-top:22px;display:flex;flex-direction:column;gap:16px;height:100%">
     <div class="a-row" style="gap:10px">
       <button class="a-btn-text" onclick="goto('settings-root')">‹</button>
-      <div class="a-h1" style="font-size:19px">Privacy &amp; Data</div>
+      <div class="a-h1" style="font-size:var(--type-title-small-size)">Privacy &amp; Data</div>
     </div>
     <div class="a-stack">
-      <div class="a-row a-card" style="align-items:flex-start;gap:12px">${uiIcon('lock')}<div><b style="display:block;font-size:13.5px">Processed on your device</b><span class="a-sub">Speech is transcribed locally wherever possible.</span></div></div>
-      <div class="a-row a-card" style="align-items:flex-start;gap:12px">${uiIcon('trash')}<div><b style="display:block;font-size:13.5px">Raw audio deleted immediately</b><span class="a-sub">The moment your journal finishes writing, source audio and transcripts are gone.</span></div></div>
-      <div class="a-row a-card" style="align-items:flex-start;gap:12px">${uiIcon('book')}<div><b style="display:block;font-size:13.5px">Only your journal remains</b><span class="a-sub">The written entry is what's kept — never the recording it came from.</span></div></div>
+      <div class="a-row a-card" style="align-items:flex-start;gap:12px">${uiIcon('lock')}<div><b style="display:block;font-size:var(--type-label-size)">Processed on your device</b><span class="a-sub">Speech is transcribed locally wherever possible.</span></div></div>
+      <div class="a-row a-card" style="align-items:flex-start;gap:12px">${uiIcon('trash')}<div><b style="display:block;font-size:var(--type-label-size)">Raw audio deleted immediately</b><span class="a-sub">The moment your journal finishes writing, source audio and transcripts are gone.</span></div></div>
+      <div class="a-row a-card" style="align-items:flex-start;gap:12px">${uiIcon('book')}<div><b style="display:block;font-size:var(--type-label-size)">Only your journal remains</b><span class="a-sub">The written entry is what's kept — never the recording it came from.</span></div></div>
     </div>
     <div class="a-card" style="margin-top:auto;border-color:color-mix(in srgb, var(--a-rec) 30%, transparent)">
       <div class="set-row" style="border:0;padding:2px 0">
@@ -1532,10 +1532,10 @@ SCREEN_RENDER['settings-privacy'] = () => `
 SCREEN_RENDER['error'] = () => `
   <div class="pad" style="padding-top:30px;display:flex;flex-direction:column;align-items:center;gap:14px;height:100%;text-align:center">
     <div class="h-mascot-slot">${mascotSVG('error',108)}</div>
-    <div class="a-h1" style="font-size:19px">Something interrupted your journal.</div>
+    <div class="a-h1" style="font-size:var(--type-title-small-size)">Something interrupted your journal.</div>
     <p class="a-sub">Nothing is lost — I can pick up right where I left off.</p>
     <div class="err-box" style="width:100%;text-align:left">
-      <p style="font-size:12px;color:var(--a-ink-soft)">The last processing step didn't finish. This is usually temporary.</p>
+      <p style="font-size:var(--type-caption-size);color:var(--a-ink-soft)">The last processing step didn't finish. This is usually temporary.</p>
     </div>
     <div class="a-stack" style="width:100%;margin-top:auto">
       <button class="a-btn a-btn-primary" onclick="retryProcessing()">Try again</button>

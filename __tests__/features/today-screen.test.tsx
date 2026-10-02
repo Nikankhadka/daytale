@@ -13,9 +13,10 @@ import {
 } from '../../src/features/recording/sessionCommands';
 import { recordingHost, useIsCapturing } from '../../src/features/recording/useRecordingEngine';
 import { TodayScreen } from '../../src/features/today';
+import { useJournalStore } from '../../src/state/journal';
 import { useSessionStore } from '../../src/state/session';
 import { getBootstrappedStorage } from '../../src/storage/bootstrap';
-import type { RecordingSession } from '../../src/storage/types';
+import type { JournalEntry, RecordingSession } from '../../src/storage/types';
 import { SESSION_ID, makeScheduledSession } from '../recording/testKit';
 
 const mockRouter = { push: jest.fn(), navigate: jest.fn(), replace: jest.fn() };
@@ -620,6 +621,45 @@ describe('Today screen', () => {
         expect(screen.getByTestId('daytale-mascot-writing-art')).toBeTruthy();
       },
     );
+  });
+
+  describe('journal ready', () => {
+    const readySession = () =>
+      makeScheduledSession({ status: 'ready', actualStart: '2026-03-10T09:00:00.000Z' });
+    const journalEntry: JournalEntry = {
+      id: 'journal-1',
+      sessionId: SESSION_ID,
+      date: '2026-03-10',
+      timezone: 'UTC',
+      title: 'A quiet morning',
+      paragraphs: ['I walked by the river.'],
+      contextTags: ['Walk'],
+      sourceEventIds: [],
+      language: 'en',
+      createdAt: '2026-03-10T09:00:00.000Z',
+      updatedAt: '2026-03-10T09:00:00.000Z',
+    };
+
+    it('keeps the processing surface while the matching entry is missing', async () => {
+      useJournalStore.getState().reset();
+      const screen = await show(readySession());
+
+      expect(screen.getByText('Writing your Daytale…')).toBeTruthy();
+      expect(screen.queryByText('Read full journal →')).toBeNull();
+    });
+
+    it('routes Edit, Share, and Read once the entry is loaded', async () => {
+      useJournalStore.setState({ entries: [journalEntry], loadState: 'ready' });
+      const screen = await show(readySession());
+
+      expect(screen.getByText('A quiet morning')).toBeTruthy();
+      await press(screen, 'Read full journal →');
+
+      expect(mockRouter.push).toHaveBeenCalledWith({
+        pathname: '/(tabs)/journal/detail',
+        params: { id: journalEntry.id },
+      });
+    });
   });
 
   it('starts over when a different session takes the screen', async () => {

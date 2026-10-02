@@ -10,23 +10,15 @@ export type JournalDraft = { title: string; paragraphs: string[] };
 export type JournalState = {
   entries: JournalEntry[];
   loadState: JournalLoadState;
-  activeEntryId: string | null;
-  draft: JournalDraft | null;
-  error: string | null;
   loadEntries: () => Promise<void>;
-  openEntry: (id: string) => void;
-  updateEntry: (id: string, patch: JournalDraft) => Promise<void>;
-  removeEntry: (id: string) => Promise<void>;
-  setDraft: (draft: JournalDraft | null) => void;
+  updateEntry: (id: string, patch: JournalDraft) => Promise<boolean>;
+  removeEntry: (id: string) => Promise<boolean>;
   reset: () => void;
 };
 
 const INITIAL_JOURNAL_STATE = {
   entries: [] as JournalEntry[],
   loadState: 'idle' as JournalLoadState,
-  activeEntryId: null as string | null,
-  draft: null as JournalDraft | null,
-  error: null as string | null,
 };
 
 /** Newest first; the date is the day the entry describes. */
@@ -45,19 +37,18 @@ export const useJournalStore = create<JournalState>((set, get) => ({
       set({ entries: [], loadState: 'ready' });
       return;
     }
-    set({ loadState: 'loading', error: null });
+    set({ loadState: 'loading' });
     try {
       const entries = await storage.repositories.journalEntries.list();
       set({ entries: [...entries].sort(byNewest), loadState: 'ready' });
     } catch {
-      set({ loadState: 'error', error: 'Your journals could not be loaded.' });
+      set({ loadState: 'error' });
     }
   },
-  openEntry: (id) => set({ activeEntryId: id, draft: null }),
   updateEntry: async (id, patch) => {
     const current = get().entries.find((entry) => entry.id === id);
     if (!current) {
-      return;
+      return false;
     }
     const now = new Date().toISOString();
     const next: JournalEntry = { ...current, ...patch, editedAt: now, updatedAt: now };
@@ -66,10 +57,10 @@ export const useJournalStore = create<JournalState>((set, get) => ({
       const saved = storage ? await storage.repositories.journalEntries.save(next) : next;
       set({
         entries: get().entries.map((entry) => (entry.id === id ? saved : entry)),
-        draft: null,
       });
+      return true;
     } catch {
-      set({ error: 'Your edits could not be saved.' });
+      return false;
     }
   },
   removeEntry: async (id) => {
@@ -78,14 +69,11 @@ export const useJournalStore = create<JournalState>((set, get) => ({
       if (storage) {
         await storage.repositories.journalEntries.deleteById(id);
       }
-      set({
-        entries: get().entries.filter((entry) => entry.id !== id),
-        activeEntryId: get().activeEntryId === id ? null : get().activeEntryId,
-      });
+      set({ entries: get().entries.filter((entry) => entry.id !== id) });
+      return true;
     } catch {
-      set({ error: 'That journal could not be deleted.' });
+      return false;
     }
   },
-  setDraft: (draft) => set({ draft }),
   reset: () => set(INITIAL_JOURNAL_STATE),
 }));

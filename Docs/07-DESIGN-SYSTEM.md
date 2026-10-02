@@ -61,7 +61,9 @@ shipped app does not render those surfaces.
 
 ## Spacing
 
-`DAYTALE_SPACING` mirrors the prototype's eight-step scale.
+`DAYTALE_SPACING` is an eight-step scale on the 8pt grid. Screen gutters stay at 24; control padding
+is `lg` horizontal and `md` vertical; `Card` padding is `xl` (20). Control geometry (`minHeight`
+44/48, check boxes, icon sizes) is not spacing and does not scale with it.
 
 | Token | Value |
 | --- | --- |
@@ -90,23 +92,27 @@ Fonts are bundled through `@expo-google-fonts` and loaded by `useDaytaleFonts()`
 weight; no `fontWeight` is set (this avoids Android dropping a custom family for a synthetic
 weight).
 
-| Role | Family | Size | Line height | Tracking | Use |
-| --- | --- | --- | --- | --- | --- |
-| `eyebrow` | IBM Plex Mono 400 | 10.5 | 14 | 1.05 | Screen eyebrow, uppercase |
-| `title` | Fredoka 600 | 23 | 29 | -0.23 | Screen heading |
-| `titleLarge` | Fredoka 600 | 27 | 34 | -0.27 | Welcome heading |
-| `titleSmall` | Fredoka 600 | 19 | 24 | -0.19 | Status and sub-screen heading |
-| `heading` | Fredoka 600 | 20 | 25 | | Section heading |
-| `body` | Figtree 400 | 15 | 22 | | Body copy |
-| `sub` | Figtree 400 | 13.5 | 20 | | Secondary copy |
-| `reading` | Newsreader 400 | 16 | 28 | | Journal reading |
-| `label` | Figtree 600 | 13.5 | 18 | | Rows, chips, control labels |
-| `button` | Figtree 700 | 15 | 20 | | Button labels |
-| `chip` | Figtree 600 | 13 | 17 | | Chips and status pills |
-| `caption` | Figtree 400 | 12 | 16 | | Captions and hints |
-| `fieldLabel` | Figtree 700 | 12 | 16 | 0.24 | Field labels |
-| `timer` | IBM Plex Mono 500 | 44 | 50 | 0.9 | Recording timer |
-| `monoLabel` | IBM Plex Mono 400 | 11 | 14 | 1.1 | Month and index labels |
+The scale targets the Apple HIG **Large (default)** text styles so body copy and controls are
+legible on a phone. `prototype/tokens.css` carries the matching `--type-*` variables and the
+prototype classes consume them.
+
+| Role | Family | Size | Line height | Tracking | HIG anchor | Use |
+| --- | --- | --- | --- | --- | --- | --- |
+| `titleLarge` | Fredoka 600 | 34 | 41 | -0.34 | Large Title | Welcome heading |
+| `title` | Fredoka 600 | 28 | 34 | -0.28 | Title 1 | Screen heading |
+| `heading` | Fredoka 600 | 22 | 28 | -0.22 | Title 2 | Section and step heading |
+| `titleSmall` | Fredoka 600 | 20 | 25 | -0.2 | Title 3 | Status and sub-screen heading |
+| `body` | Figtree 400 | 17 | 22 | | Body | Body copy |
+| `reading` | Newsreader 400 | 17 | 30 | | Body (reading leading) | Journal reading |
+| `sub` | Figtree 400 | 15 | 20 | | Subhead | Secondary copy |
+| `label` | Figtree 600 | 17 | 22 | | Headline | Rows and control labels |
+| `button` | Figtree 700 | 17 | 22 | | Headline | Button labels |
+| `chip` | Figtree 600 | 13 | 18 | | Footnote | Chips and status pills |
+| `caption` | Figtree 400 | 12 | 16 | | Caption 1 | Captions and hints |
+| `fieldLabel` | Figtree 700 | 12 | 16 | 0.24 | Caption 1 | Field labels |
+| `timer` | IBM Plex Mono 500 | 44 | 50 | 0.9 | numeric display | Recording timer |
+| `eyebrow` | IBM Plex Mono 400 | 11 | 14 | 1.1 | Caption 2 | Screen eyebrow, uppercase |
+| `monoLabel` | IBM Plex Mono 400 | 11 | 14 | 1.1 | Caption 2 | Month and index labels |
 
 ## Motion and shadows
 
@@ -131,7 +137,7 @@ plus Android elevation. The inline 1px layer is not portable to React Native.
 - **Bottom sheets**: `appPaper` fill, radius `sheet` on the top corners, scrim
   `withAlpha(appInk, 0.42)`.
 - **Tab bar**: `appSurface` fill, 1px `appLine` top border, active `appCherry`, inactive
-  `appMuted`, 22px line icons, 10.5px Figtree 600 labels.
+  `appMuted`, 22px line icons, 12px Figtree 600 labels.
 - **Lists**: hairline `appLine` separators; bless targets at 44 points or more.
 
 ### Shared primitives

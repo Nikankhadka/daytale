@@ -136,7 +136,7 @@ export function PrimaryButton({
 
 const styles = StyleSheet.create({
   safe: { flex: 1 },
-  content: { flexGrow: 1, paddingBottom: 24, paddingHorizontal: 24, paddingTop: 6 },
+  content: { flexGrow: 1, paddingBottom: 24, paddingHorizontal: 24, paddingTop: 8 },
   eyebrow: { marginBottom: 8, textTransform: 'uppercase' },
   title: { marginBottom: 12 },
   description: { marginBottom: 24 },
@@ -150,7 +150,7 @@ const styles = StyleSheet.create({
     minHeight: 44,
     justifyContent: 'center',
     marginTop: 12,
-    paddingHorizontal: 18,
-    paddingVertical: 15,
+    paddingHorizontal: 20,
+    paddingVertical: 16,
   },
 });

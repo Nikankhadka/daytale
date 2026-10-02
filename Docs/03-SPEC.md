@@ -74,7 +74,7 @@ The recording session is the source of truth for Today. A scheduled session can 
 
 ## 3. Visual and interaction system
 
-Use the tokens and copy in `prototype/tokens.css` and `prototype/index.html` directly. Do not create a second palette, type scale, mascot set, or copy deck. The implementation must preserve the prototype's Sakura Morning light theme, Night Sakura dark theme, Fredoka/Figtree/Newsreader/IBM Plex Mono font roles, spacing, radii, shadows, static SVG mascot states, and named animation intent.
+Use the tokens and copy in `prototype/tokens.css` and `prototype/index.html` directly. Do not create a second palette, type scale, mascot set, or copy deck. The implementation must preserve the prototype's Sakura Morning light theme, Night Sakura dark theme, Fredoka/Figtree/Newsreader/IBM Plex Mono font roles, spacing, radii, shadows, static SVG mascot states, and named animation intent. The shared type scale targets the Apple HIG Large (default) text styles, mirrored in `prototype/tokens.css` (`--type-*`) and `src/theme/tokens.ts`; spacing sits on the 8pt grid.
 
 The concrete token names, values, type scale, spacing, radii, shadows, motion, and component conventions are recorded in [07-DESIGN-SYSTEM](07-DESIGN-SYSTEM.md). That document is the implementation reference; this section owns the requirement.
 

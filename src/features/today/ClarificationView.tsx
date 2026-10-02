@@ -61,11 +61,10 @@ export function ClarificationView({
           {CLARIFICATION_CHIPS.map((chip) => (
             <Chip
               key={chip.label}
+              disabled={busy}
               emoji={chip.emoji}
               label={chip.label}
-              onPress={
-                busy ? undefined : () => onAnswer(chip.label === 'Ignore' ? null : chip.label)
-              }
+              onPress={() => onAnswer(chip.label === 'Ignore' ? null : chip.label)}
             />
           ))}
         </View>

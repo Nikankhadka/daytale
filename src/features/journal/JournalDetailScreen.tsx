@@ -21,6 +21,7 @@ export function JournalDetailScreen() {
   const { colors, typography, fontRoles } = useDaytaleTheme();
   const [confirming, setConfirming] = React.useState(false);
   const [busy, setBusy] = React.useState(false);
+  const [deleteError, setDeleteError] = React.useState<string | undefined>();
 
   React.useEffect(() => {
     if (loadState === 'idle') {
@@ -35,8 +36,13 @@ export function JournalDetailScreen() {
       return;
     }
     setBusy(true);
-    await removeEntry(entry.id);
+    setDeleteError(undefined);
+    const ok = await removeEntry(entry.id);
     setBusy(false);
+    if (!ok) {
+      setDeleteError('That journal could not be deleted.');
+      return;
+    }
     setConfirming(false);
     router.back();
   };
@@ -89,7 +95,7 @@ export function JournalDetailScreen() {
       {entry ? (
         <ScrollView contentContainerStyle={styles.content}>
           <Eyebrow>{formatEntryEyebrow(entry.date)}</Eyebrow>
-          <Text style={[styles.title, { color: colors.appInk, fontFamily: fontRoles.reading }]}>
+          <Text style={[typography.title, { color: colors.appInk, fontFamily: fontRoles.reading }]}>
             {entry.title}
           </Text>
           {entry.contextTags.length > 0 ? (
@@ -111,9 +117,20 @@ export function JournalDetailScreen() {
               busy={busy}
               confirmLabel="Delete"
               message="Delete this journal entry? This can't be undone."
-              onCancel={() => setConfirming(false)}
+              onCancel={() => {
+                setConfirming(false);
+                setDeleteError(undefined);
+              }}
               onConfirm={() => void onDelete()}
             />
+          ) : null}
+          {deleteError ? (
+            <Text
+              accessibilityRole="alert"
+              style={[typography.label, { color: colors.appRecording }]}
+            >
+              {deleteError}
+            </Text>
           ) : null}
         </ScrollView>
       ) : (
@@ -131,18 +148,14 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     flexDirection: 'row',
     justifyContent: 'space-between',
-    paddingHorizontal: 14,
+    paddingHorizontal: 16,
     paddingTop: 8,
   },
   back: { alignItems: 'center', flexDirection: 'row', gap: 4, padding: 10 },
   actions: { flexDirection: 'row', gap: 4 },
   iconButton: { alignItems: 'center', height: 44, justifyContent: 'center', width: 44 },
   content: { gap: 12, paddingBottom: 24, paddingHorizontal: 24, paddingTop: 4 },
-  title: {
-    fontSize: 24,
-    lineHeight: 31,
-  },
   chips: { flexDirection: 'row', flexWrap: 'wrap', gap: 8 },
-  body: { gap: 14, marginTop: 4 },
+  body: { gap: 16, marginTop: 4 },
   missing: { alignItems: 'center', paddingVertical: 48 },
 });

@@ -408,6 +408,11 @@ export function OnboardingScreen({
           setStep('ready');
         }
       }}
+      onSkip={async () => {
+        if (await save({ onboardingStage: 'ready' })) {
+          setStep('ready');
+        }
+      }}
     />
   );
 
@@ -547,17 +552,17 @@ const styles = StyleSheet.create({
     gap: 16,
     paddingBottom: 24,
     paddingHorizontal: 24,
-    paddingTop: 28,
+    paddingTop: 32,
   },
-  hero: { marginTop: 2 },
+  hero: { marginTop: 4 },
   block: { alignSelf: 'stretch', gap: 8 },
-  trust: { alignSelf: 'stretch', gap: 10, marginTop: 'auto' },
-  trustLine: { alignItems: 'center', flexDirection: 'row', gap: 10 },
+  trust: { alignSelf: 'stretch', gap: 12, marginTop: 'auto' },
+  trustLine: { alignItems: 'center', flexDirection: 'row', gap: 12 },
   input: {
     borderWidth: 1.5,
     minHeight: 48,
-    paddingHorizontal: 14,
-    paddingVertical: 13,
+    paddingHorizontal: 16,
+    paddingVertical: 12,
   },
   privacyCard: {
     alignItems: 'flex-start',
@@ -567,9 +572,7 @@ const styles = StyleSheet.create({
     gap: 12,
     padding: 16,
   },
-  privacyText: { flex: 1, gap: 3 },
+  privacyText: { flex: 1, gap: 4 },
   tagRow: { flexDirection: 'row', flexWrap: 'wrap', gap: 8, justifyContent: 'center' },
   footer: { alignSelf: 'stretch', marginTop: 'auto' },
 });
-
-export const OnboardingPlaceholder = OnboardingScreen;

@@ -1,4 +1,5 @@
 import { useRouter } from 'expo-router';
+import * as React from 'react';
 import { StyleSheet, Text, TextInput, View } from 'react-native';
 
 import { SETTINGS_ROUTE_PATHS } from '../../navigation/routes';
@@ -28,9 +29,13 @@ export function SettingsHubScreen() {
   const preferences = useSessionStore((state) => state.appPreferences);
   const { colors, typography, radii } = useDaytaleTheme();
   const current = preferences ?? createDefaultAppPreferences();
+  const [saveError, setSaveError] = React.useState<string | undefined>();
 
   const save = (patch: Parameters<typeof persistAppPreferences>[0]) => {
-    void persistAppPreferences(patch).catch(() => undefined);
+    setSaveError(undefined);
+    void persistAppPreferences(patch).catch(() =>
+      setSaveError('That preference could not be saved. Please try again.'),
+    );
   };
 
   const languages = current.spokenLanguages.map((language) => LANGUAGE_NAMES[language]).join(', ');
@@ -105,14 +110,17 @@ export function SettingsHubScreen() {
           />
         </View>
 
-        <Card padded={false}>
-          <View style={styles.cardPad}>
-            <ListRow subtitle="Version 1.0" title="About Daytale" />
-          </View>
-        </Card>
+        {saveError ? (
+          <Text
+            accessibilityRole="alert"
+            style={[typography.label, { color: colors.appRecording }]}
+          >
+            {saveError}
+          </Text>
+        ) : null}
 
         <SubText center style={styles.credit}>
-          An alarm clock for your life.
+          {'Daytale - Version 1.0\nAn alarm clock for your life.'}
         </SubText>
       </View>
     </View>
@@ -121,15 +129,15 @@ export function SettingsHubScreen() {
 
 const styles = StyleSheet.create({
   safe: { flex: 1 },
-  body: { flex: 1, gap: 16, paddingBottom: 24, paddingHorizontal: 24, paddingTop: 22 },
-  cardPad: { paddingHorizontal: 14, paddingVertical: 2 },
+  body: { flex: 1, gap: 16, paddingBottom: 24, paddingHorizontal: 24, paddingTop: 24 },
+  cardPad: { paddingHorizontal: 16, paddingVertical: 4 },
   section: { marginTop: 8 },
-  group: { gap: 10 },
+  group: { gap: 12 },
   input: {
     borderWidth: 1.5,
     minHeight: 48,
-    paddingHorizontal: 14,
-    paddingVertical: 13,
+    paddingHorizontal: 16,
+    paddingVertical: 12,
   },
   credit: { marginTop: 'auto' },
 });

@@ -105,9 +105,9 @@ function EntryRow({ entry, onPress }: { entry: JournalEntry; onPress: () => void
 
 const styles = StyleSheet.create({
   safe: { flex: 1 },
-  content: { flexGrow: 1, gap: 12, paddingBottom: 24, paddingHorizontal: 24, paddingTop: 22 },
-  group: { gap: 2 },
-  month: { marginBottom: 6, marginTop: 12 },
+  content: { flexGrow: 1, gap: 12, paddingBottom: 24, paddingHorizontal: 24, paddingTop: 24 },
+  group: { gap: 4 },
+  month: { marginBottom: 8, marginTop: 12 },
   item: {
     alignItems: 'center',
     borderBottomWidth: StyleSheet.hairlineWidth,
@@ -118,7 +118,7 @@ const styles = StyleSheet.create({
     paddingVertical: 12,
   },
   date: { alignItems: 'center', width: 44 },
-  itemBody: { flex: 1, gap: 2 },
-  chips: { flexDirection: 'row', flexWrap: 'wrap', gap: 6, marginTop: 2 },
+  itemBody: { flex: 1, gap: 4 },
+  chips: { flexDirection: 'row', flexWrap: 'wrap', gap: 8, marginTop: 4 },
   empty: { alignItems: 'center', gap: 12, paddingVertical: 32 },
 });

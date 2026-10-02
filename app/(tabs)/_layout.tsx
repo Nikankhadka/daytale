@@ -5,7 +5,7 @@ import Svg, { Circle, Path } from 'react-native-svg';
 
 import { subscribeNotificationTaps } from '../../src/features/recording/notifications';
 import { useRecordingReconciliation } from '../../src/features/recording/useRecordingEngine';
-import { TAB_ROUTE_PATHS } from '../../src/navigation/routes';
+import { routeForOnboardingState, TAB_ROUTE_PATHS } from '../../src/navigation/routes';
 import { useSessionStore } from '../../src/state/session';
 import { useDaytaleTheme } from '../../src/theme/useDaytaleTheme';
 
@@ -47,7 +47,7 @@ function TabIcon({ name, color }: { name: TabIconName; color: ColorValue }) {
 
 export default function TabsLayout() {
   const onboardingComplete = useSessionStore((state) => state.onboardingComplete);
-  const { colors, fontRoles, spacing } = useDaytaleTheme();
+  const { colors, fontRoles, spacing, typography } = useDaytaleTheme();
   const router = useRouter();
   useRecordingReconciliation();
   React.useEffect(
@@ -55,7 +55,7 @@ export default function TabsLayout() {
     [router],
   );
   if (!onboardingComplete) {
-    return <Redirect href="/onboarding" />;
+    return <Redirect href={routeForOnboardingState(false)} />;
   }
 
   return (
@@ -70,7 +70,7 @@ export default function TabsLayout() {
           borderTopWidth: 1,
           paddingTop: spacing.sm,
         },
-        tabBarLabelStyle: { fontFamily: fontRoles.uiStrong, fontSize: 10.5 },
+        tabBarLabelStyle: { fontFamily: fontRoles.uiStrong, fontSize: typography.caption.fontSize },
       }}
     >
       <Tabs.Screen

@@ -344,19 +344,24 @@ function TodayContent() {
       const entry = session
         ? journalEntries.find((item) => item.sessionId === session.id)
         : undefined;
+      if (!entry) {
+        // The entry is still loading (or the journal list has not hydrated yet):
+        // keep the processing surface rather than render dead action buttons.
+        return <ProcessingView stageIndex={processingStageIndex(session.status)} />;
+      }
       return (
         <JournalReadyView
-          eyebrow={entry ? formatEntryEyebrow(entry.date) : eyebrow}
+          eyebrow={formatEntryEyebrow(entry.date)}
           onEdit={() =>
-            entry && router.push({ pathname: JOURNAL_ROUTE_PATHS.edit, params: { id: entry.id } })
+            router.push({ pathname: JOURNAL_ROUTE_PATHS.edit, params: { id: entry.id } })
           }
           onRead={() =>
-            entry && router.push({ pathname: JOURNAL_ROUTE_PATHS.detail, params: { id: entry.id } })
+            router.push({ pathname: JOURNAL_ROUTE_PATHS.detail, params: { id: entry.id } })
           }
-          onShare={() => entry && void shareEntry(entry)}
-          paragraphs={entry?.paragraphs ?? []}
-          tags={entry?.contextTags ?? []}
-          title={entry?.title ?? 'Your day is ready.'}
+          onShare={() => void shareEntry(entry)}
+          paragraphs={entry.paragraphs}
+          tags={entry.contextTags}
+          title={entry.title}
         />
       );
     }
@@ -364,5 +369,3 @@ function TodayContent() {
       return <ProcessingView stageIndex={processingStageIndex(session.status)} />;
   }
 }
-
-export const TodayPlaceholder = TodayScreen;

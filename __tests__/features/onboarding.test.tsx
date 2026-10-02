@@ -255,6 +255,24 @@ describe('DYT-004A onboarding and preferences', () => {
     expect(useSessionStore.getState().onboardingComplete).toBe(false);
   });
 
+  it('lets the user defer voice setup and still reach the ready step', async () => {
+    const fake = createFakePreferencesRepository();
+    const preferences = mergeAppPreferences(
+      createDefaultAppPreferences(now, 'UTC'),
+      { onboardingStage: 'voice', microphonePermissionState: 'granted' },
+      now,
+    );
+    await fake.repository.save(preferences);
+    useSessionStore.getState().setAppPreferences(preferences);
+    const screen = await render(<OnboardingScreen now={() => now} repository={fake.repository} />);
+
+    await fireEvent.press(screen.getByText('Set up my voice later'));
+
+    await waitFor(() => expect(screen.getByText("You're all set.")).toBeTruthy());
+    expect(fake.getCurrent()?.onboardingStage).toBe('ready');
+    expect(fake.getCurrent()?.onboardingComplete).toBe(false);
+  });
+
   it('greets the user with their schedule and languages on the ready screen', async () => {
     const { screen } = await renderReadyScreen();
 
