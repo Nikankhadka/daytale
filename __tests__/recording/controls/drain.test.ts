@@ -444,4 +444,40 @@ describe('drainRecordingIntents', () => {
     expect(engine.pause).toHaveBeenCalledTimes(1);
     expect(store.remove).toHaveBeenCalledWith([record.id]);
   });
+
+  it('keeps the engine outcome when removing the record throws', async () => {
+    const record = makeRecord({ kind: 'pause' });
+    const store = createStore([record]);
+    store.remove.mockRejectedValue(new Error('store failure'));
+    const engine = engineWith(ok(makeSession('paused')));
+
+    const outcomes = await drain(store, engine, makeSession('recording'));
+
+    expect(outcomes).toEqual([{ id: record.id, kind: 'pause', status: 'applied' }]);
+    expect(engine.pause).toHaveBeenCalledTimes(1);
+  });
+
+  it.each([
+    'analyzing',
+    'awaiting clarification',
+    'generating',
+    'ready',
+    'failed',
+    'expired',
+    'discarded',
+  ] as const)(
+    'treats pause, resume, and stop on %s as a noop and removes each record',
+    async (status) => {
+      for (const kind of ['pause', 'resume', 'stop'] as const) {
+        const record = makeRecord({ kind });
+        const store = createStore([record]);
+        const engine = engineWith(ok(makeSession(status)));
+
+        const outcomes = await drain(store, engine, makeSession(status));
+
+        expect(outcomes).toEqual([{ id: record.id, kind, status: 'noop' }]);
+        expect(store.remove).toHaveBeenCalledWith([record.id]);
+      }
+    },
+  );
 });

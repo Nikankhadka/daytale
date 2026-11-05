@@ -30,9 +30,12 @@ enum RecordingIntentQueue {
     return value
   }
 
-  static func append(kind: String) {
+  /// Appends one record and returns it so the caller can hand the exact payload to JS.
+  /// Returns `nil` when there is no active session or nothing was written.
+  @discardableResult
+  static func append(kind: String) -> [String: Any]? {
     guard let defaults = defaults, let sessionId = activeSessionId() else {
-      return
+      return nil
     }
     let record: [String: Any] = [
       "version": 1,
@@ -46,13 +49,14 @@ enum RecordingIntentQueue {
 
     var records = read()
     if let id = id, records.contains(where: { ($0["id"] as? String) == id }) {
-      return
+      return nil
     }
     records.append(record)
     if records.count > maxRecords {
       records.removeFirst(records.count - maxRecords)
     }
     write(records, defaults: defaults)
+    return record
   }
 
   static func read() -> [[String: Any]] {

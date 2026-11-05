@@ -102,8 +102,11 @@ public class RecordingControlsModule: Module {
         forName: Notification.Name("daytaleRecordingIntent"),
         object: nil,
         queue: .main
-      ) { [weak self] _ in
-        self?.sendEvent("onRecordingIntent", ["source": "ios-activity"])
+      ) { [weak self] notification in
+        guard let record = notification.object as? [String: Any] else {
+          return
+        }
+        self?.sendEvent("onRecordingIntent", record)
       }
     }
 

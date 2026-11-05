@@ -82,6 +82,21 @@ export function useRecordingControls(options: UseRecordingControlsOptions = {}):
   } | null>(null);
 
   const syncActivity = React.useCallback(async (session: RecordingSession | null) => {
+    const port = activityRef.current;
+
+    // Gate before any start/update/end so a disabled Live Activity never relies on a swallowed
+    // native throw. Nothing is recorded as synced while unsupported, so a later status change
+    // retries once the surface becomes available.
+    let supported = false;
+    try {
+      supported = await port.isSupported();
+    } catch {
+      supported = false;
+    }
+    if (!supported) {
+      return;
+    }
+
     const nextKey = { sessionId: session?.id ?? null, status: session?.status ?? null };
     const lastKey = lastActivityRef.current;
     if (
@@ -92,8 +107,6 @@ export function useRecordingControls(options: UseRecordingControlsOptions = {}):
       return;
     }
     lastActivityRef.current = nextKey;
-
-    const port = activityRef.current;
 
     if (session === null || session.status === 'scheduled') {
       if (activitySessionRef.current !== null) {
@@ -108,15 +121,22 @@ export function useRecordingControls(options: UseRecordingControlsOptions = {}):
       if (activitySessionRef.current === session.id) {
         await quietly(() => port.update({ status, updatedAt: new Date().toISOString() }));
       } else {
-        activitySessionRef.current = session.id;
-        await quietly(() =>
-          port.start({
+        // Only mark the session as started once the native activity really exists. A false or
+        // throwing start leaves the ref unset so the next status change tries start again.
+        let started = false;
+        try {
+          started = await port.start({
             sessionId: session.id,
             status,
             startedAt: session.actualStart ?? session.createdAt,
             scheduledEnd: session.scheduledEnd,
-          }),
-        );
+          });
+        } catch {
+          started = false;
+        }
+        if (started) {
+          activitySessionRef.current = session.id;
+        }
       }
       return;
     }
@@ -162,7 +182,11 @@ export function useRecordingControls(options: UseRecordingControlsOptions = {}):
     }
 
     await quietly(() =>
-      drainRecordingIntents({ store: storeRef.current, engine: hostRef.current.engine }),
+      drainRecordingIntents({
+        store: storeRef.current,
+        engine: hostRef.current.engine,
+        isForeground: () => foreground,
+      }),
     );
   }, []);
 

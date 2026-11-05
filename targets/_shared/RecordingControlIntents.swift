@@ -13,8 +13,8 @@ struct PauseRecordingIntent: LiveActivityIntent {
   static var openAppWhenRun: Bool = false
 
   func perform() async throws -> some IntentResult {
-    RecordingIntentQueue.append(kind: "pause")
-    NotificationCenter.default.post(name: .daytaleRecordingIntent, object: nil)
+    let record = RecordingIntentQueue.append(kind: "pause")
+    NotificationCenter.default.post(name: .daytaleRecordingIntent, object: record)
     return .result()
   }
 }
@@ -26,8 +26,8 @@ struct ResumeRecordingIntent: LiveActivityIntent {
   static var openAppWhenRun: Bool = true
 
   func perform() async throws -> some IntentResult {
-    RecordingIntentQueue.append(kind: "resume")
-    NotificationCenter.default.post(name: .daytaleRecordingIntent, object: nil)
+    let record = RecordingIntentQueue.append(kind: "resume")
+    NotificationCenter.default.post(name: .daytaleRecordingIntent, object: record)
     return .result()
   }
 }
@@ -39,8 +39,8 @@ struct StopRecordingIntent: LiveActivityIntent {
   static var openAppWhenRun: Bool = false
 
   func perform() async throws -> some IntentResult {
-    RecordingIntentQueue.append(kind: "stop")
-    NotificationCenter.default.post(name: .daytaleRecordingIntent, object: nil)
+    let record = RecordingIntentQueue.append(kind: "stop")
+    NotificationCenter.default.post(name: .daytaleRecordingIntent, object: record)
     for activity in Activity<RecordingActivityAttributes>.activities {
       await activity.end(nil, dismissalPolicy: .immediate)
     }

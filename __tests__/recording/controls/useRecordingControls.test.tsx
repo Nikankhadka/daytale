@@ -83,10 +83,10 @@ function makeSession(status: RecordingSessionStatus, actualStart?: string) {
   return makeScheduledSession({ status, actualStart });
 }
 
-async function renderControls() {
+async function renderControls(overrides: { activity?: ReturnType<typeof makeActivity> } = {}) {
   const host = makeHost();
   const store = makeStore();
-  const activity = makeActivity();
+  const activity = overrides.activity ?? makeActivity();
   const view = await renderHook(() => useRecordingControls({ host, store, activity }));
   return { ...view, host, store, activity };
 }
@@ -138,7 +138,11 @@ describe('useRecordingControls', () => {
     await flush();
 
     expect(mockDrain).toHaveBeenCalledTimes(1);
-    expect(mockDrain).toHaveBeenCalledWith({ store, engine: host.engine });
+    expect(mockDrain).toHaveBeenCalledWith({
+      store,
+      engine: host.engine,
+      isForeground: expect.any(Function),
+    });
     expect(mockControls.consumePendingResume).toHaveBeenCalledTimes(1);
   });
 
@@ -211,14 +215,16 @@ describe('useRecordingControls', () => {
     expect(order).toEqual(['start:1', 'end:1', 'start:2', 'end:2', 'start:3', 'end:3']);
   });
 
-  it('enqueues a resume before draining when a launch resume is pending', async () => {
+  it('enqueues a resume before draining on the foreground path so it applies', async () => {
     mockControls.consumePendingResume.mockResolvedValueOnce(true);
     const order: string[] = [];
+    let foregroundDuringDrain = false;
     mockControls.enqueueIntent.mockImplementation(async () => {
       order.push('enqueue');
     });
-    mockDrain.mockImplementation(async () => {
+    mockDrain.mockImplementation(async (options) => {
       order.push('drain');
+      foregroundDuringDrain = options?.isForeground?.() ?? false;
       return [];
     });
 
@@ -228,6 +234,27 @@ describe('useRecordingControls', () => {
     expect(mockControls.enqueueIntent).toHaveBeenCalledWith('resume');
     expect(mockDrain).toHaveBeenCalledTimes(1);
     expect(order).toEqual(['enqueue', 'drain']);
+    expect(foregroundDuringDrain).toBe(true);
+  });
+
+  it('tells the drain whether it is foreground so the AppState path and the drain agree', async () => {
+    const foregroundFlags: boolean[] = [];
+    mockDrain.mockImplementation(async (options) => {
+      foregroundFlags.push(options?.isForeground?.() ?? false);
+      return [];
+    });
+
+    await renderControls();
+    await flush();
+    expect(foregroundFlags).toEqual([true]);
+
+    await act(async () => appStateListener?.('active'));
+    await flush();
+    expect(foregroundFlags).toEqual([true, true]);
+
+    await act(async () => mockState.intentListener?.());
+    await flush();
+    expect(foregroundFlags).toEqual([true, true, false]);
   });
 
   it('tracks the active session, paused notification, and activity on status changes', async () => {
@@ -261,6 +288,52 @@ describe('useRecordingControls', () => {
       updatedAt: expect.any(String),
     });
     expect(activity.start).toHaveBeenCalledTimes(1);
+  });
+
+  it('does nothing on the activity when the Live Activity is unsupported', async () => {
+    const activity = makeActivity();
+    activity.isSupported.mockResolvedValue(false);
+    await renderControls({ activity });
+    await flush();
+
+    await act(async () => {
+      useSessionStore.getState().setRecordingSession(makeSession('recording'));
+    });
+    await flush();
+    await act(async () => {
+      useSessionStore.getState().setRecordingSession(makeSession('paused'));
+    });
+    await flush();
+    await act(async () => {
+      useSessionStore.getState().setRecordingSession(makeSession('ready'));
+    });
+    await flush();
+
+    expect(activity.start).not.toHaveBeenCalled();
+    expect(activity.update).not.toHaveBeenCalled();
+    expect(activity.end).not.toHaveBeenCalled();
+  });
+
+  it('retries start instead of updating when the first start returns false', async () => {
+    const activity = makeActivity();
+    activity.start.mockResolvedValue(false);
+    await renderControls({ activity });
+    await flush();
+
+    await act(async () => {
+      useSessionStore.getState().setRecordingSession(makeSession('recording'));
+    });
+    await flush();
+    expect(activity.start).toHaveBeenCalledTimes(1);
+    expect(activity.update).not.toHaveBeenCalled();
+
+    await act(async () => {
+      useSessionStore.getState().setRecordingSession(makeSession('paused'));
+    });
+    await flush();
+
+    expect(activity.start).toHaveBeenCalledTimes(2);
+    expect(activity.update).not.toHaveBeenCalled();
   });
 
   it('uses createdAt when actualStart is absent', async () => {

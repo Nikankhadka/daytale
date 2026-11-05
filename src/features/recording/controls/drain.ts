@@ -73,8 +73,16 @@ function kindOf(value: unknown): RecordingIntentKind | 'invalid' {
   return parseRecordingIntentRecord(value)?.kind ?? 'invalid';
 }
 
-async function removeRecord(store: RecordingIntentStore, id: string): Promise<void> {
-  await store.remove([id]);
+/**
+ * Removal is best-effort. The engine outcome is already decided, so a store failure must not
+ * rewrite it as `failed`; the durable record is retried on the next drain.
+ */
+async function removeQuietly(store: RecordingIntentStore, id: string): Promise<void> {
+  try {
+    await store.remove([id]);
+  } catch {
+    // The batch must continue even when removal fails.
+  }
 }
 
 async function processRecord(record: unknown, id: string | undefined, context: Context) {
@@ -83,14 +91,14 @@ async function processRecord(record: unknown, id: string | undefined, context: C
     // A record with no removable string id cannot be deleted through the store API; it is reported
     // and skipped so the batch keeps moving.
     if (id !== undefined) {
-      await removeRecord(context.store, id);
+      await removeQuietly(context.store, id);
     }
     return { id: id ?? '', kind: 'invalid' as const, status: 'invalid' as const };
   }
 
   const session = context.getSession();
   if (session === null || session.id !== parsed.sessionId) {
-    await removeRecord(context.store, parsed.id);
+    await removeQuietly(context.store, parsed.id);
     return { id: parsed.id, kind: parsed.kind, status: 'unknown-session' as const };
   }
 
@@ -99,7 +107,7 @@ async function processRecord(record: unknown, id: string | undefined, context: C
     age > RECORDING_INTENT_MAX_AGE_MS ||
     (parsed.kind === 'resume' && age > RECORDING_RESUME_MAX_AGE_MS)
   ) {
-    await removeRecord(context.store, parsed.id);
+    await removeQuietly(context.store, parsed.id);
     return { id: parsed.id, kind: parsed.kind, status: 'stale' as const };
   }
 
@@ -116,7 +124,7 @@ async function processRecord(record: unknown, id: string | undefined, context: C
         : await context.engine.stop();
 
   const status = mapResult(result, statusBefore);
-  await removeRecord(context.store, parsed.id);
+  await removeQuietly(context.store, parsed.id);
   return { id: parsed.id, kind: parsed.kind, status };
 }
 
@@ -187,13 +195,9 @@ export async function drainRecordingIntents(
       outcomes.push(await processRecord(entry.value, entry.id, context));
     } catch {
       // A command that throws is a failure, but the record is still removed so it is not retried
-      // on the next drain. Removal is best-effort because the throw may have come from the store.
+      // on the next drain. Removal is best-effort.
       if (entry.id !== undefined) {
-        try {
-          await context.store.remove([entry.id]);
-        } catch {
-          // The batch must continue even when removal fails.
-        }
+        await removeQuietly(context.store, entry.id);
       }
       outcomes.push({ id: entry.id ?? '', kind: kindOf(entry.value), status: 'failed' });
     }
