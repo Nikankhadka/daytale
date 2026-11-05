@@ -5,6 +5,7 @@ import Svg, { Circle, Path } from 'react-native-svg';
 
 import { subscribeNotificationTaps } from '../../src/features/recording/notifications';
 import { useRecordingReconciliation } from '../../src/features/recording/useRecordingEngine';
+import { useProcessingReconciliation } from '../../src/features/processing';
 import { routeForOnboardingState, TAB_ROUTE_PATHS } from '../../src/navigation/routes';
 import { useSessionStore } from '../../src/state/session';
 import { useDaytaleTheme } from '../../src/theme/useDaytaleTheme';
@@ -50,6 +51,7 @@ export default function TabsLayout() {
   const { colors, fontRoles, spacing, typography } = useDaytaleTheme();
   const router = useRouter();
   useRecordingReconciliation();
+  useProcessingReconciliation();
   React.useEffect(
     () => subscribeNotificationTaps(() => router.navigate(TAB_ROUTE_PATHS.today)),
     [router],

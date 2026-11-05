@@ -177,14 +177,14 @@ describe('journal API client', () => {
   });
 
   const statusCases: [number, JournalApiFailureCode][] = [
-    [401, 'app-check-unconfigured'],
-    [403, 'app-check-unconfigured'],
+    [401, 'app-check-rejected'],
+    [403, 'app-check-rejected'],
     [400, 'invalid-request'],
     [415, 'invalid-request'],
     [404, 'invalid-request'],
     [413, 'payload-too-large'],
     [408, 'timeout'],
-    [429, 'upstream-unavailable'],
+    [429, 'rate-limited'],
     [504, 'upstream-unavailable'],
     [503, 'upstream-unavailable'],
     [500, 'upstream-unavailable'],

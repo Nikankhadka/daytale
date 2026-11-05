@@ -26,6 +26,7 @@ type ClarificationViewProps = {
   /** Neutral time window; the prototype's map/place pin is intentionally not rendered. */
   timeLabel: string;
   busy?: boolean;
+  problem?: string;
   onAnswer: (label: string | null) => void;
 };
 
@@ -36,6 +37,7 @@ export function ClarificationView({
   question,
   timeLabel,
   busy = false,
+  problem,
   onAnswer,
 }: ClarificationViewProps) {
   const { colors, typography } = useDaytaleTheme();
@@ -57,6 +59,11 @@ export function ClarificationView({
           {question}
         </Text>
         <SubText center>What were you doing here?</SubText>
+        {problem ? (
+          <Text accessibilityRole="alert" style={[typography.sub, { color: colors.appRecording }]}>
+            {problem}
+          </Text>
+        ) : null}
         <View style={styles.chips}>
           {CLARIFICATION_CHIPS.map((chip) => (
             <Chip

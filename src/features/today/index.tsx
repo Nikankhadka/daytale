@@ -14,13 +14,14 @@ import { getBootstrappedStorage } from '../../storage/bootstrap';
 import type { ClarificationQuestion } from '../../storage/types';
 import { expoPermissionGateway } from '../permissions';
 import { formatEntryEyebrow, shareEntry } from '../journal';
+import { submitClarification, type ClarificationAnswerInput } from '../processing';
 import { BREAK_LABELS, endBreak, startBreak, useBreakChoice } from '../recording/breaks';
 import type { CommandFailure, CommandResult } from '../recording/engine';
 import { discardFailedSession, retrySession, skipSession } from '../recording/sessionCommands';
 import { recordingHost, useIsCapturing } from '../recording/useRecordingEngine';
 import { ClarificationView } from './ClarificationView';
 import { JournalReadyView } from './JournalReadyView';
-import { advanceSession, answerClarification, listOpenClarifications } from './clarification';
+import { listOpenClarifications } from './clarification';
 import { PrivacySheet } from './PrivacySheet';
 import {
   canPreview,
@@ -90,6 +91,7 @@ function TodayContent() {
   const loadJournalEntries = useJournalStore((state) => state.loadEntries);
   const [questions, setQuestions] = React.useState<ClarificationQuestion[]>([]);
   const [clarIndex, setClarIndex] = React.useState(0);
+  const clarAnswers = React.useRef<ClarificationAnswerInput[]>([]);
 
   React.useEffect(() => {
     if (kind !== 'clarification' || !session) {
@@ -220,14 +222,26 @@ function TodayContent() {
       setProblem(PROBLEM);
       return;
     }
+    // Replacing the current question's entry keeps a repeated tap after a rejection idempotent.
+    const batch: ClarificationAnswerInput[] = [
+      ...clarAnswers.current.filter((entry) => entry.questionId !== question.id),
+      { questionId: question.id, answerText: answerText ?? undefined },
+    ];
+    clarAnswers.current = batch;
+    if (clarIndex + 1 < questions.length) {
+      setClarIndex(clarIndex + 1);
+      return;
+    }
     setBusy(true);
     setProblem(undefined);
     try {
-      await answerClarification(storage, question, answerText);
-      if (clarIndex + 1 < questions.length) {
-        setClarIndex(clarIndex + 1);
+      const result = await submitClarification({ storage }, session.id, batch);
+      if (result.status === 'submitted') {
+        clarAnswers.current = [];
+        setClarIndex(0);
+        useSessionStore.getState().setRecordingSession(result.session);
       } else {
-        await advanceSession(storage, session.id, 'generating');
+        setProblem(PROBLEM);
       }
     } catch {
       setProblem(PROBLEM);
@@ -331,6 +345,7 @@ function TodayContent() {
           busy={busy}
           index={clarIndex}
           onAnswer={(label) => void answer(label)}
+          problem={problem}
           question={current.question}
           timeLabel={`${formatClockAt(base + current.startMs, timezone)} – ${formatClockAt(
             base + current.endMs,

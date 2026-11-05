@@ -18,10 +18,12 @@ import type {
 export type JournalApiFailureCode =
   | 'api-unconfigured'
   | 'app-check-unconfigured'
+  | 'app-check-rejected'
   | 'invalid-request'
   | 'payload-too-large'
   | 'invalid-response'
   | 'upstream-unavailable'
+  | 'rate-limited'
   | 'timeout'
   | 'network'
   | 'aborted';
@@ -164,10 +166,10 @@ function failure(code: JournalApiFailureCode): JournalApiFailure {
 }
 
 function failureCodeForStatus(status: number): JournalApiFailureCode {
-  if (status === 401 || status === 403) return 'app-check-unconfigured';
+  if (status === 401 || status === 403) return 'app-check-rejected';
   if (status === 408) return 'timeout';
   if (status === 413) return 'payload-too-large';
-  if (status === 429) return 'upstream-unavailable';
+  if (status === 429) return 'rate-limited';
   if (status >= 500 && status <= 599) return 'upstream-unavailable';
   // 400, 404, 415, and any other 4xx mean the request will not become valid by retrying it.
   if (status >= 400 && status <= 499) return 'invalid-request';

@@ -5,6 +5,7 @@ import { withRepeat } from 'react-native-reanimated';
 
 import { createDefaultAppPreferences } from '../../src/features/preferences';
 import { expoPermissionGateway } from '../../src/features/permissions';
+import { submitClarification } from '../../src/features/processing';
 import { startBreak, useBreakChoice } from '../../src/features/recording/breaks';
 import {
   discardFailedSession,
@@ -16,7 +17,11 @@ import { TodayScreen } from '../../src/features/today';
 import { useJournalStore } from '../../src/state/journal';
 import { useSessionStore } from '../../src/state/session';
 import { getBootstrappedStorage } from '../../src/storage/bootstrap';
-import type { JournalEntry, RecordingSession } from '../../src/storage/types';
+import type {
+  ClarificationQuestion,
+  JournalEntry,
+  RecordingSession,
+} from '../../src/storage/types';
 import { SESSION_ID, makeScheduledSession } from '../recording/testKit';
 
 const mockRouter = { push: jest.fn(), navigate: jest.fn(), replace: jest.fn() };
@@ -30,6 +35,9 @@ jest.mock('expo-crypto', () => ({ randomUUID: jest.fn() }));
 jest.mock('../../src/storage/bootstrap', () => ({ getBootstrappedStorage: jest.fn() }));
 jest.mock('../../src/features/permissions', () => ({
   expoPermissionGateway: { requestRecordingPermissionsAsync: jest.fn() },
+}));
+jest.mock('../../src/features/processing', () => ({
+  submitClarification: jest.fn(),
 }));
 jest.mock('../../src/features/recording/sessionCommands', () => ({
   skipSession: jest.fn(),
@@ -54,7 +62,12 @@ const engine = recordingHost.engine as unknown as Record<
   'start' | 'pause' | 'resume' | 'stop',
   jest.Mock
 >;
-const storage = { database: {}, repositories: {} };
+const storage = {
+  database: {},
+  repositories: {
+    clarificationQuestions: { list: jest.fn() },
+  },
+};
 const OK = { ok: true, session: makeScheduledSession() } as const;
 const blocked = (code: string) => ({ ok: false, code, session: null }) as never;
 
@@ -69,6 +82,29 @@ const recordingSession = (overrides: Partial<RecordingSession> = {}) =>
     updatedAt: '2026-03-10T09:00:00.000Z',
     ...overrides,
   });
+
+const openQuestions: ClarificationQuestion[] = [
+  {
+    id: 'question-1',
+    sessionId: SESSION_ID,
+    startMs: 0,
+    endMs: 1_000,
+    question: 'What were you doing here?',
+    reason: 'missing_context',
+    status: 'open',
+    createdAt: '2026-03-10T09:00:00.000Z',
+  },
+  {
+    id: 'question-2',
+    sessionId: SESSION_ID,
+    startMs: 2_000,
+    endMs: 3_000,
+    question: 'And here?',
+    reason: 'ambiguous_speaker',
+    status: 'open',
+    createdAt: '2026-03-10T09:00:00.000Z',
+  },
+];
 
 async function show(session: RecordingSession | null, reducedMotion = false) {
   const preferences = createDefaultAppPreferences('2026-03-01T00:00:00.000Z', 'UTC');
@@ -104,6 +140,8 @@ describe('Today screen', () => {
     jest.mocked(skipSession).mockResolvedValue(true);
     jest.mocked(retrySession).mockResolvedValue('retried');
     jest.mocked(discardFailedSession).mockResolvedValue(true);
+    jest.mocked(submitClarification).mockReset();
+    jest.mocked(storage.repositories.clarificationQuestions.list).mockResolvedValue([]);
   });
 
   afterEach(async () => {
@@ -604,6 +642,69 @@ describe('Today screen', () => {
       await press(screen, 'Discard this session');
 
       expect(screen.getByText('That did not work. Please try again.')).toBeTruthy();
+    });
+  });
+
+  describe('clarification', () => {
+    const clarificationSession = () =>
+      makeScheduledSession({
+        status: 'awaiting clarification',
+        actualStart: '2026-03-10T09:00:00.000Z',
+        updatedAt: '2026-03-10T09:00:00.000Z',
+      });
+
+    it('submits answered and skipped questions once, then publishes the generating session', async () => {
+      const session = clarificationSession();
+      const generating = { ...session, status: 'generating' as const };
+      jest
+        .mocked(storage.repositories.clarificationQuestions.list)
+        .mockResolvedValue(openQuestions);
+      jest.mocked(submitClarification).mockResolvedValue({
+        status: 'submitted',
+        session: generating,
+        answered: 1,
+        skipped: 1,
+      });
+
+      const screen = await show(session);
+      expect(await screen.findByText('Question 1 of 2')).toBeTruthy();
+      await fireEvent.press(screen.getByText('Work'));
+      expect(screen.getByText('Question 2 of 2')).toBeTruthy();
+      await fireEvent.press(screen.getByText('Ignore'));
+
+      expect(submitClarification).toHaveBeenCalledTimes(1);
+      expect(submitClarification).toHaveBeenCalledWith({ storage }, SESSION_ID, [
+        { questionId: 'question-1', answerText: 'Work' },
+        { questionId: 'question-2', answerText: undefined },
+      ]);
+      expect(useSessionStore.getState().recordingSession).toEqual(generating);
+    });
+
+    it('keeps the batch and shows the problem when the submission is rejected', async () => {
+      const session = clarificationSession();
+      jest
+        .mocked(storage.repositories.clarificationQuestions.list)
+        .mockResolvedValue(openQuestions);
+      jest.mocked(submitClarification).mockResolvedValue({
+        status: 'rejected',
+        code: 'missing-question',
+        session,
+      });
+
+      const screen = await show(session);
+      expect(await screen.findByText('Question 1 of 2')).toBeTruthy();
+      await fireEvent.press(screen.getByText('Work'));
+      await fireEvent.press(screen.getByText('Ignore'));
+
+      expect(submitClarification).toHaveBeenCalledTimes(1);
+      expect(screen.getByText('That did not work. Please try again.')).toBeTruthy();
+
+      await fireEvent.press(screen.getByText('Work'));
+      expect(submitClarification).toHaveBeenCalledTimes(2);
+      expect(jest.mocked(submitClarification).mock.calls[1]![2]).toEqual([
+        { questionId: 'question-1', answerText: 'Work' },
+        { questionId: 'question-2', answerText: 'Work' },
+      ]);
     });
   });
 
