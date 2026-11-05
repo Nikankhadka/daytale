@@ -33,7 +33,8 @@
       "expo-notifications",
       "expo-font",
       "@siteed/sherpa-onnx.rn",
-      "@bacons/apple-targets"
+      "@bacons/apple-targets",
+      "./modules/recording-controls/plugin/withRecordingService"
     ],
     "experiments": {
       "typedRoutes": true

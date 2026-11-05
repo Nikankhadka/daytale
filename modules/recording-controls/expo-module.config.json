@@ -2,5 +2,8 @@
   "platforms": ["apple", "android"],
   "apple": {
     "modules": ["RecordingControlsModule"]
+  },
+  "android": {
+    "modules": ["expo.modules.recordingcontrols.RecordingControlsModule"]
   }
 }

@@ -304,6 +304,85 @@ Unverified without Xcode, CocoaPods, an Apple developer account, or a device:
 - The app target deployment target is 16.4 while the pod declares iOS 17.0; CocoaPods may warn or
   raise it during `pod install`, which was not observed here.
 
+### Part 3 evidence (2026-11-06)
+
+Commands run from the repo root on `feat/dyt-010-native-recording-controls`.
+
+- Upstream hash. The pristine `node_modules/expo-audio` at `57.0.5` hashes to
+  `519ca27105582a3393d7354e472948f26626440571b2c4f9e42bb18be317cd2d`. That value is committed in
+  `modules/recording-controls/plugin/expected-audio-service.sha256`.
+- Hash guard pass. `assertAudioServiceSource(pristineSource, committedHash)` exited 0 and printed
+  `PASS: pristine upstream matches 519ca27105582a3393d7354e472948f26626440571b2c4f9e42bb18be317cd2d`.
+- Hash guard fail. `assertAudioServiceSource(patchedSource, "0" x 64)` threw
+  `expo-audio AudioRecordingService.kt hash mismatch: expected 0000000000000000000000000000000000000000000000000000000000000000, got bedddbf1bd4a3deb63cb319cda738857abdae95733f3497499e98e6a298121c6`.
+- Independent hash confirmation. `npm pack expo-audio@57.0.5` extracted from the published tarball
+  hashes the same service file to
+  `519ca27105582a3393d7354e472948f26626440571b2c4f9e42bb18be317cd2d`. `diff -u` against the patch
+  shows only the intended `buildNotification()` changes: the Pause/Stop broadcast actions, the
+  title/text, and `VISIBILITY_PUBLIC`.
+- Patch copy. `copyPatchedService(process.cwd())` exited 0; `cmp` showed the upstream service now
+  matches `modules/recording-controls/android/patch/AudioRecordingService.kt`. `git diff --stat`
+  showed only the five modified tracked files (`.eslintrc.cjs`, `app.json`,
+  `expo-module.config.json`, `package-lock.json`, `package.json`); `node_modules` is ignored and
+  absent from `git status`.
+- Patched-file proof. The upstream file now contains `setContentTitle("Daytale")`,
+  `setContentText("Recording your voice journal")`, the `"Pause"` action, `VISIBILITY_PUBLIC`, and
+  two `setClassName(packageName, "expo.modules.recordingcontrols.RecordingActionReceiver")`
+  broadcasts with request codes 2101 and 2102. The `ACTION_STOP_RECORDING` handler and
+  `stopRecordingAndService()` remain for the engine's JS stop path; the notification no longer calls
+  `stopRecording()`.
+- Prebuild. `npx expo prebuild -p android --no-install --clean` exited 0. The only messages were the
+  known `ios.appleTeamId` warning and the `expo-system-ui` hint. It generated
+  `android/app/src/main/AndroidManifest.xml` (3045 bytes). Prebuild rewrote the `package.json`
+  `android`/`ios` scripts to `expo run:*`; both were reverted to `expo start:*`.
+- Module link. `npx expo-modules-autolinking resolve --platform android` resolved
+  `packageName: 'recording-controls'`, `sourceDir: '.../modules/recording-controls/android'`, and
+  `classifier: 'expo.modules.recordingcontrols.RecordingControlsModule'`. `android/settings.gradle`
+  calls `expoAutolinking.useExpoModules()`.
+- Cleanup. `rm -rf ios android && test ! -d ios && test ! -d android` exited 0.
+- `npx tsc --noEmit` exited 0. `npm run check:docs` passed (10 Markdown files).
+  `npx prettier --check "modules/recording-controls/**/*.{js,cjs,ts}"` passed.
+  `npx eslint modules/recording-controls` exited 0. `npm run format` and `npm run lint` exited 0.
+  `npm ci --dry-run --ignore-scripts` exited 0, so the `package-lock.json` root spec matches the
+  exact pin.
+- Existing controls suite: `npx jest __tests__/recording/controls --runInBand` passed 5 suites and
+  94 tests.
+
+Deviations that are implementation details, not design changes:
+
+- The patched service cannot compile a direct `RecordingActionReceiver::class.java` reference:
+  expo-audio is a separate Gradle library and must not depend on the app module. It uses
+  `Intent().setClassName(packageName, "expo.modules.recordingcontrols.RecordingActionReceiver")`,
+  which targets the same class at runtime.
+- `RecordingNotifications` cannot compile a direct `MainActivity` reference for the same reason. The
+  resume `PendingIntent.getActivity` uses `packageManager.getLaunchIntentForPackage`, which resolves
+  the generated `MainActivity`, then adds `daytale.recordingAction=resume`,
+  `FLAG_ACTIVITY_SINGLE_TOP`, and `FLAG_ACTIVITY_NEW_TASK`.
+- `copyPatchedService` returns early when the upstream file already equals the patch, so a second
+  prebuild on the same `node_modules` does not fail the hash guard. Any other source must match the
+  committed hash.
+- `isLiveActivitySupported` is a synchronous `Function` returning `false`, matching the Part 1
+  TypeScript signature and the iOS module; the Part 3 sketch's `AsyncFunction` would return a
+  Promise on Android.
+- `package-lock.json`'s root `expo-audio` spec was updated from `~57.0.5` to `57.0.5` so `npm ci`
+  stays in sync with the exact pin. No resolved version changed.
+
+Unverified without a Java runtime, Android SDK, or `kotlinc`:
+
+- No Kotlin compilation, Gradle build, or assembled dev build was performed. `java -version` fails,
+  `command -v kotlinc` and `command -v gradle` are empty, `ANDROID_HOME`/`ANDROID_SDK_ROOT` are
+  unset, and no Android SDK directory exists. Kotlin compilation is unverified.
+- The merged manifest (with `expo.modules.recordingcontrols.RecordingActionReceiver`) was not
+  produced; that requires a Gradle build. Only the checked-in library manifest and the prebuild app
+  manifest were inspected.
+- The recording notification's Pause/Stop actions, the paused notification (id 2002), Resume opening
+  the app, process-death behavior, lock-screen visibility, and `POST_NOTIFICATIONS` denial are all
+  unverified. D4, D5, D9, and D10 remain open.
+- Whether `onNewIntent` refreshes `currentActivity.intent` for `consumePendingResume` (Blockers item
+  9) and whether the foreground service survives process death (Blockers item 14) remain open.
+- The version-mismatch throw was not exercised with a second installed expo-audio version; the
+  exact pin and hash guard are the only upgrade checks run here.
+
 ## Definition of Done
 
 Automated half:
