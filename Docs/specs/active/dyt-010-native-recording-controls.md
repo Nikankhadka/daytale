@@ -1031,3 +1031,140 @@ ledger when the spec is accepted:
 > content-free intent record drained into recordingHost.engine's idempotent pause/resume/stop. Part 0
 > is a hard gate on @bacons/apple-targets@5.0.0 and SDK 57 prebuild. The physical-device matrix is
 > still required before Verified.
+
+## Part 0 evidence (2026-11-06)
+
+Status: PASS. iOS prebuild generated the widget target, the App Group entitlement landed on the app
+target and the widget target, and the Android prebuild still exits 0. `ios.appleTeamId` was
+intentionally omitted for this spike and is still required before an EAS build.
+
+Environment: macOS, Node v22.22.3, npm 10.9.8. Xcode is not installed on this machine
+(`xcode-select -p` is `/Library/Developer/CommandLineTools`), so `xcodebuild -list` could not run;
+CocoaPods is also absent. That is an environment limitation, not a spec failure. The target list was
+read from the generated `project.pbxproj` instead.
+
+Installed versions:
+
+```text
+$ npm ls @bacons/apple-targets @expo/prebuild-config --all
+daytale@0.1.0 /Users/nikankhadka/projects/daytale
+├─┬ @bacons/apple-targets@5.0.0
+│ └── @expo/prebuild-config@55.0.22
+└─┬ expo@57.0.25
+  └─┬ @expo/cli@57.0.27
+    └── @expo/prebuild-config@57.0.16
+exit 0
+```
+
+`@bacons/apple-targets` resolved exactly `5.0.0`. npm installed a duplicate
+`@expo/prebuild-config`: `55.0.22` nested under the plugin and `57.0.16` under `@expo/cli`. The
+plugin uses its own copy.
+
+iOS prebuild:
+
+```text
+$ npx expo prebuild -p ios --no-install --clean
+[bacons/apple-targets] Expo config is missing required ios.appleTeamId property. Find this in Xcode and add to the Expo Config to correct. iOS builds may fail until this is corrected.
+- Creating native directory (./ios)
+✔ Created native directory
+- Updating package.json
+✔ Updated package.json
+- Running prebuild
+✔ Finished prebuild
+exit 0
+```
+
+Generated paths (`find ios -maxdepth 4 -name '*.xcodeproj' -o -maxdepth 4 -name '*.entitlements' -o -maxdepth 4 -name 'Info.plist'`, exit 0):
+
+```text
+ios/.targets/recordingactivity/generated.entitlements
+ios/Daytale.xcodeproj
+ios/Daytale/Daytale.entitlements
+ios/Daytale/Info.plist
+```
+
+Target list. `xcodebuild -list -project ios/Daytale.xcodeproj` exited 1 with
+`xcode-select: error: tool 'xcodebuild' requires Xcode, but active developer directory
+'/Library/Developer/CommandLineTools' is a command line tools instance`. The same list read from
+`ios/Daytale.xcodeproj/project.pbxproj`:
+
+```text
+PBXNativeTarget "Daytale"            com.apple.product-type.application
+PBXNativeTarget "recordingactivity"  com.apple.product-type.app-extension
+```
+
+The widget target is named `recordingactivity` and carries
+`fileSystemSynchronizedGroups = (recording-activity, _shared)`, so the widget Swift and the shared
+attributes compile into it. The app target also includes the `_shared` group.
+
+Entitlements (`find ios -name '*.entitlements' -maxdepth 5 -print -exec plutil -p {} \;`, exit 0):
+
+```text
+ios/.targets/recordingactivity/generated.entitlements
+{
+  "com.apple.security.application-groups" => [
+    0 => "group.com.daytale.app"
+  ]
+}
+ios/Daytale/Daytale.entitlements
+{
+  "aps-environment" => "development"
+  "com.apple.security.application-groups" => [
+    0 => "group.com.daytale.app"
+  ]
+}
+```
+
+The app target sets `CODE_SIGN_ENTITLEMENTS = Daytale/Daytale.entitlements`; the widget target sets
+`CODE_SIGN_ENTITLEMENTS = .targets/recordingactivity/generated.entitlements`. Both contain
+`group.com.daytale.app`.
+
+Info.plist. The app target's plist is `ios/Daytale/Info.plist`:
+
+```text
+$ plutil -p ios/Daytale/Info.plist | grep -i NSSupportsLiveActivities
+  "NSSupportsLiveActivities" => true
+exit 0
+```
+
+The generated widget plist is `targets/recording-activity/Info.plist` with
+`NSExtensionPointIdentifier = com.apple.widgetkit-extension`.
+
+Android prebuild:
+
+```text
+$ npx expo prebuild -p android --no-install
+[bacons/apple-targets] Expo config is missing required ios.appleTeamId property. Find this in Xcode and add to the Expo Config to correct. iOS builds may fail until this is corrected.
+- Creating native directory (./android)
+✔ Created native directory
+- Updating package.json
+✔ Updated package.json | no changes
+- Running prebuild
+» android: userInterfaceStyle: Install expo-system-ui in your project to enable this feature.
+- Running prebuild
+✔ Finished prebuild
+exit 0
+```
+
+The plugin is iOS-only but runs its config step on every prebuild, so the same `appleTeamId` warning
+appears on Android. It did not break the Android path.
+
+Cleanup:
+
+```text
+$ rm -rf ios android && test ! -d ios && test ! -d android
+exit 0
+```
+
+Neither generated directory is present or committed. `targets/`, `app.json`, `package.json`, and
+`package-lock.json` are kept.
+
+Deviation: `ios.appleTeamId` is omitted. The Part 0 contract asks for it and says the part stops
+without it; the supervisor authorized this one omission because the team id affects signing only, not
+target generation. No placeholder was added. The plugin emits the warning above and prebuild still
+exits 0. The team id is still required before an EAS build and before D1/D7.
+
+Risk carried forward: the plugin is the SDK 55 line (`@expo/prebuild-config@55.0.22`) while the app
+runs SDK 57. Generation succeeded here, but the generated project uses `objectVersion = 54` with
+`PBXFileSystemSynchronizedRootGroup` (an Xcode 16 construct). Compilation and signing are unverified
+because Xcode and CocoaPods are not installed on this machine; D1 covers them.

@@ -32,14 +32,21 @@
       ],
       "expo-notifications",
       "expo-font",
-      "@siteed/sherpa-onnx.rn"
+      "@siteed/sherpa-onnx.rn",
+      "@bacons/apple-targets"
     ],
     "experiments": {
       "typedRoutes": true
     },
     "ios": {
       "supportsTablet": true,
-      "bundleIdentifier": "com.daytale.app"
+      "bundleIdentifier": "com.daytale.app",
+      "infoPlist": {
+        "NSSupportsLiveActivities": true
+      },
+      "entitlements": {
+        "com.apple.security.application-groups": ["group.com.daytale.app"]
+      }
     },
     "android": {
       "package": "com.daytale.app",
