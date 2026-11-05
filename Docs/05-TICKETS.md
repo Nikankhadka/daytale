@@ -12,7 +12,7 @@ Status values are `Not Started`, `In Progress`, `Blocked`, `Ready for Review`, a
 | DYT-006 | Production recording and recovery | Ready for Review | DYT-002, DYT-003, DYT-005 |
 | DYT-007 | Local transcription | Ready for Review | DYT-005, DYT-006 |
 | DYT-008 | Cloud Run and Gemini journal API | Ready for Review | DYT-001 |
-| DYT-009 | Processing, clarification, and journals | Not Started | DYT-003, DYT-007, DYT-008 |
+| DYT-009 | Processing, clarification, and journals | Ready for Review | DYT-003, DYT-007, DYT-008 |
 | DYT-010 | Native recording controls | Not Started | DYT-006 |
 | DYT-011 | Accessibility, privacy, and visual quality | Not Started | DYT-004, DYT-009, DYT-010 |
 | DYT-012 | Acceptance matrix and release sign-off | Not Started | DYT-011 |
@@ -169,7 +169,7 @@ Implementation evidence (2026-10-01): `service/journal-api/` is a stateless Node
 
 ## DYT-009 - Processing, clarification, and journals
 
-Status: `In Progress`
+Status: `Ready for Review`
 Dependencies: DYT-003, DYT-007, DYT-008
 
 Outcome: Connect local transcription to analysis, time-based clarification, generation, local journal CRUD, native share, and lifecycle deletion.
@@ -183,7 +183,7 @@ Definition of Done: a full daily loop works offline where possible, generated co
 Automated verification: orchestration, question count, answer/skip, CRUD, share payload, generation validation, retry, and deletion tests.
 Physical-device verification: end-to-end daily loop on both platforms, including offline queue and network recovery.
 
-Implementation evidence (2026-10-02): the Clarification, Processing, Journal Ready, Journal list/detail/edit, empty state, and inline deletion screens are implemented against local Zustand/storage state, including the neutral clarification time card, staged processing rows, native share, and journal-only deletion. The mobile journal API client (App Check token, response re-validation, retry until `retryUntil`) and the transcribe/analyze/generate orchestrator remain outstanding, so the loop does not yet generate a journal end to end; that work stays the DYT-009 device blocker.
+Implementation evidence (2026-11-05): the mobile DYT-009 client is implemented on `feat/dyt-009-journal-client` through commits 86d01fc, 11df669, and 579daed, plus the 1426f00 orchestrator merge; the hardening commit 50dbcee follows. `src/services/appCheck.ts` is a dev-only App Check token port that fails closed. `src/services/journalApi.ts` sends the analyze and generate requests, re-validates 200 responses with the shared contract, enforces the 1 MiB limit, times out after 60 seconds, never logs the token or body, and maps statuses and transport failures to typed results (401/403 `app-check-rejected`, 429 `rate-limited`, other 4xx `invalid-request`, 413 `payload-too-large`, 408 `timeout`, network `network`, 5xx `upstream-unavailable`, 3xx `invalid-response`). `src/features/processing/host.ts` drives transcribe, analyze, clarification, and generate, retries transient failures at 30 s, 60 s, 120 s, and so on up to 15 minutes, bounded by `retryUntil`, and uses a single-flight reconcile with a 10-minute stale bound. `useProcessingReconciliation` resumes work on launch, every minute, and on foreground, and the tabs layout mounts it. Today batches clarification answers into one submission with a 300 ms double-tap cooldown and publishes the generating session. `npm run check` passes 51 test suites with 555 tests, 9 documentation files, 15 routes, and 107 journal API service tests; the targeted services/processing/today set passes 7 suites with 132 tests. Independent review returned PASS WITH RISKS, and every reported risk was fixed. Known limits: production App Check through RNFB is not wired and the provider fails closed; oversized requests report `payload-too-large` with no splitting and the failed surface stays generic; the physical-device end-to-end and offline gate remains pending.
 
 ## DYT-010 - Native recording controls
 

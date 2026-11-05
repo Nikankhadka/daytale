@@ -4,22 +4,22 @@ This file records current delivery evidence and decisions. It does not repeat re
 
 ## Current milestone
 
-Canonical documentation baseline complete. DYT-001 repository foundation checks are green locally, but its iOS and Android development-client gate remains outstanding. DYT-002 implementation is in progress with its physical-device gate pending. DYT-003 implementation is in progress with automated persistence and cleanup checks green; its physical-device gate remains pending. DYT-004A implementation is in progress through the Voice Setup boundary, with its physical accessibility and visual gate pending. DYT-005 voice enrollment, DYT-006 production recording, and DYT-007 local transcription are ready for review with their physical-device gates pending. DYT-008 journal API is ready for review with its Cloud Run deployment and device gate pending.
+Canonical documentation baseline complete. DYT-001 repository foundation checks are green locally, but its iOS and Android development-client gate remains outstanding. DYT-002 implementation is in progress with its physical-device gate pending. DYT-003 implementation is in progress with automated persistence and cleanup checks green; its physical-device gate remains pending. DYT-004A implementation is in progress through the Voice Setup boundary, with its physical accessibility and visual gate pending. DYT-005 voice enrollment, DYT-006 production recording, and DYT-007 local transcription are ready for review with their physical-device gates pending. DYT-008 journal API is ready for review with its Cloud Run deployment and device gate pending. DYT-009 processing, clarification, and journals is ready for review with its production App Check and physical-device gates pending.
 
 2026-10-02: DYT-004 prototype-faithful UI shell is rebuilt from the prototype: onboarding copy and layout, a settings hub with schedule/languages/privacy sub-screens, shared UI primitives, and the nested journal/settings route trees. DYT-009 screens (clarification, processing stages, journal-ready, journal list/detail/edit) are built against local Zustand/storage state; the mobile journal API client and generation orchestrator remain the outstanding DYT-009 backend work.
 
 ## Ticket status
 
 Completed: none.
-Active: DYT-001, DYT-002, DYT-003, DYT-004, DYT-009.
+Active: DYT-001, DYT-002, DYT-003, DYT-004.
 Blocked: none.
-Ready for review: DYT-005, DYT-006, DYT-007, DYT-008.
+Ready for review: DYT-005, DYT-006, DYT-007, DYT-008, DYT-009.
 Verified: none.
 Not started: DYT-010 through DYT-012.
 
 ## Blockers and prerequisites
 
-There is no repository implementation blocker. DYT-001 and DYT-002 still need Apple and Google developer access plus physical devices for development-build and background-recording verification. DYT-008 deployment needs the Google Cloud/Firebase project, App Check registration, and a paid Gemini key stored only in Secret Manager.
+There is no repository implementation blocker. DYT-001 and DYT-002 still need Apple and Google developer access plus physical devices for development-build and background-recording verification. DYT-008 deployment needs the Google Cloud/Firebase project, App Check registration, and a paid Gemini key stored only in Secret Manager. DYT-009 production App Check needs the Firebase project plus RNFB or a supported bridge, and its physical-device end-to-end, offline recovery, and device App Check gates remain pending.
 
 ## Latest verified build
 
@@ -40,6 +40,8 @@ Expo SDK 57 repository foundation, DYT-002 recording-spike configuration, DYT-00
 2026-10-02: DYT-004/DYT-009 prototype-faithful UI rebuild `npm run check` passed formatting, lint, TypeScript, 42 test suites with 460 tests, documentation links/placeholders, and route smoke checks for the 15 canonical routes. The journal API service check passed with 107 tests. Web screenshot comparison against the prototype, the mobile journal API client and generation orchestrator, the native recording surfaces, and all physical-device gates remain pending.
 
 2026-10-02: HIG type scale, 8pt spacing normalization, and flow-bug fixes `npm run check` passed formatting, lint, TypeScript, 45 test suites with 473 tests, documentation links/placeholders, the 15 canonical routes, and the journal API service check with 107 tests. `npx expo export --platform web` passed. The flow fixes add tests for journal save/delete failures, settings save/open-settings feedback, last-language selection, the deferred voice-setup path, the null-repository voice screen, the journal-ready handoff, and the shared Chip/Select controls. Interactive web click-through, screenshot comparison against the prototype, and all physical-device gates remain pending.
+
+2026-11-05: DYT-009 mobile client `npm run check` passed formatting, lint, TypeScript, 51 test suites with 555 tests, documentation links/placeholders, the 15 canonical routes, and the journal API service check with 107 tests. The targeted `npx jest __tests__/services __tests__/processing __tests__/features/today-screen.test.tsx --runInBand` passed 7 suites with 132 tests. The work is on `feat/dyt-009-journal-client` at commits 86d01fc, 11df669, 579daed, and 50dbcee, on top of the 1426f00 orchestrator merge. Independent review returned PASS WITH RISKS; the double-tap, overlapping-reconcile, stale-hang, status-code, and test-gap findings were fixed before this record. App Check token handling, request preflight, response re-validation, retry backoff, the tabs reconciliation hook, and the Today clarification batch are covered by fake clients and fixtures; no live App Check, Gemini, Cloud Run, or physical-device end-to-end run has happened.
 
 ## Dated decisions
 
