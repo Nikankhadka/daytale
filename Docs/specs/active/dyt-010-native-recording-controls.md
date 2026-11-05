@@ -1321,3 +1321,94 @@ successful command, the missing terminal-status matrix cases, the iOS intent eve
 and the `targets/**/*.js` format glob. Residual risks are recorded in Blockers: ActivityKit type
 identity across the pod, app, and widget targets; the absent `ios.appleTeamId`; Swift compilation
 and signing; Kotlin compilation; and every device-gate item D1-D10.
+
+### iOS compile evidence (2026-11-06)
+
+Status: BLOCKED. No compile, link, pod install, or simulator launch was performed on this machine.
+The toolchain gate failed before `pod install` and `xcodebuild` could run.
+
+Toolchain:
+
+- `xcode-select -p` -> `/Applications/Xcode.app/Contents/Developer`. `xcodebuild -version` ->
+  `Xcode 27.2` / `Build version 27B52`.
+- The Xcode license is not accepted. `defaults read com.apple.dt.Xcode
+  IDEXcodeVersionForAgreedToGMLicense` is absent, and `xcrun simctl list runtimes`,
+  `xcodebuild -showsdks`, `xcodebuild -list`, and the simulator build all exit 69 with
+  `You have not agreed to the Xcode license agreements. Please run 'sudo xcodebuild -license'`.
+  Accepting it needs an interactive `sudo` password that this session does not have.
+- No iOS simulator runtime is installed: `/Library/Developer/CoreSimulator` does not exist and
+  `~/Library/Developer/CoreSimulator/Profiles/Runtimes` does not exist. Only
+  `iPhoneSimulator27.2.sdk` is present. No device is listable, so no boot, install, launch, or
+  screenshot was attempted.
+
+CocoaPods:
+
+- `pod --version` -> `command not found`. `brew install cocoapods` exits 1 with
+  `Error: You have not agreed to the Xcode license`.
+- `gem install cocoapods --user-install` fails on the native `nkf` extension:
+  `mkmf.rb can't find header files for ruby at
+  /System/Library/Frameworks/Ruby.framework/Versions/2.6/usr/lib/ruby/include/ruby.h`. The system
+  Ruby 2.6.10 ships no development headers, so no native gem can build. `sudo gem install` would
+  still hit the same missing headers.
+- `npx expo prebuild -p ios` exits 0 but reports
+  `⚠️ Unable to install the CocoaPods CLI` (gem and Homebrew both fail for the reasons above). No
+  `Pods/` directory and no `ios/Daytale.xcworkspace` are produced, so the build command cannot
+  resolve its workspace. `npx expo prebuild -p ios --no-install --clean` exits 0 and is the only
+  prebuild that completes.
+
+Podspec source paths (checked with Ruby `Dir.glob` from `modules/recording-controls/ios/`):
+
+- `../../../targets/_shared/RecordingActivityAttributes.swift` -> resolves to one file.
+- `../../../targets/_shared/RecordingIntentQueue.swift` -> resolves to one file.
+- The spec's literal `../../targets/_shared/...` -> resolves to `[]`, confirming the Part 2 note.
+- The exact `../../../` form is still unverified inside CocoaPods itself, because `pod install`
+  never ran.
+
+Deployment target mismatch (fixed):
+
+- Before this slice the generated Podfile had `platform :ios, '16.4'` (the Expo default, since
+  `Podfile.properties.json` carried no `ios.deploymentTarget`) while the pod declares
+  `s.platforms = { :ios => '17.0' }`. CocoaPods rejects that combination outright
+  (`[!] The platform of the target ... is not compatible with ... which has a minimum requirement
+  of iOS 17.0`), so `pod install` would have failed after the license was fixed.
+- `app.json` now sets `ios.deploymentTarget = "17.0"`, which is a first-class Expo SDK 57 key
+  (`@expo/config-plugins/build/ios/DeploymentTarget.js` writes both `IPHONEOS_DEPLOYMENT_TARGET` and
+  `ios.deploymentTarget` into `Podfile.properties.json`). It matches the documented platform,
+  "iOS 17 and later" (`Docs/02-MVP.md:12`), and adds no dependency.
+- Re-ran `npx expo prebuild -p ios --no-install --clean`: exit 0. The `Daytale` app target is now
+  `IPHONEOS_DEPLOYMENT_TARGET = 17.0` in both configurations, the `recordingactivity` extension
+  stays at 17.0, and `Podfile.properties.json` contains `"ios.deploymentTarget": "17.0"`, so the
+  generated Podfile resolves to `platform :ios, '17.0'`. The project-level default remains 16.4;
+  every native target overrides it and Xcode 27's floor is 15.0.
+
+Supplementary Swift type-check (not an `xcodebuild` build):
+
+- `swiftc` 6.4.2 was invoked directly, which bypasses the license gate, against the real
+  `iPhoneSimulator27.2.sdk`:
+  `swiftc -typecheck -sdk <SDK> -target arm64-apple-ios17.0-simulator -swift-version 5
+  targets/_shared/RecordingActivityAttributes.swift targets/_shared/RecordingIntentQueue.swift
+  targets/_shared/RecordingControlIntents.swift targets/recording-activity/RecordingActivityWidget.swift`
+  exited 0. This is a full type-check, not the Part 2 `-parse`, and it links against the real
+  ActivityKit, WidgetKit, SwiftUI, and AppIntents frameworks in the SDK.
+- `modules/recording-controls/ios/RecordingControlsModule.swift` could not be type-checked: it
+  imports `ExpoModulesCore`, which only exists after `pod install`. Its API usage was instead
+  checked against the installed `node_modules/expo-modules-core/ios` sources: `Field`/`FieldOption`
+  with `.required`, `Events`, `OnCreate`, `OnDestroy`, `sendEvent`, and `runOnQueue` all exist with
+  compatible signatures. That is a source inspection, not a compile.
+
+What is therefore still unproven:
+
+- No pod compiled; no `DaytaleRecordingControls` target exists. Blockers item 5 (ActivityKit type
+  identity across the pod, app, and widget targets) is untouched; it is a runtime property that no
+  compile can settle.
+- No app, widget, or extension target compiled or linked. No `Daytale.app` was produced, installed,
+  or launched. No screenshot, no process-liveness check, and no device log exist.
+- No signed build and no physical-device result is claimed. D1-D10 remain open.
+
+To unblock, in order:
+
+1. `sudo xcodebuild -license accept` (interactive).
+2. `xcodebuild -downloadPlatform iOS` (or install an iOS 17+ runtime in Xcode settings).
+3. Install CocoaPods 1.16.2+ with a Ruby that has headers, for example `brew install cocoapods`
+   after step 1.
+4. `npx expo prebuild -p ios`, then the simulator build, then the launch steps.
