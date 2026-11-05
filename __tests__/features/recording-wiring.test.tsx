@@ -1,6 +1,7 @@
 import { cleanup, render } from '@testing-library/react-native';
 
 import TabsLayout from '../../app/(tabs)/_layout';
+import { useRecordingControls } from '../../src/features/recording/controls';
 import { deleteAllAppData } from '../../src/features/preferences/deleteData';
 import { persistAppPreferences } from '../../src/features/preferences';
 import { cancelBreakEnd } from '../../src/features/recording/notifications';
@@ -43,6 +44,9 @@ jest.mock('../../src/features/recording/notifications', () => ({
 jest.mock('../../src/features/recording/useRecordingEngine', () => ({
   useRecordingReconciliation: jest.fn(),
   recordingHost: { engine: { abandon: jest.fn() } },
+}));
+jest.mock('../../src/features/recording/controls', () => ({
+  useRecordingControls: jest.fn(),
 }));
 
 describe('daily reminder follows saved preferences', () => {
@@ -138,6 +142,7 @@ describe('tabs layout', () => {
     await render(<TabsLayout />);
 
     expect(useRecordingReconciliation).toHaveBeenCalled();
+    expect(useRecordingControls).toHaveBeenCalledTimes(1);
     expect(mockRedirect).not.toHaveBeenCalled();
     expect(subscribeNotificationTaps).toHaveBeenCalledTimes(1);
 

@@ -3,6 +3,7 @@ import * as React from 'react';
 import type { ColorValue } from 'react-native';
 import Svg, { Circle, Path } from 'react-native-svg';
 
+import { useRecordingControls } from '../../src/features/recording/controls';
 import { subscribeNotificationTaps } from '../../src/features/recording/notifications';
 import { useRecordingReconciliation } from '../../src/features/recording/useRecordingEngine';
 import { useProcessingReconciliation } from '../../src/features/processing';
@@ -50,6 +51,7 @@ export default function TabsLayout() {
   const onboardingComplete = useSessionStore((state) => state.onboardingComplete);
   const { colors, fontRoles, spacing, typography } = useDaytaleTheme();
   const router = useRouter();
+  useRecordingControls();
   useRecordingReconciliation();
   useProcessingReconciliation();
   React.useEffect(

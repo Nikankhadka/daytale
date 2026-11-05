@@ -836,8 +836,8 @@ Status: Planned. Depends on Part 0 and Part 1.
 
   - `s.name = 'DaytaleRecordingControls'`, `s.platforms = { :ios => '17.0' }`,
     `s.static_framework = true`, `s.dependency 'ExpoModulesCore'`.
-  - `s.source_files = "**/*.{h,m,swift}", "../../targets/_shared/RecordingActivityAttributes.swift",
-    "../../targets/_shared/RecordingIntentQueue.swift"`.
+  - `s.source_files = "**/*.{h,m,swift}", "../../../targets/_shared/RecordingActivityAttributes.swift",
+    "../../../targets/_shared/RecordingIntentQueue.swift"`.
   - If CocoaPods rejects the relative paths, duplicate the two files into the module with identical
     content and record the build result. This is a packaging detail, not a second design.
 
