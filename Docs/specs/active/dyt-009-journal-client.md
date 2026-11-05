@@ -162,7 +162,7 @@ Append the local-dev App Check debug token key after `EXPO_PUBLIC_API_BASE_URL=`
 4. Generate happy path sends one POST to the exact generate URL and returns the validated response.
 5. Response re-validation drops an unsupported analyze event while the call still succeeds.
 6. A malformed generate output returns `invalid-response`.
-7. The status table maps `401, 403, 400, 415, 404, 413, 408, 429, 504, 503, 500` to the documented
+7. The status table maps `401, 403, 400, 415, 404, 413, 408, 429, 504, 503, 500, 302` to the documented
    codes and each call fetches once.
 8. A network rejection returns `network`; an internal timeout with a never-resolving fetch returns
    `timeout`.
@@ -190,21 +190,22 @@ Part 2 wired the client in and ran the full gate; the counts are in Evidence bel
 ## Evidence
 
 Independent review passed with risks. The final commit carries the review fixes: a 300 ms
-clarification cooldown for a rapid double-tap, a `reconciling` guard for overlapping intervals, the
-two missing failure codes in this spec, and the added coverage below.
+clarification cooldown for a rapid double-tap, a single-flight reconcile with a 10-minute stale
+bound for overlapping or hung passes, the two missing failure codes in this spec, and the added
+coverage below.
 
 Final `npm run check`:
 
 - format: all matched files pass Prettier.
 - lint: clean.
 - typecheck: `tsc --noEmit` clean.
-- tests: 51 suites, 554 tests passed.
+- tests: 51 suites, 555 tests passed.
 - docs: 9 Markdown files scanned, passed.
 - routes: 15 route files, passed.
 - service: 107 tests, 0 failed.
 
 Targeted: `npx jest __tests__/services __tests__/processing __tests__/features/today-screen.test.tsx --runInBand`
--> 7 suites, 131 tests passed.
+-> 7 suites, 132 tests passed.
 
 ## Definition of Done
 
@@ -244,6 +245,7 @@ Check. The persisted session is the offline queue; no second queue is added.
 ```ts
 export const RETRY_BASE_MS = 30_000;
 export const RETRY_CAP_MS = 900_000;
+export const RECONCILE_STALE_MS = 600_000;
 export function retryDelayMs(attempt: number): number; // min(30s * 2^attempt, 15m)
 
 export type ProcessingHostDependencies = {
@@ -277,6 +279,9 @@ export function createProcessingHost(dependencies: ProcessingHostDependencies): 
   `now >= nextAt`. It calls `retrySession(storage, id, uuid(), { now: () => now, uuid })`, then `kick`
   on `retried`, and clears the entry on `expired` or `rejected`. It never retries at or after
   `retryUntil`; expiry cleanup owns that session.
+- `reconcile` is single-flight: a concurrent tick is dropped, not queued. A pass older than
+  `RECONCILE_STALE_MS` (10 minutes) may be overlapped, so a hung native call cannot disable retries
+  until the app restarts.
 - `attach()` subscribes to the store, compares the previous `id` and `status`, and kicks only when the
   session becomes `transcribing`, `analyzing`, or `generating`. It kicks an already processing current
   session once on attach and returns the unsubscribe.
@@ -300,6 +305,8 @@ export function createProcessingHost(dependencies: ProcessingHostDependencies): 
 
 - `listOpenClarifications` still loads open questions. A `ClarificationAnswerInput[]` ref accumulates
   answers; answering drops any earlier entry with the same id and appends the new one.
+- A synchronous 300 ms cooldown (`canAnswer`/`answerUnlock` refs, timer cleared on unmount) drops a
+  rapid second tap so it cannot answer the next question with the previous tap's label.
 - Every answer but the last only advances `clarIndex`. The last answer calls
   `submitClarification({ storage }, session.id, batch)` once. `submitted` clears the ref, resets
   `clarIndex`, and publishes `result.session`, which the tabs hook picks up. `rejected` shows the

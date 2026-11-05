@@ -10,6 +10,8 @@ import type { GenerationDependencies, TranscribeDependency } from './orchestrato
 
 export const RETRY_BASE_MS = 30_000;
 export const RETRY_CAP_MS = 900_000;
+/** A reconcile pass older than this may be overlapped, so a hung native call cannot disable retries. */
+export const RECONCILE_STALE_MS = 10 * 60_000;
 
 /** Exponential backoff with no jitter: 30 s, 60 s, 120 s, ... capped at 15 minutes. */
 export function retryDelayMs(attempt: number): number {
@@ -63,6 +65,7 @@ export function createProcessingHost(dependencies: ProcessingHostDependencies): 
   const inFlight = new Set<string>();
   const retries = new Map<string, RetryState>();
   let reconciling = false;
+  let reconcileStartedAt = 0;
 
   const pipeline = (storage: StorageBootstrapResult): GenerationDependencies => {
     const client = dependencies.getClient();
@@ -159,8 +162,11 @@ export function createProcessingHost(dependencies: ProcessingHostDependencies): 
   };
 
   const reconcile = async (at: Date): Promise<void> => {
-    if (reconciling) return;
+    // A concurrent tick is dropped, not queued. A pass older than the stale bound may overlap, so a
+    // hung native call cannot disable retries until the app restarts.
+    if (reconciling && at.getTime() - reconcileStartedAt < RECONCILE_STALE_MS) return;
     reconciling = true;
+    reconcileStartedAt = at.getTime();
     try {
       const storage = dependencies.getStorage();
       if (storage === undefined) return;

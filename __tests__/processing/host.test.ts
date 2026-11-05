@@ -1,6 +1,7 @@
 import { createDefaultAppPreferences } from '../../src/features/preferences';
 import {
   createProcessingHost,
+  RECONCILE_STALE_MS,
   RETRY_BASE_MS,
   RETRY_CAP_MS,
   retryDelayMs,
@@ -230,6 +231,31 @@ describe('processing host', () => {
 
     expect(listSpy).toHaveBeenCalledTimes(1);
     expect(analyze).toHaveBeenCalledTimes(1);
+
+    // The guard resets after a normal pass, so the next tick reconciles again.
+    await host.reconcile(new Date(NOW.getTime() + 1));
+    expect(listSpy).toHaveBeenCalledTimes(2);
+  });
+
+  it('overlaps a reconcile pass that has hung past the stale bound', async () => {
+    const fixture = await createProcessingFixture({
+      analysis: analyzedResponse({ questions: [analyzedQuestion()] }),
+    });
+    const { host } = createHost(fixture);
+    const listSpy = jest
+      .spyOn(fixture.repositories.recordingSessions, 'list')
+      .mockImplementationOnce(() => new Promise<RecordingSession[]>(() => undefined));
+    const at = new Date(NOW.getTime());
+
+    void host.reconcile(at);
+    await host.reconcile(new Date(at.getTime() + RECONCILE_STALE_MS - 1));
+    expect(listSpy).toHaveBeenCalledTimes(1);
+    expect(fixture.transcribeCalls).toHaveLength(0);
+
+    await host.reconcile(new Date(at.getTime() + RECONCILE_STALE_MS));
+    expect(listSpy).toHaveBeenCalledTimes(2);
+    expect(fixture.transcribeCalls).toHaveLength(1);
+    expect((await fixture.session()).status).toBe('awaiting clarification');
   });
 
   it('retries a retryable failed session on the first reconcile of a fresh host', async () => {

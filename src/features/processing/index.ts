@@ -1,6 +1,7 @@
 export { createDefaultTranscribe } from './defaults';
 export {
   createProcessingHost,
+  RECONCILE_STALE_MS,
   RETRY_BASE_MS,
   RETRY_CAP_MS,
   retryDelayMs,

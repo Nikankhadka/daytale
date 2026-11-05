@@ -92,7 +92,7 @@ function TodayContent() {
   const [questions, setQuestions] = React.useState<ClarificationQuestion[]>([]);
   const [clarIndex, setClarIndex] = React.useState(0);
   const clarAnswers = React.useRef<ClarificationAnswerInput[]>([]);
-  // A rapid second tap can land on the next question; a short synchronous cooldown swallows it.
+  // A rapid second tap can land on the next question; a short cooldown swallows it.
   const answerUnlock = React.useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
   const canAnswer = React.useRef(true);
 

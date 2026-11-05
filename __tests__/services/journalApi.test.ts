@@ -354,14 +354,17 @@ describe('journal API client', () => {
     expect(calls[0]!.init.headers['x-firebase-appcheck']).toBe('fresh-token');
   });
 
-  it('requests a fresh token for every call', async () => {
-    const { fetchImpl } = recordingFetch(okResponse(ANALYZE_RESPONSE));
-    const getToken = tokenProvider();
+  it('requests and sends a fresh token for every call', async () => {
+    const tokens = ['first-token', 'second-token'];
+    const getToken = jest.fn(async () => tokens.shift() ?? 'extra-token');
+    const { calls, fetchImpl } = recordingFetch(okResponse(ANALYZE_RESPONSE));
     const client = createJournalApiClient({ baseUrl: BASE_URL, getToken, fetch: fetchImpl });
 
     await client.analyze(ANALYZE_REQUEST);
     await client.analyze(ANALYZE_REQUEST);
 
     expect(getToken).toHaveBeenCalledTimes(2);
+    expect(calls[0]!.init.headers['x-firebase-appcheck']).toBe('first-token');
+    expect(calls[1]!.init.headers['x-firebase-appcheck']).toBe('second-token');
   });
 });
