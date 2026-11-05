@@ -1,9 +1,9 @@
-# DYT-009 Part 1 - App Check token port and journal API client
+# DYT-009 - Journal API client and processing wiring
 
 Status: Accepted - device gate pending
 Ticket: [DYT-009](../../05-TICKETS.md#dyt-009---processing-clarification-and-journals)
 Branch: `feat/dyt-009-journal-client`
-Owners: mobile client slice; the processing host, Today screen states, and the processing hook are Part 2.
+Owners: mobile journal API client, processing host, and Today clarification wiring.
 
 ## Problem
 
