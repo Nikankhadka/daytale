@@ -92,6 +92,18 @@ function TodayContent() {
   const [questions, setQuestions] = React.useState<ClarificationQuestion[]>([]);
   const [clarIndex, setClarIndex] = React.useState(0);
   const clarAnswers = React.useRef<ClarificationAnswerInput[]>([]);
+  // A rapid second tap can land on the next question; a short synchronous cooldown swallows it.
+  const answerUnlock = React.useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
+  const canAnswer = React.useRef(true);
+
+  React.useEffect(
+    () => () => {
+      if (answerUnlock.current !== undefined) {
+        clearTimeout(answerUnlock.current);
+      }
+    },
+    [],
+  );
 
   React.useEffect(() => {
     if (kind !== 'clarification' || !session) {
@@ -222,6 +234,16 @@ function TodayContent() {
       setProblem(PROBLEM);
       return;
     }
+    if (!canAnswer.current) {
+      return;
+    }
+    canAnswer.current = false;
+    if (answerUnlock.current !== undefined) {
+      clearTimeout(answerUnlock.current);
+    }
+    answerUnlock.current = setTimeout(() => {
+      canAnswer.current = true;
+    }, 300);
     // Replacing the current question's entry keeps a repeated tap after a rejection idempotent.
     const batch: ClarificationAnswerInput[] = [
       ...clarAnswers.current.filter((entry) => entry.questionId !== question.id),

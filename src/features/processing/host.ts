@@ -62,6 +62,7 @@ export function createProcessingHost(dependencies: ProcessingHostDependencies): 
     ((session: RecordingSession) => useSessionStore.getState().setRecordingSession(session));
   const inFlight = new Set<string>();
   const retries = new Map<string, RetryState>();
+  let reconciling = false;
 
   const pipeline = (storage: StorageBootstrapResult): GenerationDependencies => {
     const client = dependencies.getClient();
@@ -158,6 +159,8 @@ export function createProcessingHost(dependencies: ProcessingHostDependencies): 
   };
 
   const reconcile = async (at: Date): Promise<void> => {
+    if (reconciling) return;
+    reconciling = true;
     try {
       const storage = dependencies.getStorage();
       if (storage === undefined) return;
@@ -203,6 +206,8 @@ export function createProcessingHost(dependencies: ProcessingHostDependencies): 
       }
     } catch {
       // Leave the persisted state untouched; the next reconcile picks it up.
+    } finally {
+      reconciling = false;
     }
   };
 

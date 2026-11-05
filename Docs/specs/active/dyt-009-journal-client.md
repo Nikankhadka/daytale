@@ -1,6 +1,6 @@
 # DYT-009 Part 1 - App Check token port and journal API client
 
-Status: Active - Part 1 built, Part 2 in progress
+Status: Accepted - device gate pending
 Ticket: [DYT-009](../../05-TICKETS.md#dyt-009---processing-clarification-and-journals)
 Branch: `feat/dyt-009-journal-client`
 Owners: mobile client slice; the processing host, Today screen states, and the processing hook are Part 2.
@@ -71,10 +71,12 @@ structural types fit without a dependency edge.
 export type JournalApiFailureCode =
   | 'api-unconfigured'
   | 'app-check-unconfigured'
+  | 'app-check-rejected'
   | 'invalid-request'
   | 'payload-too-large'
   | 'invalid-response'
   | 'upstream-unavailable'
+  | 'rate-limited'
   | 'timeout'
   | 'network'
   | 'aborted';
@@ -183,13 +185,26 @@ npx prettier --check "src/services/**/*.ts" "__tests__/services/**/*.ts" ".env.e
 npm run check:docs
 ```
 
-The full `npm run check` runs after Part 2 wires the client in.
+Part 2 wired the client in and ran the full gate; the counts are in Evidence below.
 
 ## Evidence
 
-The supervisor records acceptance. Expected evidence for this slice: the four commands above pass,
-the new spec scans cleanly, and the diff adds no dependency, no `console` call, and no
-`src/services` -> `src/features` import.
+Independent review passed with risks. The final commit carries the review fixes: a 300 ms
+clarification cooldown for a rapid double-tap, a `reconciling` guard for overlapping intervals, the
+two missing failure codes in this spec, and the added coverage below.
+
+Final `npm run check`:
+
+- format: all matched files pass Prettier.
+- lint: clean.
+- typecheck: `tsc --noEmit` clean.
+- tests: 51 suites, 554 tests passed.
+- docs: 9 Markdown files scanned, passed.
+- routes: 15 route files, passed.
+- service: 107 tests, 0 failed.
+
+Targeted: `npx jest __tests__/services __tests__/processing __tests__/features/today-screen.test.tsx --runInBand`
+-> 7 suites, 131 tests passed.
 
 ## Definition of Done
 
@@ -201,14 +216,18 @@ the new spec scans cleanly, and the diff adds no dependency, no `console` call, 
 
 ## Blockers and follow-ups
 
-- Production App Check token acquisition is not implemented; the provider fails closed outside dev.
-- Part 2 owns the processing host, the Today screen state changes, and the hook that assigns the
-  client to the orchestrator's `analyze` and `generate` dependencies.
+- Device gate: the full loop (recording -> clarification -> generation -> journal) is unverified on
+  iOS and Android with real App Check and Gemini.
+- Production App Check/RNFB token acquisition (or a supported Firebase bridge) is not implemented;
+  the provider fails closed outside dev.
+- Non-retryable error-specific UI and next-retry-window copy for failures such as 413,
+  `app-check-rejected`, and `payload-too-large` is not built; the failed view shows the generic
+  retry/discard surface and the retry deadline.
 - `aborted` is reserved for a future caller-supplied signal and is not produced by this client.
 
 ## Part 2 - Processing host and Today wiring
 
-Status: In progress. Depends on Part 1 (the client and token port).
+Status: Built and reviewed - device gate pending. Depends on Part 1 (the client and token port).
 
 Scope: drive analysis, clarification, and generation for every ready persisted session; own retry
 timing bounded by `retryUntil`; resume work on launch, every minute, and on foreground; and submit

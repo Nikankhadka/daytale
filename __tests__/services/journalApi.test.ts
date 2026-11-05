@@ -188,6 +188,7 @@ describe('journal API client', () => {
     [504, 'upstream-unavailable'],
     [503, 'upstream-unavailable'],
     [500, 'upstream-unavailable'],
+    [302, 'invalid-response'],
   ];
 
   it.each(statusCases)('maps status %i to %s without reading the body', async (status, code) => {
@@ -351,5 +352,16 @@ describe('journal API client', () => {
 
     expect(calls[0]!.url).toBe(`${BASE_URL}/v1/journal/analyze`);
     expect(calls[0]!.init.headers['x-firebase-appcheck']).toBe('fresh-token');
+  });
+
+  it('requests a fresh token for every call', async () => {
+    const { fetchImpl } = recordingFetch(okResponse(ANALYZE_RESPONSE));
+    const getToken = tokenProvider();
+    const client = createJournalApiClient({ baseUrl: BASE_URL, getToken, fetch: fetchImpl });
+
+    await client.analyze(ANALYZE_REQUEST);
+    await client.analyze(ANALYZE_REQUEST);
+
+    expect(getToken).toHaveBeenCalledTimes(2);
   });
 });

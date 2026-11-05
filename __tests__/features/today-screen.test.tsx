@@ -653,6 +653,11 @@ describe('Today screen', () => {
         updatedAt: '2026-03-10T09:00:00.000Z',
       });
 
+    const unlockAnswer = () =>
+      act(async () => {
+        jest.advanceTimersByTime(300);
+      });
+
     it('submits answered and skipped questions once, then publishes the generating session', async () => {
       const session = clarificationSession();
       const generating = { ...session, status: 'generating' as const };
@@ -669,6 +674,7 @@ describe('Today screen', () => {
       const screen = await show(session);
       expect(await screen.findByText('Question 1 of 2')).toBeTruthy();
       await fireEvent.press(screen.getByText('Work'));
+      await unlockAnswer();
       expect(screen.getByText('Question 2 of 2')).toBeTruthy();
       await fireEvent.press(screen.getByText('Ignore'));
 
@@ -678,6 +684,36 @@ describe('Today screen', () => {
         { questionId: 'question-2', answerText: undefined },
       ]);
       expect(useSessionStore.getState().recordingSession).toEqual(generating);
+    });
+
+    it('ignores a rapid double tap so it cannot answer the next question', async () => {
+      const session = clarificationSession();
+      jest
+        .mocked(storage.repositories.clarificationQuestions.list)
+        .mockResolvedValue(openQuestions);
+      jest.mocked(submitClarification).mockResolvedValue({
+        status: 'submitted',
+        session: { ...session, status: 'generating' },
+        answered: 2,
+        skipped: 0,
+      });
+
+      const screen = await show(session);
+      expect(await screen.findByText('Question 1 of 2')).toBeTruthy();
+      await fireEvent.press(screen.getByText('Work'));
+      await fireEvent.press(screen.getByText('Work'));
+
+      expect(screen.getByText('Question 2 of 2')).toBeTruthy();
+      expect(submitClarification).not.toHaveBeenCalled();
+
+      await unlockAnswer();
+      await fireEvent.press(screen.getByText('Ignore'));
+
+      expect(submitClarification).toHaveBeenCalledTimes(1);
+      expect(submitClarification).toHaveBeenCalledWith({ storage }, SESSION_ID, [
+        { questionId: 'question-1', answerText: 'Work' },
+        { questionId: 'question-2', answerText: undefined },
+      ]);
     });
 
     it('keeps the batch and shows the problem when the submission is rejected', async () => {
@@ -694,11 +730,13 @@ describe('Today screen', () => {
       const screen = await show(session);
       expect(await screen.findByText('Question 1 of 2')).toBeTruthy();
       await fireEvent.press(screen.getByText('Work'));
+      await unlockAnswer();
       await fireEvent.press(screen.getByText('Ignore'));
 
       expect(submitClarification).toHaveBeenCalledTimes(1);
       expect(screen.getByText('That did not work. Please try again.')).toBeTruthy();
 
+      await unlockAnswer();
       await fireEvent.press(screen.getByText('Work'));
       expect(submitClarification).toHaveBeenCalledTimes(2);
       expect(jest.mocked(submitClarification).mock.calls[1]![2]).toEqual([

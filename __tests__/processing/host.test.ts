@@ -4,6 +4,7 @@ import {
   RETRY_BASE_MS,
   RETRY_CAP_MS,
   retryDelayMs,
+  type AnalyzeResult,
   type ProcessingHost,
 } from '../../src/features/processing';
 import type { JournalApiClient } from '../../src/services/journalApi';
@@ -115,7 +116,7 @@ describe('processing host', () => {
     expect(await fixture.repositories.listExtractedEventsBySession(SESSION_ID)).toHaveLength(1);
   });
 
-  it('retries a transient failure after 30 s, then waits 60 s', async () => {
+  it('retries a transient failure after 30 s, 60 s, then 120 s', async () => {
     const fixture = await createProcessingFixture({
       analysis: { status: 'failed', code: 'network' },
     });
@@ -148,6 +149,16 @@ describe('processing host', () => {
     fixture.setNow(at90);
     await host.reconcile(at90);
     expect(fixture.analyzeCalls).toHaveLength(3);
+
+    const at209 = new Date(NOW.getTime() + 209_000);
+    fixture.setNow(at209);
+    await host.reconcile(at209);
+    expect(fixture.analyzeCalls).toHaveLength(3);
+
+    const at210 = new Date(NOW.getTime() + 210_000);
+    fixture.setNow(at210);
+    await host.reconcile(at210);
+    expect(fixture.analyzeCalls).toHaveLength(4);
   });
 
   it.each(['invalid-response', 'app-check-rejected', 'api-unconfigured', 'payload-too-large'])(
@@ -170,21 +181,55 @@ describe('processing host', () => {
     },
   );
 
-  it('never retries at or after retryUntil', async () => {
+  it('never retries at or after retryUntil and keeps the retry material', async () => {
     const fixture = await createProcessingFixture({
-      analysis: { status: 'failed', code: 'network' },
+      analysis: analyzedResponse({ events: [analyzedEvent()], questions: [] }),
+      generation: { status: 'failed', code: 'network' },
     });
     const { host } = createHost(fixture);
 
     await host.kick(SESSION_ID);
     const failed = await fixture.session();
+    expect(failed.retryTarget).toBe('generating');
     const deadline = new Date(failed.retryUntil!);
     fixture.setNow(deadline);
 
     await host.reconcile(deadline);
 
-    expect(fixture.analyzeCalls).toHaveLength(1);
+    expect(fixture.generateCalls).toHaveLength(1);
     expect((await fixture.session()).status).toBe('failed');
+    expect(await fixture.repositories.listTranscriptSegmentsBySession(SESSION_ID)).toHaveLength(1);
+    expect(await fixture.repositories.listExtractedEventsBySession(SESSION_ID)).toHaveLength(1);
+  });
+
+  it('ignores an overlapping reconcile while the first is still running', async () => {
+    const fixture = await createProcessingFixture();
+    let resolveAnalysis: ((result: AnalyzeResult) => void) | undefined;
+    const analyze = jest.fn(
+      () =>
+        new Promise<AnalyzeResult>((resolve) => {
+          resolveAnalysis = resolve;
+        }),
+    );
+    fixture.deps.analyze = analyze;
+    const { host } = createHost(fixture);
+    const listSpy = jest.spyOn(fixture.repositories.recordingSessions, 'list');
+    const at = new Date(NOW.getTime());
+
+    const first = host.reconcile(at);
+    const second = host.reconcile(at);
+    await second;
+    await new Promise<void>((resolve) => setImmediate(resolve));
+
+    expect(listSpy).toHaveBeenCalledTimes(1);
+    expect(fixture.transcribeCalls).toHaveLength(1);
+    expect(analyze).toHaveBeenCalledTimes(1);
+
+    resolveAnalysis!({ status: 'failed', code: 'network' });
+    await first;
+
+    expect(listSpy).toHaveBeenCalledTimes(1);
+    expect(analyze).toHaveBeenCalledTimes(1);
   });
 
   it('retries a retryable failed session on the first reconcile of a fresh host', async () => {
@@ -219,7 +264,15 @@ describe('processing host', () => {
     await waitForStatus(fixture, 'ready');
 
     expect(fixture.generateCalls).toHaveLength(1);
+
+    // Put the persisted session back in processing so a surviving subscription would kick again.
+    const ready = await fixture.session();
+    await fixture.repositories.recordingSessions.save({ ...ready, status: 'generating' });
     detach();
+    useSessionStore.getState().setRecordingSession({ ...ready, status: 'analyzing' });
+    await new Promise<void>((resolve) => setImmediate(resolve));
+
+    expect(fixture.generateCalls).toHaveLength(1);
   });
 
   it('kicks on a store change into processing and ignores unrelated updates', async () => {
