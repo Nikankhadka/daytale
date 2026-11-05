@@ -13,7 +13,7 @@ Status values are `Not Started`, `In Progress`, `Blocked`, `Ready for Review`, a
 | DYT-007 | Local transcription | Ready for Review | DYT-005, DYT-006 |
 | DYT-008 | Cloud Run and Gemini journal API | Ready for Review | DYT-001 |
 | DYT-009 | Processing, clarification, and journals | Ready for Review | DYT-003, DYT-007, DYT-008 |
-| DYT-010 | Native recording controls | Not Started | DYT-006 |
+| DYT-010 | Native recording controls | In Progress | DYT-006 |
 | DYT-011 | Accessibility, privacy, and visual quality | Not Started | DYT-004, DYT-009, DYT-010 |
 | DYT-012 | Acceptance matrix and release sign-off | Not Started | DYT-011 |
 
@@ -187,7 +187,7 @@ Implementation evidence (2026-11-05): the mobile DYT-009 client is implemented o
 
 ## DYT-010 - Native recording controls
 
-Status: `Not Started`
+Status: `In Progress`
 Dependencies: DYT-006
 
 Outcome: Add iOS Lock Screen and Dynamic Island Live Activity plus Android foreground notification actions for Pause, Resume, and Stop.
@@ -200,6 +200,8 @@ Definition of Done: all actions are idempotent, reflect the persisted state, and
 
 Automated verification: action reducer, stale action, lifecycle, permission, and redaction tests.
 Physical-device verification: lock screen, Dynamic Island, Android notification shade, background, and termination scenarios.
+
+Spec: [DYT-010 native recording controls](specs/active/dyt-010-native-recording-controls.md). Ready for build; the Part 0 SDK 57 plugin spike is the first gate and no implementation has started.
 
 ## DYT-011 - Accessibility, privacy, and visual quality
 
