@@ -1,3 +1,4 @@
+import * as Crypto from 'expo-crypto';
 import type { SQLiteBindValue } from 'expo-sqlite';
 
 import type { MigrationDatabase, MigrationTransaction } from './migrations';
@@ -11,6 +12,7 @@ import {
   type ClarificationAnswer,
   type ClarificationQuestion,
   type CleanupReceipt,
+  type CleanupRecordKind,
   type ExtractedEvent,
   type JournalEntry,
   type RecordingOperation,
@@ -37,6 +39,18 @@ export class StorageRepositoryError extends Error {
   public constructor(message: string) {
     super(message);
     this.name = 'StorageRepositoryError';
+  }
+}
+
+/**
+ * A session operation was refused by the reducer inside a write transaction, so the whole
+ * transaction rolled back. Distinct from the validation errors that mean the caller handed in
+ * state the store refuses to persist, so callers can map only this case to a rejected result.
+ */
+export class StorageOperationRejectedError extends StorageRepositoryError {
+  public constructor(message: string) {
+    super(message);
+    this.name = 'StorageOperationRejectedError';
   }
 }
 
@@ -75,6 +89,44 @@ export type ChunkTranscriptWrite = {
   segments: TranscriptSegment[];
 };
 
+export type SessionAnalysisWrite = {
+  sessionId: string;
+  events: ExtractedEvent[];
+  questions: ClarificationQuestion[];
+};
+
+export type StoredAnalysis = {
+  events: ExtractedEvent[];
+  questions: ClarificationQuestion[];
+};
+
+export type ClarificationSubmissionWrite = {
+  /** The same session's open questions, already carrying their answered/skipped status. */
+  questions: ClarificationQuestion[];
+  answers: ClarificationAnswer[];
+  /** Applied in the same transaction as the question changes. */
+  sessionOperation: { operation: RecordingOperation; action: RecordingSessionAction };
+};
+
+/** The content-free receipt kinds a successful generation removes from a session. */
+export const SESSION_COMPLETION_DELETED_KINDS: CleanupRecordKind[] = [
+  'transcript_segments',
+  'extracted_events',
+  'clarification_questions',
+  'clarification_answers',
+];
+
+export type SessionCompletionWrite = {
+  /** The journal entry to persist; its source events are removed by the same transaction. */
+  journal: JournalEntry;
+  /** Applied in the same transaction as the journal insert and the source cleanup. */
+  sessionOperation: { operation: RecordingOperation; action: RecordingSessionAction };
+  /** Content-free receipt identity; `deletedKinds` is derived from what this operation removes. */
+  receipt: { id: string; completedAt: string };
+  /** Content-free hash of the receipt metadata; defaults to expo-crypto SHA-256. */
+  hash?: (value: string) => Promise<string>;
+};
+
 export type StorageRepositories = {
   appPreferences: EntityRepository<AppPreferences>;
   voiceProfiles: VoiceProfileRepository;
@@ -99,6 +151,21 @@ export type StorageRepositories = {
   saveChunkTranscript: (input: ChunkTranscriptWrite) => Promise<boolean>;
   /** Deletes a closed chunk's unusable audio without a transcript; false if not closed. */
   discardClosedChunk: (id: string) => Promise<boolean>;
+  listTranscriptSegmentsBySession: (sessionId: string) => Promise<TranscriptSegment[]>;
+  listExtractedEventsBySession: (sessionId: string) => Promise<ExtractedEvent[]>;
+  listClarificationQuestionsBySession: (sessionId: string) => Promise<ClarificationQuestion[]>;
+  /** The session's journal entry, if generation already produced one. */
+  findJournalEntryBySession: (sessionId: string) => Promise<JournalEntry | null>;
+  /** Replaces a session's analysis (events and questions) in one transaction. */
+  replaceSessionAnalysis: (input: SessionAnalysisWrite) => Promise<StoredAnalysis>;
+  /** Settles clarification questions and advances the session in one transaction. */
+  saveClarificationSubmission: (
+    input: ClarificationSubmissionWrite,
+  ) => Promise<RecordingSessionOperationResult>;
+  /** Writes the journal and removes its source records and advances the session in one transaction. */
+  completeSessionWithJournal: (
+    input: SessionCompletionWrite,
+  ) => Promise<RecordingSessionOperationResult>;
 };
 
 type SqlRow = Record<string, unknown>;
@@ -242,6 +309,15 @@ export function createStorageRepositories(database: MigrationDatabase): StorageR
     readAudioChunkBytes: (id) => readAudioChunkBytes(database, id),
     saveChunkTranscript: (input) => saveChunkTranscript(database, input),
     discardClosedChunk: (id) => discardClosedChunk(database, id),
+    listTranscriptSegmentsBySession: (sessionId) =>
+      listTranscriptSegmentsBySession(database, sessionId),
+    listExtractedEventsBySession: (sessionId) => listExtractedEventsBySession(database, sessionId),
+    listClarificationQuestionsBySession: (sessionId) =>
+      listClarificationQuestionsBySession(database, sessionId),
+    findJournalEntryBySession: (sessionId) => findJournalEntryBySession(database, sessionId),
+    replaceSessionAnalysis: (input) => replaceSessionAnalysis(database, input),
+    saveClarificationSubmission: (input) => saveClarificationSubmission(database, input),
+    completeSessionWithJournal: (input) => completeSessionWithJournal(database, input),
   };
 }
 
@@ -448,6 +524,200 @@ export async function discardClosedChunk(
   });
 }
 
+/**
+ * Transcript segments of one session, ordered by chunk sequence and then by their chunk-relative
+ * start. The returned `startMs`/`endMs` are session-relative: each segment is offset by its chunk's
+ * `started_at` minus the session start (`actual_start`, falling back to `scheduled_start`), with
+ * negative offsets clamped to zero. The persisted rows stay chunk-relative; this join is what puts
+ * every chunk's local timestamps back on the one session timeline the analyze request needs.
+ */
+export async function listTranscriptSegmentsBySession(
+  database: MigrationDatabase,
+  sessionId: string,
+): Promise<TranscriptSegment[]> {
+  const rows = await database.getAllAsync<SqlRow>(
+    `SELECT ts.id, ts.session_id, ts.chunk_id, ts.start_ms, ts.end_ms, ts.text, ts.language,
+            ts.speaker, ts.speaker_confidence, ts.transcript_confidence, ts.created_at,
+            c.started_at AS chunk_started_at,
+            s.actual_start AS session_actual_start,
+            s.scheduled_start AS session_scheduled_start
+     FROM transcript_segments ts
+     LEFT JOIN audio_chunks c ON c.id = ts.chunk_id
+     LEFT JOIN recording_sessions s ON s.id = ts.session_id
+     WHERE ts.session_id = ?
+     ORDER BY c.sequence, ts.start_ms, ts.id`,
+    validateStorageId(sessionId),
+  );
+  return rows.map(mapSessionTranscriptSegment);
+}
+
+export async function listExtractedEventsBySession(
+  database: MigrationDatabase,
+  sessionId: string,
+): Promise<ExtractedEvent[]> {
+  const rows = await database.getAllAsync<SqlRow>(
+    `SELECT ${EXTRACTED_EVENT_COLUMNS} FROM extracted_events
+     WHERE session_id = ? ORDER BY start_ms, id`,
+    validateStorageId(sessionId),
+  );
+  return rows.map(mapExtractedEvent);
+}
+
+export async function listClarificationQuestionsBySession(
+  database: MigrationDatabase,
+  sessionId: string,
+): Promise<ClarificationQuestion[]> {
+  const rows = await database.getAllAsync<SqlRow>(
+    `SELECT ${CLARIFICATION_QUESTION_COLUMNS} FROM clarification_questions
+     WHERE session_id = ? ORDER BY start_ms, id`,
+    validateStorageId(sessionId),
+  );
+  return rows.map(mapClarificationQuestion);
+}
+
+/**
+ * Makes one session's analysis durable, replacing anything a previous attempt wrote. The delete
+ * and the inserts share a transaction, so a rerun after a failure can never duplicate events or
+ * questions. The max-two-open-questions guard still applies inside `writeClarificationQuestion`.
+ */
+export async function replaceSessionAnalysis(
+  database: MigrationDatabase,
+  input: SessionAnalysisWrite,
+): Promise<StoredAnalysis> {
+  const sessionId = validateStorageId(input.sessionId);
+  const events = input.events.map((event) => validateExtractedEvent(event));
+  const questions = input.questions.map((question) => validateClarificationQuestion(question));
+  if (events.some((event) => event.sessionId !== sessionId)) {
+    throw new StorageRepositoryError('An extracted event does not belong to the session.');
+  }
+  if (questions.some((question) => question.sessionId !== sessionId)) {
+    throw new StorageRepositoryError('A clarification question does not belong to the session.');
+  }
+  await withExclusiveTransaction(database, async (transaction) => {
+    await assertSessionExists(transaction, sessionId);
+    await run(
+      transaction,
+      `DELETE FROM clarification_answers
+       WHERE question_id IN (SELECT id FROM clarification_questions WHERE session_id = ?)`,
+      sessionId,
+    );
+    await run(transaction, 'DELETE FROM clarification_questions WHERE session_id = ?', sessionId);
+    await run(transaction, 'DELETE FROM extracted_events WHERE session_id = ?', sessionId);
+    for (const event of events) {
+      await writeExtractedEvent(transaction, event);
+    }
+    for (const question of questions) {
+      await writeClarificationQuestion(transaction, question);
+    }
+  });
+  return { events, questions };
+}
+
+/**
+ * Marks a session's clarification answers as answered or skipped and advances it, atomically.
+ * Every question must still be open and owned by the session, so a second submission is refused
+ * rather than rewriting a settled answer. A session operation the reducer rejects rolls the whole
+ * transaction back, so questions are never settled while the session stays put.
+ */
+export async function saveClarificationSubmission(
+  database: MigrationDatabase,
+  input: ClarificationSubmissionWrite,
+): Promise<RecordingSessionOperationResult> {
+  const sessionId = validateStorageId(input.sessionOperation.operation.sessionId);
+  const questions = input.questions.map((question) => validateClarificationQuestion(question));
+  const answers = input.answers.map((answer) => validateClarificationAnswer(answer));
+  if (questions.some((question) => question.sessionId !== sessionId)) {
+    throw new StorageRepositoryError('A clarification question does not belong to the session.');
+  }
+  return withExclusiveTransaction(database, async (transaction) => {
+    for (const question of questions) {
+      if (question.status === 'open') {
+        throw new StorageRepositoryError('A clarification submission must settle its questions.');
+      }
+      const existing = await transaction.getFirstAsync<{ session_id: string; status: string }>(
+        'SELECT session_id, status FROM clarification_questions WHERE id = ?',
+        question.id,
+      );
+      if (existing === null || existing.session_id !== sessionId || existing.status !== 'open') {
+        throw new StorageRepositoryError('Clarification question is not open for this session.');
+      }
+      await run(
+        transaction,
+        'UPDATE clarification_questions SET status = ? WHERE id = ?',
+        question.status,
+        question.id,
+      );
+    }
+    for (const answer of answers) {
+      await writeClarificationAnswer(transaction, answer);
+    }
+    const result = await applyRecordingSessionOperationInTransaction(
+      transaction,
+      input.sessionOperation.operation,
+      input.sessionOperation.action,
+    );
+    if (result.operation.status !== 'applied') {
+      // Throwing rolls the settled questions and answers back with the rejected operation.
+      throw new StorageOperationRejectedError(
+        'The clarification submission could not advance the session.',
+      );
+    }
+    return result;
+  });
+}
+
+/**
+ * Persists a generated journal entry and, in one transaction, removes the session's source
+ * records (transcript segments, extracted events, clarification questions and answers), appends a
+ * content-free success receipt, and advances the session to `ready`. A session operation the
+ * reducer rejects throws `StorageOperationRejectedError` and rolls the whole transaction back, so a
+ * journal is never written without the matching cleanup and advance.
+ */
+export async function completeSessionWithJournal(
+  database: MigrationDatabase,
+  input: SessionCompletionWrite,
+): Promise<RecordingSessionOperationResult> {
+  const sessionId = validateStorageId(input.sessionOperation.operation.sessionId);
+  const journal = validateJournalEntry(input.journal);
+  if (journal.sessionId !== sessionId) {
+    throw new StorageRepositoryError('The journal entry does not belong to the session.');
+  }
+  const hash = input.hash ?? defaultCleanupHash;
+  return withExclusiveTransaction(database, async (transaction) => {
+    await assertSessionExists(transaction, sessionId);
+    // The journal's source events must still exist when it is written, so it goes before the delete.
+    await writeJournalEntry(transaction, journal);
+    await run(
+      transaction,
+      `DELETE FROM clarification_answers
+       WHERE question_id IN (SELECT id FROM clarification_questions WHERE session_id = ?)`,
+      sessionId,
+    );
+    await run(transaction, 'DELETE FROM clarification_questions WHERE session_id = ?', sessionId);
+    await run(transaction, 'DELETE FROM extracted_events WHERE session_id = ?', sessionId);
+    await run(transaction, 'DELETE FROM transcript_segments WHERE session_id = ?', sessionId);
+    const result = await applyRecordingSessionOperationInTransaction(
+      transaction,
+      input.sessionOperation.operation,
+      input.sessionOperation.action,
+    );
+    if (result.operation.status !== 'applied') {
+      throw new StorageOperationRejectedError(
+        'The session completion could not advance the session to ready.',
+      );
+    }
+    await insertReceipt(transaction, {
+      sessionId,
+      reason: 'success',
+      deletedKinds: SESSION_COMPLETION_DELETED_KINDS,
+      completedAt: input.receipt.completedAt,
+      uuid: () => input.receipt.id,
+      hash,
+    });
+    return result;
+  });
+}
+
 export async function saveTranscriptSegment(
   database: MigrationDatabase,
   value: TranscriptSegment,
@@ -600,6 +870,18 @@ export async function deleteJournalEntry(database: MigrationDatabase, id: string
   await withExclusiveTransaction(database, async (transaction) => {
     await run(transaction, 'DELETE FROM journal_entries WHERE id = ?', validatedId);
   });
+}
+
+export async function findJournalEntryBySession(
+  database: MigrationDatabase,
+  sessionId: string,
+): Promise<JournalEntry | null> {
+  const row = await database.getFirstAsync<SqlRow>(
+    `SELECT ${JOURNAL_ENTRY_COLUMNS} FROM journal_entries
+     WHERE session_id = ? ORDER BY created_at, id LIMIT 1`,
+    validateStorageId(sessionId),
+  );
+  return row === null ? null : mapJournalEntry(row);
 }
 
 export async function saveCleanupReceipt(
@@ -1130,6 +1412,55 @@ async function writeJournalEntry(
   );
 }
 
+/**
+ * Writes one content-free cleanup receipt inside the caller's transaction. The hash is over the
+ * receipt metadata only, never over deleted content, so the receipt reveals nothing it records.
+ */
+export async function insertReceipt(
+  transaction: MigrationTransaction,
+  input: {
+    sessionId: string;
+    reason: CleanupReceipt['reason'];
+    deletedKinds: CleanupReceipt['deletedKinds'];
+    completedAt: string;
+    uuid: () => string;
+    hash: (value: string) => Promise<string>;
+  },
+): Promise<CleanupReceipt> {
+  const receiptId = validateStorageId(input.uuid());
+  const contentFreeHash = await input.hash(
+    JSON.stringify({
+      sessionId: input.sessionId,
+      reason: input.reason,
+      completedAt: input.completedAt,
+      deletedKinds: input.deletedKinds,
+    }),
+  );
+  const receipt = validateCleanupReceipt({
+    id: receiptId,
+    sessionId: input.sessionId,
+    reason: input.reason,
+    deletedKinds: input.deletedKinds,
+    completedAt: input.completedAt,
+    contentFreeHash,
+    createdAt: input.completedAt,
+  });
+
+  await transaction.runAsync(
+    `INSERT INTO cleanup_receipts
+     (id, session_id, reason, deleted_kinds, completed_at, content_free_hash)
+     VALUES (?, ?, ?, ?, ?, ?)`,
+    receipt.id,
+    receipt.sessionId ?? null,
+    receipt.reason,
+    JSON.stringify(receipt.deletedKinds),
+    receipt.completedAt,
+    receipt.contentFreeHash,
+  );
+
+  return receipt;
+}
+
 async function writeCleanupReceipt(
   database: MigrationTransaction,
   record: CleanupReceipt,
@@ -1283,6 +1614,12 @@ function sqliteBoolean(value: boolean): number {
   return value ? 1 : 0;
 }
 
+function defaultCleanupHash(value: string): Promise<string> {
+  return Crypto.digestStringAsync(Crypto.CryptoDigestAlgorithm.SHA256, value, {
+    encoding: Crypto.CryptoEncoding.HEX,
+  });
+}
+
 function json(value: readonly unknown[]): string {
   return JSON.stringify(value);
 }
@@ -1425,6 +1762,21 @@ function mapTranscriptSegment(row: SqlRow): TranscriptSegment {
     transcriptConfidence: row.transcript_confidence,
     createdAt: row.created_at,
   });
+}
+
+function mapSessionTranscriptSegment(row: SqlRow): TranscriptSegment {
+  const segment = mapTranscriptSegment(row);
+  const sessionStart =
+    optionalText(row.session_actual_start) ?? optionalText(row.session_scheduled_start);
+  const chunkStart = optionalText(row.chunk_started_at);
+  if (sessionStart === undefined || chunkStart === undefined) {
+    return segment;
+  }
+  const offsetMs = Date.parse(chunkStart) - Date.parse(sessionStart);
+  if (!Number.isFinite(offsetMs) || offsetMs <= 0) {
+    return segment;
+  }
+  return { ...segment, startMs: segment.startMs + offsetMs, endMs: segment.endMs + offsetMs };
 }
 
 function mapExtractedEvent(row: SqlRow): ExtractedEvent {
