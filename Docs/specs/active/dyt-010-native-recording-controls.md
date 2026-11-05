@@ -258,6 +258,52 @@ part lands; the device rows stay open until the physical matrix runs.
 | 4 | Full `npm run check` counts and the recording-wiring result. |
 | Device | D1-D10 with device model, OS version, build hash, and screenshots; no content visible on any surface. |
 
+### Part 2 evidence (2026-11-06)
+
+Commands run from the repo root on `feat/dyt-010-native-recording-controls`.
+
+- `npx expo prebuild -p ios --no-install --clean` exited 0. The only warning was
+  `[bacons/apple-targets] Expo config is missing required ios.appleTeamId property`; `app.json` is
+  unchanged by this slice. Prebuild rewrote `package.json` `ios`/`android` scripts to
+  `expo run:*`; that change was reverted, so `package.json` is untouched.
+- Generated targets: `Daytale` (`com.apple.product-type.application`) and `recordingactivity`
+  (`com.apple.product-type.app-extension`). The widget target deployment target is `17.0`.
+- App Group entitlements: `ios/Daytale/Daytale.entitlements` and
+  `ios/.targets/recordingactivity/generated.entitlements` both contain
+  `com.apple.security.application-groups = ["group.com.daytale.app"]`.
+- `ios/Daytale/Info.plist` contains `NSSupportsLiveActivities = true`.
+- The generated project references `_shared/RecordingActivityAttributes.swift`,
+  `_shared/RecordingControlIntents.swift`, and `_shared/RecordingIntentQueue.swift` in both targets.
+- `npx expo-modules-autolinking resolve --platform ios` resolves
+  `podName: RecordingControls`, `podspecDir: modules/recording-controls/ios`, and
+  `class: RecordingControlsModule`; the generated `Podfile` loads it through `use_expo_modules!`.
+- `swiftc -parse targets/_shared/*.swift targets/recording-activity/*.swift
+  modules/recording-controls/ios/*.swift` exited 0. This is syntax only: ActivityKit, SwiftUI,
+  WidgetKit, AppIntents, and ExpoModulesCore are not available in this CommandLineTools-only
+  environment, so no type-check or compile is claimed.
+- `npx tsc --noEmit` exited 0. `npm run check:docs` passed (10 Markdown files).
+  `npx prettier --check "targets/**/*.js" "modules/recording-controls/**/*.json"` passed.
+- `rm -rf ios android` followed by `test ! -d ios && test ! -d android` exited 0.
+
+Podspec path note: the spec's literal `../../targets/_shared/...` resolves from
+`modules/recording-controls/ios/` to `modules/targets/_shared`, which does not exist (Ruby
+`Dir.glob` returns `[]`). The podspec therefore uses `../../../targets/_shared/...`, which resolves
+to the repo `targets/_shared` and matches both files. The shared files are still referenced by
+relative path; no duplicate copies were added.
+
+Unverified without Xcode, CocoaPods, an Apple developer account, or a device:
+
+- `pod install` was not run (CocoaPods is not installed), so podspec acceptance and the exact
+  `../../../` path are unverified in CocoaPods itself.
+- No compile or signed build was performed. ActivityKit type identity across the pod, app, and
+  widget targets (Blockers item 5) is untested.
+- `ios.appleTeamId` is absent from `app.json`, so EAS second-target signing (Blockers item 6) and
+  App Group provisioning (Blockers item 7) are unverified.
+- The App Group queue read/write check and every D2/D3/D7/D8 device behavior remain open.
+- `ResumeRecordingIntent.openAppWhenRun` behavior (Blockers item 10) is untested.
+- The app target deployment target is 16.4 while the pod declares iOS 17.0; CocoaPods may warn or
+  raise it during `pod install`, which was not observed here.
+
 ## Definition of Done
 
 Automated half:
