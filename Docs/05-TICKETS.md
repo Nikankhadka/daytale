@@ -13,7 +13,7 @@ Status values are `Not Started`, `In Progress`, `Blocked`, `Ready for Review`, a
 | DYT-007 | Local transcription | Ready for Review | DYT-005, DYT-006 |
 | DYT-008 | Cloud Run and Gemini journal API | Ready for Review | DYT-001 |
 | DYT-009 | Processing, clarification, and journals | Ready for Review | DYT-003, DYT-007, DYT-008 |
-| DYT-010 | Native recording controls | In Progress | DYT-006 |
+| DYT-010 | Native recording controls | Ready for Review | DYT-006 |
 | DYT-011 | Accessibility, privacy, and visual quality | Not Started | DYT-004, DYT-009, DYT-010 |
 | DYT-012 | Acceptance matrix and release sign-off | Not Started | DYT-011 |
 
@@ -187,7 +187,7 @@ Implementation evidence (2026-11-05): the mobile DYT-009 client is implemented o
 
 ## DYT-010 - Native recording controls
 
-Status: `In Progress`
+Status: `Ready for Review`
 Dependencies: DYT-006
 
 Outcome: Add iOS Lock Screen and Dynamic Island Live Activity plus Android foreground notification actions for Pause, Resume, and Stop.
@@ -202,6 +202,8 @@ Automated verification: action reducer, stale action, lifecycle, permission, and
 Physical-device verification: lock screen, Dynamic Island, Android notification shade, background, and termination scenarios.
 
 Spec: [DYT-010 native recording controls](specs/active/dyt-010-native-recording-controls.md). Ready for build; the Part 0 SDK 57 plugin spike is the first gate and no implementation has started.
+
+Implementation evidence (2026-11-06): the automated half is built on `feat/dyt-010-native-recording-controls` through commits ac1f30d, 5282a40, 2c3422a, 84b737e, 52f6127, a45025f, 4b8b374, and c29237f. `@bacons/apple-targets@5.0.0` generates a `recordingactivity` widget target on Expo SDK 57 with the App Group in both entitlements and `NSSupportsLiveActivities`; the iOS module and `LiveActivityIntent` actions are in `modules/recording-controls/ios` and `targets/`; the Android config plugin patches expo-audio 57.0.5's `AudioRecordingService.kt` behind a SHA-256 guard so Pause and Stop write a content-free intent record instead of calling native `stopRecording()`. Every system action drains into `recordingHost.engine` through `src/features/recording/controls`, with 6 controls suites and 112 tests. Final `npm run check` passes 56 suites with 660 tests, 10 documentation files, 15 routes, and 107 journal API service tests. Known limits: no Xcode, CocoaPods, Java, Kotlin, Gradle, or Android SDK on the build machine, so Swift and Kotlin compilation, pod install, signing, and every notification/Live Activity behavior are unverified; ActivityKit type identity across the three Swift targets is unproven; `ios.appleTeamId` is still absent. Device gates D1-D10 remain.
 
 ## DYT-011 - Accessibility, privacy, and visual quality
 

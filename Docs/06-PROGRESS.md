@@ -11,9 +11,9 @@ Canonical documentation baseline complete. DYT-001 repository foundation checks 
 ## Ticket status
 
 Completed: none.
-Active: DYT-001, DYT-002, DYT-003, DYT-004, DYT-010.
+Active: DYT-001, DYT-002, DYT-003, DYT-004.
 Blocked: none.
-Ready for review: DYT-005, DYT-006, DYT-007, DYT-008, DYT-009.
+Ready for review: DYT-005, DYT-006, DYT-007, DYT-008, DYT-009, DYT-010.
 Verified: none.
 Not started: DYT-011 through DYT-012.
 
@@ -44,6 +44,8 @@ Expo SDK 57 repository foundation, DYT-002 recording-spike configuration, DYT-00
 2026-11-05: DYT-009 mobile client `npm run check` passed formatting, lint, TypeScript, 51 test suites with 555 tests, documentation links/placeholders, the 15 canonical routes, and the journal API service check with 107 tests. The targeted `npx jest __tests__/services __tests__/processing __tests__/features/today-screen.test.tsx --runInBand` passed 7 suites with 132 tests. The work is on `feat/dyt-009-journal-client` at commits 86d01fc, 11df669, 579daed, and 50dbcee, on top of the 1426f00 orchestrator merge. Independent review returned PASS WITH RISKS; the actionable double-tap, overlapping-reconcile, stale-hang, status-code, and test-gap findings were fixed before this record; residual limits are recorded in the spec. App Check token handling, request preflight, response re-validation, retry backoff, the tabs reconciliation hook, and the Today clarification batch are covered by fake clients and fixtures; no live App Check, Gemini, Cloud Run, or physical-device end-to-end run has happened.
 
 2026-11-06: DYT-010 native recording controls planned. Native Swift/Kotlin is justified under Docs/03-SPEC.md:119-121 by a demonstrated device gap: expo-audio's Android foreground notification exposes only Stop and its action calls native stopRecording() outside the JS command layer, and iOS has no Lock Screen or Dynamic Island control surface. Every system action becomes a persisted, content-free intent record drained into recordingHost.engine's idempotent pause/resume/stop. Part 0 is a hard gate on @bacons/apple-targets@5.0.0 and an Expo SDK 57 prebuild; the 6.0.0 SDK 57 line exists only as an unpublished draft PR. The physical-device matrix is still required before Verified.
+
+2026-11-06: DYT-010 native recording controls automated half built on `feat/dyt-010-native-recording-controls` (ac1f30d, 5282a40, 2c3422a, 84b737e, 52f6127, a45025f, 4b8b374, c29237f). `@bacons/apple-targets@5.0.0` prebuild generates the `recordingactivity` widget target with the `group.com.daytale.app` entitlement in both targets and `NSSupportsLiveActivities`; `@expo/prebuild-config` resolves as a duplicate 55.0.22 under the plugin and 57.0.16 under Expo. The iOS module exposes start/update/end and the Live Activity buttons write content-free `LiveActivityIntent` records to the App Group. The Android config plugin patches expo-audio 57.0.5's `AudioRecordingService.kt` behind a SHA-256 guard (pristine hash `519ca27105582a3393d7354e472948f26626440571b2c4f9e42bb18be317cd2d`) so Pause and Stop write a record instead of calling native `stopRecording()`; the receiver never touches the recorder. The JS drain applies pause, resume, and stop through `recordingHost.engine`, and `useRecordingControls` is mounted in the tabs layout. `npm run check` passes 56 Jest suites with 660 tests, 10 documentation files, 15 routes, and 107 journal API service tests. No Xcode, CocoaPods, Java, Kotlin, Gradle, or Android SDK is available on the build machine, so Swift and Kotlin compilation, pod install, signing, and all Live Activity and notification behavior are unverified; ActivityKit type identity across the three Swift targets is unproven; `ios.appleTeamId` is still absent. Device gates D1-D10 remain, so the ticket is Ready for Review, not Verified.
 
 ## Dated decisions
 

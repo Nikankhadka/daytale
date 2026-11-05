@@ -1,6 +1,6 @@
 # DYT-010 - Native recording controls
 
-Status: Ready for build - Part 0 dependency spike is the gate.
+Status: Built - device gate pending.
 Ticket: [DYT-010](../../05-TICKETS.md#dyt-010---native-recording-controls)
 Branch: `feat/dyt-010-native-recording-controls`
 Owners: recording controls, iOS Live Activity, Android recording notification.
@@ -466,7 +466,7 @@ The ticket cannot be marked Verified without D1-D10. The automated half alone is
 
 ## Part 0 - Dependency spike
 
-Status: The first and only gate. No Part 1 work starts until this passes.
+Status: Passed (2026-11-06).
 
 Scope: prove that `@bacons/apple-targets@5.0.0` generates a Live Activity widget target on Expo SDK
 57, and that the Android prebuild still works. This part adds the dependency, the app config, a
@@ -532,7 +532,7 @@ minimal target, and nothing else.
 
 ## Part 1 - Cross-platform action core
 
-Status: Planned. Depends on Part 0.
+Status: Built and reviewed (2026-11-06).
 
 Scope: the JS wrapper, intent schema, native store port, drain, Live Activity port, and the controls
 hook. Native implementations arrive in Parts 2 and 3; Part 1 typechecks and tests with fakes.
@@ -755,7 +755,7 @@ The Part 1 rows of the top-level acceptance list (1-19).
 
 ## Part 2 - iOS Live Activity
 
-Status: Planned. Depends on Part 0 and Part 1.
+Status: Built - compile and signing unverified (2026-11-06).
 
 ### Technical contract
 
@@ -890,7 +890,7 @@ The iOS rows of the top-level acceptance list (20-22) and D2, D3, D7, D8.
 
 ## Part 3 - Android notification
 
-Status: Planned. Depends on Part 0 and Part 1.
+Status: Built - Kotlin compilation unverified (2026-11-06).
 
 ### Decision
 
@@ -1113,7 +1113,7 @@ The Android rows of the top-level acceptance list (23) and D4, D5, D9, D10.
 
 ## Part 4 - Wiring, gating, and docs
 
-Status: Planned. Depends on Parts 1-3.
+Status: Built and reviewed (2026-11-06).
 
 ### Technical contract
 
@@ -1293,3 +1293,31 @@ Risk carried forward: the plugin is the SDK 55 line (`@expo/prebuild-config@55.0
 runs SDK 57. Generation succeeded here, but the generated project uses `objectVersion = 54` with
 `PBXFileSystemSynchronizedRootGroup` (an Xcode 16 construct). Compilation and signing are unverified
 because Xcode and CocoaPods are not installed on this machine; D1 covers them.
+
+### Part 1 evidence (2026-11-06)
+
+- Commits: 5282a40 (schema and native bridge), 2c3422a (drain), 84b737e (Live Activity port and
+  hook), c29237f (review fixes).
+- `npx jest __tests__/recording/controls --runInBand`: 5 suites, 94 tests at first green; 6 suites,
+  112 tests including the wiring suite after the review fixes.
+- `npx tsc --noEmit`: clean. Prettier and ESLint clean on the changed files.
+- Covered: every acceptance scenario 1-18 at its named seam, plus the seven terminal-status rows of
+  the behavior matrix added during review.
+
+### Part 4 evidence (2026-11-06)
+
+- Commit 4b8b374 mounts `useRecordingControls()` in `app/(tabs)/_layout.tsx` and asserts it in
+  `__tests__/features/recording-wiring.test.tsx`.
+- Final `npm run check` on c29237f: exit 0. Format clean, lint clean, `tsc --noEmit` clean, 56 Jest
+  suites with 660 tests passed, 10 documentation files, 15 route files, 107 journal API service
+  tests passed.
+
+### Review (2026-11-06)
+
+Independent review returned PASS WITH RISKS. Fixed before this record: the missing
+`isLiveActivitySupported()` gate in `syncActivity`, the activity session ref being set before
+`start` resolved, the drain foreground passthrough, removal ordering when the store throws after a
+successful command, the missing terminal-status matrix cases, the iOS intent event payload shape,
+and the `targets/**/*.js` format glob. Residual risks are recorded in Blockers: ActivityKit type
+identity across the pod, app, and widget targets; the absent `ios.appleTeamId`; Swift compilation
+and signing; Kotlin compilation; and every device-gate item D1-D10.
