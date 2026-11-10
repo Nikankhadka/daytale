@@ -43,6 +43,16 @@ GEMINI_API_KEY=<key> FIREBASE_PROJECT_ID=<project> npm --prefix service/journal-
 
 The server listens on `PORT` (default `8080`). It exits at startup, naming only the missing variable, when `GEMINI_API_KEY` or `FIREBASE_PROJECT_ID` is unset. Requests need a real App Check token for `<project>`; without one the service answers `401`.
 
+## Run locally with the dev gate
+
+```sh
+GEMINI_API_KEY=<key> DEV_APP_TOKEN=<32+ chars> npm --prefix service/journal-api run dev
+```
+
+`src/dev.ts` accepts a shared secret in the `x-firebase-appcheck` header instead of a real App Check token, so a dev-client build on a phone can call the service. Point the phone at the Mac's LAN IP (`http://<mac-lan-ip>:8080`), not `localhost`, and send `x-firebase-appcheck: <DEV_APP_TOKEN>` with every request. The token must be at least 32 characters, and is compared in constant time and never logged.
+
+This is a test scaffold, never production security. It refuses to start with `NODE_ENV=production`.
+
 ## Test
 
 ```sh
