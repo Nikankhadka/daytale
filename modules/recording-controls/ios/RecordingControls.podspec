@@ -1,5 +1,5 @@
 Pod::Spec.new do |s|
-  s.name           = 'DaytaleRecordingControls'
+  s.name           = 'RecordingControls'
   s.version        = '1.0.0'
   s.summary        = 'Native recording controls for Daytale.'
   s.description    = 'iOS Live Activity controls and the App Group recording intent queue.'
