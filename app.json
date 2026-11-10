@@ -44,7 +44,11 @@
       "deploymentTarget": "17.0",
       "bundleIdentifier": "com.daytale.app",
       "infoPlist": {
-        "NSSupportsLiveActivities": true
+        "NSSupportsLiveActivities": true,
+        "NSAppTransportSecurity": {
+          "NSAllowsLocalNetworking": true
+        },
+        "NSLocalNetworkUsageDescription": "Daytale connects to your Mac on the local network during development builds."
       },
       "entitlements": {
         "com.apple.security.application-groups": ["group.com.daytale.app"]
