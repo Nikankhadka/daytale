@@ -505,8 +505,9 @@ export function validateGenerateOutput(
 }
 
 // ---------------------------------------------------------------------------------------------
-// JSON Schemas handed to Gemini as responseJsonSchema. Only keywords that Gemini structured output
-// documents as supported are used; string length and tag patterns are enforced above instead.
+// JSON Schemas handed to Gemini as responseJsonSchema. Only documented-supported keywords are
+// used. `maxItems` on the large `events` object array is documented but rejected by some models
+// (gemini-3.5-flash-lite: 400 INVALID_ARGUMENT), so validateAnalyzeOutput enforces the event count.
 // ---------------------------------------------------------------------------------------------
 
 const speakerSchema = { type: 'string', enum: [...SPEAKERS] };
@@ -517,7 +518,6 @@ export const analyzeResponseJsonSchema = {
   properties: {
     events: {
       type: 'array',
-      maxItems: LIMITS.events,
       items: {
         type: 'object',
         properties: {

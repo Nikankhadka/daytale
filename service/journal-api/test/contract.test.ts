@@ -337,7 +337,9 @@ test('response schemas are strict objects with every property required', () => {
     assert.deepEqual([...schema.required].sort(), Object.keys(schema.properties).sort());
   }
   assert.equal(analyzeResponseJsonSchema.properties.questions.maxItems, 2);
-  assert.equal(analyzeResponseJsonSchema.properties.events.maxItems, 200);
+  // Deliberately absent: gemini-3.5-flash-lite rejects maxItems on the events object array, and
+  // validateAnalyzeOutput enforces the event count instead.
+  assert.equal('maxItems' in analyzeResponseJsonSchema.properties.events, false);
 });
 
 test('contract.ts has no imports so the mobile app can reuse it', async () => {

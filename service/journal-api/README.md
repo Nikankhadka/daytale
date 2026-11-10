@@ -53,7 +53,7 @@ GEMINI_API_KEY=<key> DEV_APP_TOKEN=<32+ chars> npm --prefix service/journal-api 
 
 This is a test scaffold, never production security. It refuses to start with `NODE_ENV=production`.
 
-`DEV_GEMINI_MODEL` is optional, defaults to the pinned model, and exists only because the pinned model can be capacity-blocked.
+`DEV_GEMINI_MODEL` is optional, defaults to the pinned model, and exists only because the pinned model can be capacity-blocked. The known-good fallback while the pinned model is capacity-blocked is `gemini-3.5-flash-lite`.
 
 ## Test
 
