@@ -51,16 +51,25 @@ export function userTurn(data: unknown): string {
   ].join('\n');
 }
 
+// The model id and timeout are overridable only so dev.ts can dodge a capacity-blocked pinned
+// model; every production call site passes no options and stays pinned.
+export interface GeminiOptions {
+  timeoutMs?: number;
+  model?: string;
+}
+
 export function createGemini(
   client: GeminiClient,
-  timeoutMs: number = GEMINI_TIMEOUT_MS,
+  options: GeminiOptions = {},
 ): (request: ModelRequest) => Promise<string> {
+  const timeoutMs = options.timeoutMs ?? GEMINI_TIMEOUT_MS;
+  const model = options.model ?? GEMINI_MODEL;
   return async (request) => {
     const analyze = request.kind === 'analyze';
     const signal = AbortSignal.timeout(timeoutMs);
     try {
       const response = await client.models.generateContent({
-        model: GEMINI_MODEL,
+        model,
         contents: [{ role: 'user', parts: [{ text: userTurn(request.data) }] }],
         config: {
           systemInstruction: analyze ? ANALYZE_INSTRUCTION : GENERATE_INSTRUCTION,

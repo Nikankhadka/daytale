@@ -3,7 +3,7 @@
 import { randomUUID, timingSafeEqual } from 'node:crypto';
 import { GoogleGenAI } from '@google/genai';
 import { createServer } from './app.ts';
-import { createGemini } from './gemini.ts';
+import { createGemini, GEMINI_MODEL } from './gemini.ts';
 
 const MIN_DEV_TOKEN_CHARS = 32;
 
@@ -39,7 +39,9 @@ function start(): void {
     verifyAppCheck: async (token) => {
       if (!devTokenMatches(token, devAppToken)) throw new Error('app_check_invalid');
     },
-    generate: createGemini(gemini),
+    generate: createGemini(gemini, {
+      model: process.env.DEV_GEMINI_MODEL?.trim() || GEMINI_MODEL,
+    }),
     log: (entry) => console.log(JSON.stringify(entry)),
     requestId: randomUUID,
     now: Date.now,

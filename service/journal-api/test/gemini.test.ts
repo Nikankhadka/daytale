@@ -139,7 +139,7 @@ test('a call that outlives the timeout rejects with a TimeoutError', async () =>
   const keepAlive = setTimeout(() => {}, 5000);
   try {
     await assert.rejects(
-      createGemini(client, 20)({ kind: 'analyze', data: analyzeRequest }),
+      createGemini(client, { timeoutMs: 20 })({ kind: 'analyze', data: analyzeRequest }),
       (error: Error) => error.name === 'TimeoutError',
     );
   } finally {
